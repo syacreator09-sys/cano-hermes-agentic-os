@@ -1,0 +1,26 @@
+id: creative-director
+name: Creative Director
+team: content
+objective: Define concepto, hook, estructura y estilo.
+status: approved
+runtime: claude-code
+model_profiles:
+- claude-subscription
+skills:
+- creative-brief
+tools:
+- nexus_search
+- task_events
+permissions:
+  filesystem: workspace-only
+  network: allowlist
+  production: approval-required
+budget:
+  max_cost_usd: 0.5
+  max_turns: 16
+  timeout_seconds: 1200
+evaluations:
+- schema
+- safety
+- task-contract
+max_concurrency: 1

@@ -1,0 +1,12 @@
+{
+  "id": "mcp-build",
+  "version": "0.1.0",
+  "status": "active",
+  "objective": "Crear MCP de mínimo privilegio.",
+  "risk": "low",
+  "tests": [
+    "manifest",
+    "procedure-review"
+  ],
+  "progressive_disclosure": true
+}

@@ -1,0 +1,12 @@
+{
+  "id": "capability-routing",
+  "version": "0.1.0",
+  "status": "active",
+  "objective": "Seleccionar equipo, runtime y modelo.",
+  "risk": "low",
+  "tests": [
+    "manifest",
+    "procedure-review"
+  ],
+  "progressive_disclosure": true
+}

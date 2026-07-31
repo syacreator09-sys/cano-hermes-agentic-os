@@ -1,0 +1,12 @@
+{
+  "id": "deep-research",
+  "version": "0.1.0",
+  "status": "active",
+  "objective": "Sintetizar contexto largo con trazabilidad.",
+  "risk": "low",
+  "tests": [
+    "manifest",
+    "procedure-review"
+  ],
+  "progressive_disclosure": true
+}

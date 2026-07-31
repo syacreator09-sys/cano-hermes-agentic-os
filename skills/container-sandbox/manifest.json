@@ -1,0 +1,12 @@
+{
+  "id": "container-sandbox",
+  "version": "0.1.0",
+  "status": "active",
+  "objective": "Crear contenedor rootless limitado.",
+  "risk": "low",
+  "tests": [
+    "manifest",
+    "procedure-review"
+  ],
+  "progressive_disclosure": true
+}

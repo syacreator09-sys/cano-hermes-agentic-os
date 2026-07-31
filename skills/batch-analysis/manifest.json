@@ -1,0 +1,12 @@
+{
+  "id": "batch-analysis",
+  "version": "0.1.0",
+  "status": "active",
+  "objective": "Procesar grandes lotes con costo controlado.",
+  "risk": "low",
+  "tests": [
+    "manifest",
+    "procedure-review"
+  ],
+  "progressive_disclosure": true
+}

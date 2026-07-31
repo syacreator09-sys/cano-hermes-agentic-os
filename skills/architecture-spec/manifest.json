@@ -1,0 +1,12 @@
+{
+  "id": "architecture-spec",
+  "version": "0.1.0",
+  "status": "active",
+  "objective": "Convertir una necesidad en arquitectura y criterios verificables.",
+  "risk": "low",
+  "tests": [
+    "manifest",
+    "procedure-review"
+  ],
+  "progressive_disclosure": true
+}

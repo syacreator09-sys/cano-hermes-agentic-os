@@ -1,0 +1,26 @@
+id: kimi-researcher
+name: Kimi Researcher
+team: research
+objective: Procesa contextos largos y síntesis extensas.
+status: approved
+runtime: api
+model_profiles:
+- deepseek-daily
+skills:
+- deep-research
+tools:
+- nexus_search
+- task_events
+permissions:
+  filesystem: workspace-only
+  network: allowlist
+  production: approval-required
+budget:
+  max_cost_usd: 0.5
+  max_turns: 16
+  timeout_seconds: 1200
+evaluations:
+- schema
+- safety
+- task-contract
+max_concurrency: 1

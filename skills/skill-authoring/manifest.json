@@ -1,0 +1,12 @@
+{
+  "id": "skill-authoring",
+  "version": "0.1.0",
+  "status": "active",
+  "objective": "Crear skill compatible con registro progresivo.",
+  "risk": "low",
+  "tests": [
+    "manifest",
+    "procedure-review"
+  ],
+  "progressive_disclosure": true
+}

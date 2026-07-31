@@ -1,0 +1,16 @@
+[Unit]
+Description=Cano Hermes Agentic OS
+After=network-online.target
+[Service]
+Type=simple
+User=hermes
+WorkingDirectory=/srv/cano-hermes-agentic-os
+EnvironmentFile=/srv/cano-hermes-agentic-os/.env
+ExecStart=/srv/cano-hermes-agentic-os/.venv/bin/uvicorn cano_hermes.api.app:app --host 127.0.0.1 --port 8000
+Restart=on-failure
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/srv/cano-hermes-agentic-os/storage /srv/cano-hermes-agentic-os/vault
+[Install]
+WantedBy=multi-user.target

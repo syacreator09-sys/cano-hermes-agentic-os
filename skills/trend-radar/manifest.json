@@ -1,0 +1,12 @@
+{
+  "id": "trend-radar",
+  "version": "0.1.0",
+  "status": "active",
+  "objective": "Descubrir ideas por canal y score.",
+  "risk": "low",
+  "tests": [
+    "manifest",
+    "procedure-review"
+  ],
+  "progressive_disclosure": true
+}

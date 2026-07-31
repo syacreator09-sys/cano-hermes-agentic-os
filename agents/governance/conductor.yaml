@@ -1,0 +1,27 @@
+id: conductor
+name: Hermes Conductor
+team: governance
+objective: Interpreta objetivos, descompone y coordina sin ejecutar trabajo especializado.
+status: active
+runtime: hermes
+model_profiles:
+- deepseek-daily
+skills:
+- task-planning
+- capability-routing
+tools:
+- nexus_search
+- task_events
+permissions:
+  filesystem: workspace-only
+  network: allowlist
+  production: approval-required
+budget:
+  max_cost_usd: 0.5
+  max_turns: 16
+  timeout_seconds: 1200
+evaluations:
+- schema
+- safety
+- task-contract
+max_concurrency: 1

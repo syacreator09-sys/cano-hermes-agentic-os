@@ -1,0 +1,12 @@
+{
+  "id": "git-worktrees",
+  "version": "0.1.0",
+  "status": "active",
+  "objective": "Aislar trabajos de Claude y Codex por tarea.",
+  "risk": "low",
+  "tests": [
+    "manifest",
+    "procedure-review"
+  ],
+  "progressive_disclosure": true
+}

@@ -1,0 +1,12 @@
+{
+  "id": "capability-audit",
+  "version": "0.1.0",
+  "status": "active",
+  "objective": "Buscar duplicados antes de crear capacidad.",
+  "risk": "low",
+  "tests": [
+    "manifest",
+    "procedure-review"
+  ],
+  "progressive_disclosure": true
+}

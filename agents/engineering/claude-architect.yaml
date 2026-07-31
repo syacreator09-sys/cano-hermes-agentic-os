@@ -1,0 +1,27 @@
+id: claude-architect
+name: Claude Architect
+team: engineering
+objective: Diseña arquitectura y especificaciones usando Claude Code.
+status: approved
+runtime: claude-code
+model_profiles:
+- claude-subscription
+skills:
+- architecture-spec
+- repo-analysis
+tools:
+- nexus_search
+- task_events
+permissions:
+  filesystem: workspace-only
+  network: allowlist
+  production: approval-required
+budget:
+  max_cost_usd: 0.5
+  max_turns: 16
+  timeout_seconds: 1200
+evaluations:
+- schema
+- safety
+- task-contract
+max_concurrency: 1

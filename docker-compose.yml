@@ -1,0 +1,13 @@
+services:
+  hermes:
+    build: .
+    ports: ["8000:8000"]
+    env_file: [.env]
+    volumes:
+      - ./storage:/app/storage
+      - ./vault:/app/vault
+      - ./agents:/app/agents:ro
+      - ./skills:/app/skills:ro
+    restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: ["ALL"]

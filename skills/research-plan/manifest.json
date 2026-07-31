@@ -1,0 +1,12 @@
+{
+  "id": "research-plan",
+  "version": "0.1.0",
+  "status": "active",
+  "objective": "Diseñar investigación con preguntas y fuentes.",
+  "risk": "low",
+  "tests": [
+    "manifest",
+    "procedure-review"
+  ],
+  "progressive_disclosure": true
+}

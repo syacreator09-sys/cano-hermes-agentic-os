@@ -1,0 +1,27 @@
+id: codex-builder
+name: Codex Builder
+team: engineering
+objective: Implementa cambios y pruebas usando Codex.
+status: approved
+runtime: codex
+model_profiles:
+- codex-subscription
+skills:
+- tdd-build
+- git-worktrees
+tools:
+- nexus_search
+- task_events
+permissions:
+  filesystem: workspace-only
+  network: allowlist
+  production: approval-required
+budget:
+  max_cost_usd: 0.5
+  max_turns: 16
+  timeout_seconds: 1200
+evaluations:
+- schema
+- safety
+- task-contract
+max_concurrency: 1

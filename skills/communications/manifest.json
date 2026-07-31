@@ -1,0 +1,12 @@
+{
+  "id": "communications",
+  "version": "0.1.0",
+  "status": "active",
+  "objective": "Enviar mensajes solo con política y aprobación.",
+  "risk": "low",
+  "tests": [
+    "manifest",
+    "procedure-review"
+  ],
+  "progressive_disclosure": true
+}

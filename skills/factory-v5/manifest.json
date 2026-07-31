@@ -1,0 +1,12 @@
+{
+  "id": "factory-v5",
+  "version": "0.1.0",
+  "status": "active",
+  "objective": "Invocar Factory V5 por contrato sin absorberla.",
+  "risk": "low",
+  "tests": [
+    "manifest",
+    "procedure-review"
+  ],
+  "progressive_disclosure": true
+}

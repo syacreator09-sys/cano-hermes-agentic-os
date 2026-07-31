@@ -1,0 +1,12 @@
+{
+  "id": "tdd-build",
+  "version": "0.1.0",
+  "status": "active",
+  "objective": "Implementar con prueba fallida, código mínimo y refactor.",
+  "risk": "low",
+  "tests": [
+    "manifest",
+    "procedure-review"
+  ],
+  "progressive_disclosure": true
+}

@@ -1,0 +1,12 @@
+{
+  "id": "browser-automation",
+  "version": "0.1.0",
+  "status": "active",
+  "objective": "Navegar con allowlist y captura de evidencia.",
+  "risk": "low",
+  "tests": [
+    "manifest",
+    "procedure-review"
+  ],
+  "progressive_disclosure": true
+}

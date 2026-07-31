@@ -1,0 +1,12 @@
+{
+  "id": "code-review",
+  "version": "0.1.0",
+  "status": "active",
+  "objective": "Revisar alcance, calidad, seguridad y regresión.",
+  "risk": "low",
+  "tests": [
+    "manifest",
+    "procedure-review"
+  ],
+  "progressive_disclosure": true
+}

@@ -1,0 +1,26 @@
+id: skill-engineer
+name: Skill Engineer
+team: forge
+objective: Construye y versiona skills reutilizables.
+status: approved
+runtime: codex
+model_profiles:
+- codex-subscription
+skills:
+- skill-authoring
+tools:
+- nexus_search
+- task_events
+permissions:
+  filesystem: workspace-only
+  network: allowlist
+  production: approval-required
+budget:
+  max_cost_usd: 0.5
+  max_turns: 16
+  timeout_seconds: 1200
+evaluations:
+- schema
+- safety
+- task-contract
+max_concurrency: 1

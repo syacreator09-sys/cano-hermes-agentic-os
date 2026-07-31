@@ -1,0 +1,12 @@
+{
+  "id": "structured-processing",
+  "version": "0.1.0",
+  "status": "active",
+  "objective": "Transformar entradas a esquemas JSON.",
+  "risk": "low",
+  "tests": [
+    "manifest",
+    "procedure-review"
+  ],
+  "progressive_disclosure": true
+}

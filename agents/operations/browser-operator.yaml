@@ -1,0 +1,26 @@
+id: browser-operator
+name: Browser Operator
+team: operations
+objective: Ejecuta navegación autorizada en sandbox.
+status: approved
+runtime: browser
+model_profiles:
+- deepseek-daily
+skills:
+- browser-automation
+tools:
+- nexus_search
+- task_events
+permissions:
+  filesystem: workspace-only
+  network: allowlist
+  production: approval-required
+budget:
+  max_cost_usd: 0.5
+  max_turns: 16
+  timeout_seconds: 1200
+evaluations:
+- schema
+- safety
+- task-contract
+max_concurrency: 1

@@ -1,0 +1,12 @@
+{
+  "id": "trend-analysis",
+  "version": "0.1.0",
+  "status": "active",
+  "objective": "Detectar señales actuales y contrastarlas.",
+  "risk": "low",
+  "tests": [
+    "manifest",
+    "procedure-review"
+  ],
+  "progressive_disclosure": true
+}

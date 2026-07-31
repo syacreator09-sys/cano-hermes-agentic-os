@@ -1,0 +1,26 @@
+id: mcp-engineer
+name: MCP Engineer
+team: forge
+objective: Construye servidores MCP limitados y probados.
+status: approved
+runtime: codex
+model_profiles:
+- codex-subscription
+skills:
+- mcp-build
+tools:
+- nexus_search
+- task_events
+permissions:
+  filesystem: workspace-only
+  network: allowlist
+  production: approval-required
+budget:
+  max_cost_usd: 0.5
+  max_turns: 16
+  timeout_seconds: 1200
+evaluations:
+- schema
+- safety
+- task-contract
+max_concurrency: 1

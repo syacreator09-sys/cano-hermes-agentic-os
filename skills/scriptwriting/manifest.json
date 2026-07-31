@@ -1,0 +1,12 @@
+{
+  "id": "scriptwriting",
+  "version": "0.1.0",
+  "status": "active",
+  "objective": "Escribir guiones por formato y duración.",
+  "risk": "low",
+  "tests": [
+    "manifest",
+    "procedure-review"
+  ],
+  "progressive_disclosure": true
+}

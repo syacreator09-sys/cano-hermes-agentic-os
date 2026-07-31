@@ -1,0 +1,12 @@
+{
+  "id": "integration-build",
+  "version": "0.1.0",
+  "status": "active",
+  "objective": "Crear adaptadores idempotentes con rollback.",
+  "risk": "low",
+  "tests": [
+    "manifest",
+    "procedure-review"
+  ],
+  "progressive_disclosure": true
+}

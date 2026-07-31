@@ -1,0 +1,12 @@
+{
+  "id": "nexus-context",
+  "version": "0.1.0",
+  "status": "active",
+  "objective": "Recuperar solo contexto relevante.",
+  "risk": "low",
+  "tests": [
+    "manifest",
+    "procedure-review"
+  ],
+  "progressive_disclosure": true
+}

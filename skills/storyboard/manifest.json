@@ -1,0 +1,12 @@
+{
+  "id": "storyboard",
+  "version": "0.1.0",
+  "status": "active",
+  "objective": "Crear escenas, cámara, texto, audio y timing.",
+  "risk": "low",
+  "tests": [
+    "manifest",
+    "procedure-review"
+  ],
+  "progressive_disclosure": true
+}

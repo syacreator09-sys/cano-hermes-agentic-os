@@ -1,0 +1,26 @@
+id: grok-trend-analyst
+name: Grok Trend Analyst
+team: research
+objective: Analiza tendencias y señales sociales.
+status: approved
+runtime: api
+model_profiles:
+- deepseek-daily
+skills:
+- trend-analysis
+tools:
+- nexus_search
+- task_events
+permissions:
+  filesystem: workspace-only
+  network: allowlist
+  production: approval-required
+budget:
+  max_cost_usd: 0.5
+  max_turns: 16
+  timeout_seconds: 1200
+evaluations:
+- schema
+- safety
+- task-contract
+max_concurrency: 1

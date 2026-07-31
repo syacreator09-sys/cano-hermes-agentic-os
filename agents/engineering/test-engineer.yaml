@@ -1,0 +1,26 @@
+id: test-engineer
+name: Test Engineer
+team: engineering
+objective: Diseña y ejecuta pruebas unitarias, integración y E2E.
+status: approved
+runtime: python
+model_profiles:
+- deepseek-daily
+skills:
+- testing
+tools:
+- nexus_search
+- task_events
+permissions:
+  filesystem: workspace-only
+  network: allowlist
+  production: approval-required
+budget:
+  max_cost_usd: 0.5
+  max_turns: 16
+  timeout_seconds: 1200
+evaluations:
+- schema
+- safety
+- task-contract
+max_concurrency: 1

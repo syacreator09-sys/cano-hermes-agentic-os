@@ -1,0 +1,12 @@
+{
+  "id": "security-review",
+  "version": "0.1.0",
+  "status": "active",
+  "objective": "Evaluar permisos y secretos.",
+  "risk": "low",
+  "tests": [
+    "manifest",
+    "procedure-review"
+  ],
+  "progressive_disclosure": true
+}

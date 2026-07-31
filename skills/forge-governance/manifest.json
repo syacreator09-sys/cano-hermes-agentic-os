@@ -1,0 +1,12 @@
+{
+  "id": "forge-governance",
+  "version": "0.1.0",
+  "status": "active",
+  "objective": "Aplicar cuarentena, pruebas y promoción.",
+  "risk": "low",
+  "tests": [
+    "manifest",
+    "procedure-review"
+  ],
+  "progressive_disclosure": true
+}

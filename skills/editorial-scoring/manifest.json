@@ -1,0 +1,12 @@
+{
+  "id": "editorial-scoring",
+  "version": "0.1.0",
+  "status": "active",
+  "objective": "Puntuar relevancia, novedad, autoridad y riesgo.",
+  "risk": "low",
+  "tests": [
+    "manifest",
+    "procedure-review"
+  ],
+  "progressive_disclosure": true
+}

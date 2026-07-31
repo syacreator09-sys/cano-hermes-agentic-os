@@ -1,0 +1,12 @@
+{
+  "id": "voice-flow",
+  "version": "0.1.0",
+  "status": "active",
+  "objective": "Procesar voz, confirmaciones y respuestas.",
+  "risk": "low",
+  "tests": [
+    "manifest",
+    "procedure-review"
+  ],
+  "progressive_disclosure": true
+}

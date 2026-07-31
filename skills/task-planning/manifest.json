@@ -1,0 +1,12 @@
+{
+  "id": "task-planning",
+  "version": "0.1.0",
+  "status": "active",
+  "objective": "Descomponer objetivos en subtareas con dependencias.",
+  "risk": "low",
+  "tests": [
+    "manifest",
+    "procedure-review"
+  ],
+  "progressive_disclosure": true
+}

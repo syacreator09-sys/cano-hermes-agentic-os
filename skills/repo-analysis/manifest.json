@@ -1,0 +1,12 @@
+{
+  "id": "repo-analysis",
+  "version": "0.1.0",
+  "status": "active",
+  "objective": "Analizar estructura, dependencias y riesgos de un repositorio.",
+  "risk": "low",
+  "tests": [
+    "manifest",
+    "procedure-review"
+  ],
+  "progressive_disclosure": true
+}

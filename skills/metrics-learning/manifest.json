@@ -1,0 +1,12 @@
+{
+  "id": "metrics-learning",
+  "version": "0.1.0",
+  "status": "active",
+  "objective": "Convertir resultados en hipótesis y experimentos.",
+  "risk": "low",
+  "tests": [
+    "manifest",
+    "procedure-review"
+  ],
+  "progressive_disclosure": true
+}

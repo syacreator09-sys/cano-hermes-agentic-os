@@ -1,0 +1,26 @@
+id: container-builder
+name: Container Builder
+team: forge
+objective: Genera sandboxes rootless con políticas de recursos.
+status: approved
+runtime: codex
+model_profiles:
+- codex-subscription
+skills:
+- container-sandbox
+tools:
+- nexus_search
+- task_events
+permissions:
+  filesystem: workspace-only
+  network: allowlist
+  production: approval-required
+budget:
+  max_cost_usd: 0.5
+  max_turns: 16
+  timeout_seconds: 1200
+evaluations:
+- schema
+- safety
+- task-contract
+max_concurrency: 1
