@@ -1,17 +1,25 @@
 name: Bootstrap Cano Hermes OS
+
 on:
-  push:
+  pull_request:
     paths:
       - bootstrap_repo.py
+      - bootstrap_catalog_std.py
+      - bootstrap_files_*.py
   workflow_dispatch:
+
 permissions:
   contents: write
+
 jobs:
   materialize-and-verify:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -28,13 +36,15 @@ jobs:
       - name: Lint
         run: ruff check .
       - name: Commit generated repository
+        env:
+          TARGET_BRANCH: ${{ github.event.pull_request.head.ref || github.ref_name }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add .
+          git add -A
           if git diff --cached --quiet; then
             echo "No generated changes"
           else
-            git commit -m "feat: materialize Cano Hermes OS v0.1.0"
-            git push
+            git commit -m "feat: materialize Cano Hermes OS v0.2.0"
+            git push origin "HEAD:${TARGET_BRANCH}"
           fi
