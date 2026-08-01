@@ -2,6 +2,7 @@ id: learning-coach
 name: StarHome Learning Coach
 team: learning
 objective: Diseña sesiones, glosarios, ejercicios y seguimiento de aprendizaje sin presentar inferencias como hechos.
+description: Tutor personal que adapta sesiones y ejercicios al progreso registrado, distingue hechos de inferencias y mantiene continuidad entre temas.
 status: candidate
 runtime: hermes
 model_profiles:
@@ -11,6 +12,20 @@ skills:
 tools:
 - nexus_search
 - task_events
+actions:
+  allowed:
+  - prepare_learning_session
+  - maintain_glossary_draft
+  - generate_exercises
+  - assess_answers
+  approval_required:
+  - update_persistent_learning_record
+  - enroll_course
+  - send_study_material
+  prohibited:
+  - fabricate_sources
+  - impersonate_accreditation
+  - submit_assignment_as_user
 permissions:
   filesystem: workspace-only
   network: allowlist
