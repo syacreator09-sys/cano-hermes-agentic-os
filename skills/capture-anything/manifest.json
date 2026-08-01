@@ -1,0 +1,9 @@
+{
+  "id": "capture-anything",
+  "version": "0.3.0",
+  "status": "candidate",
+  "objective": "Clasificar entradas y preparar registros trazables sin escrituras externas.",
+  "risk": "medium",
+  "tests": ["manifest", "procedure-review", "privacy-boundary"],
+  "progressive_disclosure": true
+}
