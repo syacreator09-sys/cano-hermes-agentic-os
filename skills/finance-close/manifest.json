@@ -1,0 +1,9 @@
+{
+  "id": "finance-close",
+  "version": "0.3.0",
+  "status": "candidate",
+  "objective": "Preparar cierres financieros conciliados y diferencias documentadas.",
+  "risk": "medium",
+  "tests": ["manifest", "procedure-review", "financial-boundary"],
+  "progressive_disclosure": true
+}
