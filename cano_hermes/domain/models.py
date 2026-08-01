@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 from uuid import uuid4
 
@@ -10,7 +10,7 @@ from .enums import AgentStatus, ApprovalStatus, RiskLevel, TaskStatus
 
 
 def utcnow() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 class Budget(BaseModel):
@@ -54,7 +54,7 @@ class AgentActions(BaseModel):
     prohibited: list[str] = Field(default_factory=list)
 
     @model_validator(mode="after")
-    def validate_action_groups(self) -> "AgentActions":
+    def validate_action_groups(self) -> AgentActions:
         groups = {
             "allowed": self.allowed,
             "approval_required": self.approval_required,
