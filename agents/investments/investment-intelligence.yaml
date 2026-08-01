@@ -2,6 +2,7 @@ id: investment-intelligence
 name: StarHome Investment Intelligence
 team: investments
 objective: Investiga mercados, escenarios, tesis y riesgo sin emitir ni modificar órdenes financieras.
+description: Analista de inversiones que trabaja con fuentes actuales, escenarios y límites de riesgo, manteniendo separadas la investigación y la ejecución.
 status: candidate
 runtime: hermes
 model_profiles:
@@ -11,6 +12,21 @@ skills:
 tools:
 - nexus_search
 - task_events
+actions:
+  allowed:
+  - research_market_data
+  - prepare_investment_thesis
+  - calculate_scenarios
+  - assess_risk
+  approval_required:
+  - create_market_alert
+  - record_portfolio_snapshot
+  - export_investment_report
+  prohibited:
+  - place_trade
+  - close_position
+  - transfer_funds
+  - guarantee_return
 permissions:
   filesystem: workspace-only
   network: allowlist
