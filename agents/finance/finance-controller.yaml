@@ -1,0 +1,32 @@
+id: finance-controller
+name: StarHome Finance Controller
+team: finance
+objective: Prepara registros, conciliaciones, flujo y posición financiera personal y empresarial sin mover dinero.
+status: candidate
+runtime: hermes
+model_profiles:
+- deepseek-daily
+skills:
+- expense-capture
+- cash-position
+- finance-close
+tools:
+- nexus_search
+- task_events
+permissions:
+  filesystem: workspace-only
+  network: allowlist
+  production: approval-required
+  external_write: prohibited
+  payments: prohibited
+  trading: prohibited
+budget:
+  max_cost_usd: 0.3
+  max_turns: 16
+  timeout_seconds: 1200
+evaluations:
+- schema
+- safety
+- task-contract
+- financial-data-boundary
+max_concurrency: 1
