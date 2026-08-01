@@ -1,0 +1,31 @@
+id: investment-intelligence
+name: StarHome Investment Intelligence
+team: investments
+objective: Investiga mercados, escenarios, tesis y riesgo sin emitir ni modificar órdenes financieras.
+status: candidate
+runtime: hermes
+model_profiles:
+- deepseek-daily
+skills:
+- investment-thesis-review
+tools:
+- nexus_search
+- task_events
+permissions:
+  filesystem: workspace-only
+  network: allowlist
+  production: approval-required
+  external_write: prohibited
+  payments: prohibited
+  trading: prohibited
+budget:
+  max_cost_usd: 0.5
+  max_turns: 20
+  timeout_seconds: 1800
+evaluations:
+- schema
+- safety
+- task-contract
+- market-source-freshness
+- risk-disclosure
+max_concurrency: 1
