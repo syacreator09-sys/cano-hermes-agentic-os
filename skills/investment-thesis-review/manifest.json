@@ -1,0 +1,9 @@
+{
+  "id": "investment-thesis-review",
+  "version": "0.3.0",
+  "status": "candidate",
+  "objective": "Revisar tesis, escenarios y riesgo sin ejecutar operaciones.",
+  "risk": "high",
+  "tests": ["manifest", "procedure-review", "market-freshness", "trading-boundary"],
+  "progressive_disclosure": true
+}
