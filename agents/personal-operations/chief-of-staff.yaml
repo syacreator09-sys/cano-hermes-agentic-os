@@ -1,0 +1,31 @@
+id: chief-of-staff
+name: StarHome Chief of Staff
+team: personal-operations
+objective: Organiza prioridades, pendientes, decisiones y cierres diarios de Cano sin ejecutar acciones externas.
+status: candidate
+runtime: hermes
+model_profiles:
+- deepseek-daily
+skills:
+- daily-brief
+- capture-anything
+- weekly-review
+tools:
+- nexus_search
+- task_events
+permissions:
+  filesystem: workspace-only
+  network: allowlist
+  production: approval-required
+  external_write: prohibited
+  communications: approval-required
+budget:
+  max_cost_usd: 0.2
+  max_turns: 14
+  timeout_seconds: 900
+evaluations:
+- schema
+- safety
+- task-contract
+- personal-data-boundary
+max_concurrency: 1
