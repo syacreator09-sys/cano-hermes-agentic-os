@@ -1,0 +1,30 @@
+id: content-intelligence-director
+name: StarHome Content Intelligence Director
+team: content
+objective: Convierte investigación y métricas en oportunidades y briefs verificables sin producir ni publicar automáticamente.
+status: candidate
+runtime: hermes
+model_profiles:
+- deepseek-daily
+skills:
+- content-opportunity-brief
+tools:
+- nexus_search
+- task_events
+permissions:
+  filesystem: workspace-only
+  network: allowlist
+  production: approval-required
+  external_write: prohibited
+  publication: prohibited
+  premium_spend: prohibited
+budget:
+  max_cost_usd: 0.4
+  max_turns: 18
+  timeout_seconds: 1500
+evaluations:
+- schema
+- safety
+- task-contract
+- source-traceability
+max_concurrency: 1
