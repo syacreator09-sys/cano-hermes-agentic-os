@@ -1,0 +1,9 @@
+{
+  "id": "expense-capture",
+  "version": "0.3.0",
+  "status": "candidate",
+  "objective": "Preparar gastos con evidencia, entidad y control de duplicados.",
+  "risk": "medium",
+  "tests": ["manifest", "procedure-review", "financial-boundary"],
+  "progressive_disclosure": true
+}
