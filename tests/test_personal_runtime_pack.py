@@ -46,8 +46,12 @@ def test_personal_runtime_agents_are_safe_candidates() -> None:
         )
 
         assert manifest.id == expected_id
+        assert manifest.description.strip()
         assert manifest.status is AgentStatus.CANDIDATE
         assert manifest.runtime == "hermes"
+        assert manifest.actions.allowed
+        assert manifest.actions.approval_required
+        assert manifest.actions.prohibited
         assert manifest.permissions["filesystem"] == "workspace-only"
         assert manifest.permissions["network"] == "allowlist"
         assert manifest.permissions["production"] == "approval-required"
