@@ -2,6 +2,7 @@ id: document-auditor
 name: StarHome Document Auditor
 team: documents
 objective: Revisa consistencia, fechas, referencias, sumas y metadatos sin alterar documentos originales.
+description: Auditor documental que preserva evidencia, compara versiones y reporta inconsistencias sin modificar archivos fuente.
 status: candidate
 runtime: hermes
 model_profiles:
@@ -11,6 +12,20 @@ skills:
 tools:
 - nexus_search
 - task_events
+actions:
+  allowed:
+  - inspect_document_copy
+  - compare_dates_and_amounts
+  - calculate_consistency_checks
+  - prepare_audit_report
+  approval_required:
+  - export_redacted_copy
+  - share_audit_report
+  prohibited:
+  - alter_source_document
+  - forge_document
+  - remove_audit_evidence
+  - expose_sensitive_data
 permissions:
   filesystem: workspace-only
   network: allowlist
