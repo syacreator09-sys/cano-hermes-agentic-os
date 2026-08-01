@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from typing import Any
 from uuid import uuid4
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from .enums import AgentStatus, ApprovalStatus, RiskLevel, TaskStatus
 
@@ -48,16 +48,52 @@ class TaskEvent(BaseModel):
     created_at: datetime = Field(default_factory=utcnow)
 
 
+class AgentActions(BaseModel):
+    allowed: list[str] = Field(default_factory=list)
+    approval_required: list[str] = Field(default_factory=list)
+    prohibited: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def validate_action_groups(self) -> "AgentActions":
+        groups = {
+            "allowed": self.allowed,
+            "approval_required": self.approval_required,
+            "prohibited": self.prohibited,
+        }
+
+        normalized_groups: dict[str, set[str]] = {}
+        for group_name, values in groups.items():
+            normalized = [value.strip() for value in values]
+            if any(not value for value in normalized):
+                raise ValueError(f"empty action in {group_name}")
+            if len(normalized) != len(set(normalized)):
+                raise ValueError(f"duplicate action in {group_name}")
+            normalized_groups[group_name] = set(normalized)
+
+        group_names = list(normalized_groups)
+        for index, left_name in enumerate(group_names):
+            for right_name in group_names[index + 1 :]:
+                overlap = normalized_groups[left_name] & normalized_groups[right_name]
+                if overlap:
+                    joined = ", ".join(sorted(overlap))
+                    raise ValueError(
+                        f"actions cannot appear in both {left_name} and {right_name}: {joined}"
+                    )
+        return self
+
+
 class AgentManifest(BaseModel):
     id: str
     name: str
     team: str
     objective: str
+    description: str = ""
     status: AgentStatus = AgentStatus.CANDIDATE
     runtime: str = "hermes"
     model_profiles: list[str] = Field(default_factory=list)
     skills: list[str] = Field(default_factory=list)
     tools: list[str] = Field(default_factory=list)
+    actions: AgentActions = Field(default_factory=AgentActions)
     permissions: dict[str, Any] = Field(default_factory=dict)
     budget: Budget = Field(default_factory=Budget)
     evaluations: list[str] = Field(default_factory=list)
