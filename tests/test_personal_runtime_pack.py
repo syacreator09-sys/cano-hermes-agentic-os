@@ -4,6 +4,7 @@ import yaml
 
 from cano_hermes.domain.enums import AgentStatus
 from cano_hermes.domain.models import AgentManifest
+from cano_hermes.registry.skills import SkillRegistry
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -59,6 +60,17 @@ def test_personal_runtime_agents_are_safe_candidates() -> None:
         assert manifest.budget.max_turns <= 20
         assert manifest.budget.timeout_seconds <= 1800
         assert manifest.max_concurrency == 1
+
+
+def test_personal_runtime_skills_are_registered_candidates() -> None:
+    registry = SkillRegistry(ROOT / "skills").load()
+
+    assert EXPECTED_SKILLS <= registry.keys()
+    for skill_id in EXPECTED_SKILLS:
+        manifest = registry[skill_id]
+        assert manifest["status"] == "candidate"
+        assert manifest["version"] == "0.3.0"
+        assert manifest["progressive_disclosure"] is True
 
 
 def test_personal_runtime_skills_have_procedure_and_verification() -> None:
