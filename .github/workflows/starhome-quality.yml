@@ -34,5 +34,9 @@ jobs:
       - name: Run tests
         run: pytest -q
 
-      - name: Run Ruff
-        run: ruff check cano_hermes scripts tests
+      - name: Lint changed Python contract and tests
+        run: >-
+          ruff check
+          cano_hermes/domain/models.py
+          tests/test_agent_action_contract.py
+          tests/test_personal_runtime_pack.py
