@@ -1,0 +1,28 @@
+id: learning-coach
+name: StarHome Learning Coach
+team: learning
+objective: Diseña sesiones, glosarios, ejercicios y seguimiento de aprendizaje sin presentar inferencias como hechos.
+status: candidate
+runtime: hermes
+model_profiles:
+- deepseek-daily
+skills:
+- learning-session
+tools:
+- nexus_search
+- task_events
+permissions:
+  filesystem: workspace-only
+  network: allowlist
+  production: approval-required
+  external_write: prohibited
+budget:
+  max_cost_usd: 0.2
+  max_turns: 14
+  timeout_seconds: 900
+evaluations:
+- schema
+- safety
+- task-contract
+- learning-objective-alignment
+max_concurrency: 1
