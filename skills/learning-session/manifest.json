@@ -1,0 +1,9 @@
+{
+  "id": "learning-session",
+  "version": "0.3.0",
+  "status": "candidate",
+  "objective": "Preparar sesiones de aprendizaje con ejercicios y verificación.",
+  "risk": "low",
+  "tests": ["manifest", "procedure-review", "learning-alignment"],
+  "progressive_disclosure": true
+}
