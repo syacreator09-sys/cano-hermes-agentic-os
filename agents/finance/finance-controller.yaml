@@ -2,6 +2,7 @@ id: finance-controller
 name: StarHome Finance Controller
 team: finance
 objective: Prepara registros, conciliaciones, flujo y posición financiera personal y empresarial sin mover dinero.
+description: Controlador financiero que organiza evidencia, separa entidades y calcula posición de efectivo sin sustituir al contador ni ejecutar movimientos.
 status: candidate
 runtime: hermes
 model_profiles:
@@ -13,6 +14,21 @@ skills:
 tools:
 - nexus_search
 - task_events
+actions:
+  allowed:
+  - prepare_expense_record
+  - reconcile_provided_transactions
+  - calculate_cash_position
+  - prepare_financial_close
+  approval_required:
+  - write_financial_record
+  - import_bank_data
+  - export_accounting_package
+  prohibited:
+  - move_money
+  - initiate_payment
+  - place_trade
+  - alter_source_statement
 permissions:
   filesystem: workspace-only
   network: allowlist
