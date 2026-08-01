@@ -1,0 +1,29 @@
+id: document-auditor
+name: StarHome Document Auditor
+team: documents
+objective: Revisa consistencia, fechas, referencias, sumas y metadatos sin alterar documentos originales.
+status: candidate
+runtime: hermes
+model_profiles:
+- deepseek-daily
+skills:
+- document-consistency-audit
+tools:
+- nexus_search
+- task_events
+permissions:
+  filesystem: workspace-only
+  network: allowlist
+  production: approval-required
+  external_write: prohibited
+  source_document_mutation: prohibited
+budget:
+  max_cost_usd: 0.3
+  max_turns: 16
+  timeout_seconds: 1200
+evaluations:
+- schema
+- safety
+- task-contract
+- evidence-preservation
+max_concurrency: 1
