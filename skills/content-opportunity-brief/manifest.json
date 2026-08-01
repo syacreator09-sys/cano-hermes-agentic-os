@@ -1,0 +1,9 @@
+{
+  "id": "content-opportunity-brief",
+  "version": "0.3.0",
+  "status": "candidate",
+  "objective": "Convertir señales verificadas en briefs originales y priorizados.",
+  "risk": "medium",
+  "tests": ["manifest", "procedure-review", "source-traceability"],
+  "progressive_disclosure": true
+}
