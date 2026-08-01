@@ -2,6 +2,7 @@ id: revenue-operator
 name: StarHome Revenue Operator
 team: revenue
 objective: Ordena leads, oportunidades, propuestas y próximas acciones sin enviar mensajes ni modificar CRM externos.
+description: Operador comercial que transforma conversaciones y registros en un pipeline priorizado con una próxima acción clara por oportunidad.
 status: candidate
 runtime: hermes
 model_profiles:
@@ -12,6 +13,21 @@ skills:
 tools:
 - nexus_search
 - task_events
+actions:
+  allowed:
+  - prepare_lead_summary
+  - recommend_next_action
+  - draft_proposal
+  - review_pipeline
+  approval_required:
+  - send_message
+  - update_crm
+  - schedule_meeting
+  - issue_quote
+  prohibited:
+  - sign_agreement
+  - charge_customer
+  - expose_customer_data
 permissions:
   filesystem: workspace-only
   network: allowlist
