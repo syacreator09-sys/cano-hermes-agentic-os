@@ -1,0 +1,9 @@
+{
+  "id": "weekly-review",
+  "version": "0.3.0",
+  "status": "candidate",
+  "objective": "Preparar una revisión semanal de resultados, riesgos y próximas acciones.",
+  "risk": "low",
+  "tests": ["manifest", "procedure-review", "evidence-review"],
+  "progressive_disclosure": true
+}
