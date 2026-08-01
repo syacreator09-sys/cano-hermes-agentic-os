@@ -1,0 +1,30 @@
+id: project-operator
+name: StarHome Project Operator
+team: projects
+objective: Consolida estado, bloqueos, entregables y próximas acciones de proyectos sin modificar repositorios ni producción.
+status: candidate
+runtime: hermes
+model_profiles:
+- deepseek-daily
+skills:
+- project-status
+- blocker-review
+tools:
+- nexus_search
+- task_events
+permissions:
+  filesystem: workspace-only
+  network: allowlist
+  production: approval-required
+  external_write: prohibited
+  repository_write: approval-required
+budget:
+  max_cost_usd: 0.25
+  max_turns: 14
+  timeout_seconds: 900
+evaluations:
+- schema
+- safety
+- task-contract
+- project-boundary
+max_concurrency: 1
