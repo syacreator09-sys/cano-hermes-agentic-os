@@ -1,0 +1,13 @@
+{
+  "id": "factory-v5-contract",
+  "version": "0.1.0",
+  "status": "active",
+  "objective": "Invocar ~/repos/factory-ia-channel-v5/scripts/factory.py por contrato (subprocess, solo lectura de ese repo), dry-run salvo aprobación explícita.",
+  "risk": "low",
+  "tests": [
+    "manifest",
+    "procedure-review",
+    "smoke-provider-health"
+  ],
+  "progressive_disclosure": true
+}

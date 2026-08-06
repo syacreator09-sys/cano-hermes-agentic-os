@@ -1,0 +1,13 @@
+{
+  "id": "command-center-contract",
+  "version": "0.1.0",
+  "status": "active",
+  "objective": "Invocar las oficinas Python de ~/repos/cano-ai-command-center/01-offices/ por contrato (subprocess, su propio .env), solo lectura de ese repo.",
+  "risk": "low",
+  "tests": [
+    "manifest",
+    "procedure-review",
+    "smoke-preflight-content-studio"
+  ],
+  "progressive_disclosure": true
+}

@@ -1,0 +1,14 @@
+{
+  "id": "adaptive-content-orchestrator",
+  "version": "0.3.0",
+  "status": "active",
+  "objective": "Orquestar la oficina office-content: convertir una solicitud en un brief editorial multicanal (research, video, carrusel, ImageGen nativa, voz, Remotion) vía ~/repos/cano-adaptive-content-skill, siempre CONSTRUCTION_ONLY.",
+  "risk": "low",
+  "tests": [
+    "manifest",
+    "procedure-review",
+    "smoke-pytest-49",
+    "smoke-validate-skill"
+  ],
+  "progressive_disclosure": true
+}
