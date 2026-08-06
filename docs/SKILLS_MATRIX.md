@@ -10,6 +10,7 @@ Fuentes leídas directamente (nada inventado):
 4. Búsqueda local (`~/.claude/skills`, `~/.codex/`, `factory-ia-channel-v5/renderers/hyperframes`) + catálogo remoto `github.com/heygen-com/hyperframes` (vía `gh api` y fetch de `SKILL.md`) para HyperFrames.
 5. `~/.claude/skills/graphify/SKILL.md`.
 6. `~/.claude/plans/snuggly-humming-snail.md` (líneas 75-129) para las oficinas Docker planeadas (F11/F14) — no construidas, no se inventó contenido nuevo.
+7. **F7 (2026-08-05, añadido después de la generación original de este documento):** `gh search repos --owner tecnomanu` + `gh api` (licencia/contenido de repos), lectura de `~/repos/cano-tutorial-suite`, `~/repos/cano-screen-tutorial-skill`, `~/repos/cano-video-vox` (repos propios), lectura de `CLAUDE-CODE-LAUNCHERS/fba-hunter/` en command-center (solo lectura), y un dry-run real de `video-docs-builder` (`rehearse.ts` contra una app local de una sola página, sin gasto, sin tocar command-center).
 
 Columnas: `skill | oficina | ejecutor | credenciales | riesgo`.
 
@@ -236,18 +237,49 @@ Contenido tomado literalmente de la tabla en `~/.claude/plans/snuggly-humming-sn
 
 ---
 
+## 6. Herramientas externas — F7 (video, grabación, research, generación de docs)
+
+Añadido en F7 del plan Prometeo (2026-08-05). Detalle completo de la
+evaluación tecnomanu en `docs/TECNOMANU_REPOS_REVIEW.md`; detalle del
+launcher fba-hunter en `docs/FBA_HUNTER_LAUNCHER_NOTES.md`; detalle santmun
+(solo contexto, no repos nuevos) en `docs/SANTMUN_REFERENCE_MAP.md`.
+
+### Video / documentación (standalone, no oficina StarHome todavía)
+
+| skill/herramienta | oficina | ejecutor | credenciales | riesgo |
+|---|---|---|---|---|
+| `video-docs-builder` (tecnomanu, MIT, clonado en `~/repos/video-docs-builder`) | N/A — herramienta externa standalone; usada hoy también dentro de Factory V5 vía command-center (`tools/external/video-docs-builder/`, solo lectura) | node/npx (Playwright + FFmpeg + Piper, fuera de los runtimes StarHome) | No obligatoria — Piper TTS local es gratis; ElevenLabs/OpenAI TTS son opcionales y de pago | bajo — graba `localhost`/apps propias; dry-run `rehearse.ts` verificado en F7 contra una app de una sola página servida localmente, 2/2 pasos OK, sin gasto |
+| `agent-rules-kit` (tecnomanu, ISC, clonado en `~/repos/agent-rules-kit`) | forge (generación de reglas/documentación para agentes IA — Cursor, Claude, VS Code, etc.) | node CLI (`npx agent-rules-kit`) | No — escribe archivos locales; integraciones MCP (ej. `pampa`) son opcionales | bajo |
+| `cano-tutorial-suite` (`~/repos/cano-tutorial-suite`, MIT, propio) | content — orquesta screen-tutorial + HeyGen presenter + VideoVox + hybrid composer para el pipeline editorial CANO Digital | node CLI (`bin/cano-tutorial.js`) | No obligatoria en modo mock; HeyGen API solo si se activa el presentador live | bajo — modo mock sin llaves; rama `feature/clone-ready-v0.2` tiene ~20 commits sin fusionar a `main`, pero el diff neto actual es que **`main` ya tiene más contenido** que esa rama (la rama elimina `docs/CONTENT-FORMATS.md` y `docs/VIDEO-ANALYSIS-WATCH.md` respecto a `main`) — no se fusionó nada, solo se inventarió por instrucción explícita |
+| `cano-screen-tutorial-skill` (`~/repos/cano-screen-tutorial-skill`, propio) | content — graba tutoriales de navegador reproducibles con Playwright (video WebM, screenshots, trazas) | node CLI (`bin/cano-screen.js`) | No obligatoria en modo mock; sesiones live requieren autorización explícita de dominio | bajo |
+| `cano-video-vox` (`~/repos/cano-video-vox`, propio) | content — shorts verticales animados estilo documental con Remotion | node + Python aislado (recorte de fondos) + Remotion | Sí, para el flujo completo: Kie.ai (imágenes) + ElevenLabs (voz) vía Llavero de macOS, no `.env` | medio — usa proveedores de pago para su flujo principal (no tiene camino 100% gratis documentado); el propio README dice que el repo debe permanecer privado hasta cerrar revisión de licencia/procedencia — **no confundir con el `video-vox` de santmun** (repo de terceros, licencia UNKNOWN, solo referencia visual — ver `docs/SANTMUN_REFERENCE_MAP.md`); este es un repo propio distinto |
+
+### Research / market-intel (relacionado con F14 `office-market-intel`)
+
+| skill/herramienta | oficina | ejecutor | credenciales | riesgo |
+|---|---|---|---|---|
+| `fba-hunter` launcher (command-center, `CLAUDE-CODE-LAUNCHERS/fba-hunter/`, solo lectura) | market-intel (relacionado a F14, no construido aún) | python (scripts propios de un proyecto completo aparte) | Ninguna declarada en el launcher en sí (solo texto/knowledge base); el proyecto completo real trae su propio `.env.example` | bajo — research-only, nunca ejecuta compras; ver `docs/FBA_HUNTER_LAUNCHER_NOTES.md` para la distinción launcher-vs-repo-completo |
+
+**No clonado en F7** (evaluado y rechazado): `framevox` y `agent-rules-kit-mcp`
+(ambos de tecnomanu, sin archivo `LICENSE` en la raíz). `qwen3-tts-api`
+(tecnomanu) fue evaluado pero descartado por categoría (TTS/audio, no
+video/grabación/documentación) — ver `docs/TECNOMANU_REPOS_REVIEW.md` para
+el detalle completo de los 40 repos revisados.
+
+---
+
 ## Resumen
 
-**Total de skills/pipelines inventariados: 92**
-(54 StarHome nativo + 14 categorías hermes-agent + 19 HyperFrames catálogo remoto + 1 graphify + 4 oficinas Docker F11 + 1 oficina Docker F14)
+**Total de skills/pipelines inventariados: 98**
+(54 StarHome nativo + 14 categorías hermes-agent + 19 HyperFrames catálogo remoto + 1 graphify + 4 oficinas Docker F11 + 1 oficina Docker F14 + 6 herramientas externas F7: video-docs-builder, agent-rules-kit, cano-tutorial-suite, cano-screen-tutorial-skill, cano-video-vox, fba-hunter launcher)
 
 ### Por riesgo
 
 | riesgo | cuenta | dónde |
 |---|---|---|
 | alto | 5 | StarHome: investment-thesis-review (1) · HyperFrames: media-use, motion-graphics, talking-head-recut (3) · Oficinas Docker: office-publish (1) |
-| medio | 24 | StarHome: 9 · hermes-agent (categorías con credencial sensible): autonomous-ai-agents, email, github, productivity, social-media (5) · HyperFrames: hyperframes-router, product-launch-video, pr-to-video, figma (4) · Oficinas Docker: office-ugc, office-market-intel (2) — resto bajo |
-| bajo | 63 | el resto |
+| medio | 25 | StarHome: 9 · hermes-agent (categorías con credencial sensible): autonomous-ai-agents, email, github, productivity, social-media (5) · HyperFrames: hyperframes-router, product-launch-video, pr-to-video, figma (4) · Oficinas Docker: office-ugc, office-market-intel (2) · F7: cano-video-vox (1, proveedores de pago sin camino gratis documentado) — resto bajo |
+| bajo | 68 | el resto |
 
 ### Por oficina (solo StarHome nativo, 54 skills — únicas con `team` explícito en `agents/*.yaml`)
 
@@ -260,6 +292,7 @@ content 9 · engineering 8 · governance 7 · forge 6 · research 6 · operation
 - **HyperFrames (19, no instaladas):** 3 con credencial probable no confirmada (media-use, pr-to-video, figma); resto sin evidencia.
 - **graphify (1):** 0 obligatorias.
 - **Oficinas Docker (5, no construidas):** 0 — aún no hay integración real.
+- **Herramientas externas F7 (6):** 1 de 6 toca credenciales de pago para su flujo principal (`cano-video-vox` → Kie.ai + ElevenLabs); las otras 5 tienen camino 100% gratis (modo mock o TTS local).
 
 ---
 
@@ -271,3 +304,5 @@ content 9 · engineering 8 · governance 7 · forge 6 · research 6 · operation
 4. **Los 54 `SKILL.md` de StarHome son boilerplate idéntico.** Todos (salvo `investment-thesis-review`, que tiene procedimiento propio con verificación) comparten el mismo texto genérico de 5 pasos ("Confirmar objetivo… Recuperar contexto… Ejecutar en modo seguro… Validar… Registrar evidencia"). Es coherente con `progressive_disclosure: true` en el manifiesto (el detalle real vive en otro lado, probablemente en el prompt del agente o en `references/`), pero si F15 espera que estos documentos contengan procedimientos operativos específicos por skill, hoy no los tienen — es deuda de contenido, no de estructura.
 5. **`skills/candidates/`** (creado dinámicamente por `SkillFactory` en `cano_hermes/forge/skill_factory.py`) no existía en el momento de este inventario — no hay skills en cuarentena pendientes de promoción ahora mismo.
 6. **hermes-agent no tiene concepto de "oficina" StarHome.** Su catálogo de 14 categorías es una biblioteca de capacidades transversal, consumida por cualquier agente `runtime: hermes` de cualquier team. Mapear categorías de hermes-agent 1:1 a oficinas StarHome sería inventar una relación que no existe en el código — se dejó `oficina = N/A` a propósito.
+7. **Contradicción sin resolver en command-center sobre `thumbnail-simple-skill` (santmun).** `reuse-map-santmun.md` lo da por extraído en `thumbnail_engine`, pero `SANTMUN_QUARANTINE_AUDIT_20260727.md` lo lista bajo "Bloqueadas por licencia desconocida". No se pudo resolver desde este repo (command-center es solo lectura) — ver `docs/SANTMUN_REFERENCE_MAP.md`. Si F15 toca Factory V5, marcar como pendiente de aclarar con quien mantiene ese repo, no asumir ninguna de las dos versiones.
+8. **El mecanismo MCP portable de esta máquina existe pero está vacío.** `hermes_cli/mcp_config.py` (hermes-agent) declara que los MCP servers viven en `~/.hermes/config.yaml` bajo la clave `mcp_servers`, interpolando secretos desde un `~/.hermes/.env` opcional. En esta máquina, `~/.hermes/config.yaml` tiene `mcp_servers: {}` (vacío) y `~/.hermes/.env` **no existe**. Ninguno de los 4 MCP portables (`n8n-mcp`, `notion`, `rapidapi-tiktok`, `factory-ia-channel`) está registrado todavía. No se creó el archivo a ciegas — ver `docs/MCP_PORTABLE_CONNECTORS.md` para el hallazgo completo y qué falta antes de activarlos.
