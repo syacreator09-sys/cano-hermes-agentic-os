@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 from pathlib import Path
 
@@ -8,12 +9,15 @@ from cano_hermes.domain.models import ApprovalRequest, ExecutionResult
 from cano_hermes.governance.approvals import ApprovalService
 from cano_hermes.governance.budget import BudgetService
 from cano_hermes.governance.policy import PermissionEngine
+from cano_hermes.orchestration.completion import complete_execution
 from cano_hermes.runtimes.base import ExecutionPacket
 from cano_hermes.runtimes.claude_code import ClaudeCodeExecutor
 from cano_hermes.runtimes.codex import CodexExecutor
 from cano_hermes.runtimes.container_sandbox import ContainerSandboxExecutor
 from cano_hermes.runtimes.hermes_agent import HermesAgentExecutor
+from cano_hermes.runtimes.locks import WriteLockManager
 from cano_hermes.runtimes.openclaw import OpenClawExecutor
+from cano_hermes.runtimes.worktrees import SAFE_NAME, WorktreeManager
 
 
 # AgentManifest.runtime (agents/**/*.yaml `runtime:` field) -> registered
@@ -36,6 +40,15 @@ AGENT_RUNTIME_TO_EXECUTOR: dict[str, str] = {
 }
 DEFAULT_EXECUTOR_ID = "hermes-agent"
 
+# Global, named lock: any task whose metadata marks it as a render (Remotion/
+# ffmpeg) contends for this single key regardless of its own workspace. No
+# render executor exists yet to detect this automatically, so the interim
+# convention -- documented here because it's the only place it's enforced --
+# is that whoever queues a render sets `metadata={"kind": "render", ...}`.
+# The machine has no GPU: renders must always run one at a time, never two in
+# parallel, hence one shared lock rather than the usual per-workspace one.
+RENDER_LOCK_KEY = "render"
+
 
 class ExecutionService:
     def __init__(
@@ -45,10 +58,15 @@ class ExecutionService:
         workspace_root: Path | str = "storage/workspaces",
         approvals: ApprovalService | None = None,
         budget: BudgetService | None = None,
+        artifacts_root: Path | str = "storage/artifacts",
+        lock_manager: WriteLockManager | None = None,
+        worktree_manager: WorktreeManager | None = None,
+        repository: Path | str | None = None,
     ):
         self.engine = engine
         self.mode = mode
         self.workspace_root = Path(workspace_root)
+        self.artifacts_root = Path(artifacts_root)
         self.policy = PermissionEngine(mode)
         self.executors = {
             "claude-code": ClaudeCodeExecutor(mode=mode),
@@ -64,6 +82,62 @@ class ExecutionService:
         # about DI (tests, scripts) get a working service for free.
         self.approvals = approvals or ApprovalService(engine.store)
         self.budget = budget or BudgetService(engine.store)
+        self.lock_manager = lock_manager or WriteLockManager()
+        self.worktree_manager = worktree_manager or WorktreeManager()
+        # Worktree isolation for engineering-domain tasks is opt-in: it only
+        # activates when a real git `repository` is configured. Left at
+        # None (the default used by every test that constructs this class
+        # directly), engineering tasks keep using the plain shared
+        # workspace exactly as before K2 -- this avoids surprising every
+        # existing domain="engineering" test with real `git worktree add`
+        # side effects against whatever repo happens to be the process cwd.
+        # Production wiring (api/dependencies.py) passes
+        # settings.repository_root to actually enable it.
+        self.repository = Path(repository) if repository is not None else None
+
+    def _is_render_task(self, task) -> bool:
+        return task.metadata.get("kind") == "render"
+
+    async def _run_locked(self, lock_target: Path, owner: str, action):
+        """Hold `self.lock_manager`'s lock on `lock_target` for the duration
+        of `action()`. `WriteLockManager.acquire` itself is fail-fast (it
+        raises `RuntimeError` immediately on contention) -- this wraps
+        *just the acquisition* in a poll loop so a second contender actually
+        *waits* for the first to finish and then runs, instead of erroring
+        out. That's what makes two render tasks serialize rather than
+        merely "not crash". Acquisition and execution are deliberately
+        split (rather than one `try/except RuntimeError` around the whole
+        `with` block) so a `RuntimeError` raised by `action()` itself
+        propagates normally instead of being mistaken for lock contention
+        and retried forever.
+
+        Known limitation: no staleness eviction. A process that dies while
+        holding the lock leaves the lock file behind forever, and every
+        future contender for that same key will wait indefinitely. Accepted
+        gap for K2 -- worth revisiting once K3 adds a real queue/worker
+        supervisor that can detect and clear a dead holder.
+        """
+        while True:
+            lock_cm = self.lock_manager.acquire(lock_target, owner)
+            try:
+                lock_cm.__enter__()
+            except RuntimeError:
+                await asyncio.sleep(0.05)
+                continue
+            try:
+                return await action()
+            finally:
+                lock_cm.__exit__(None, None, None)
+
+    def _worktree_for(self, task, executor_id: str) -> Path:
+        """Idempotent: a retried run of the same task+executor reuses the
+        worktree `WorktreeManager.create` already made instead of crashing
+        on `FileExistsError`."""
+        name = SAFE_NAME.sub("-", f"{task.id}-{executor_id}").strip("-")
+        target = self.worktree_manager.root / name
+        if target.exists():
+            return target
+        return self.worktree_manager.create(self.repository, task.id, executor_id)
 
     def _resolve_executor_id(self, task) -> str:
         """Derive the executor from the Conductor's Assignment
@@ -132,18 +206,35 @@ class ExecutionService:
             )
 
         executor = self.executors[executor_id]
-        workspace = self.workspace_root / task.id / executor_id
+        # Engineering-domain tasks get an isolated git worktree instead of
+        # the shared workspace tree, when a repository is configured (see
+        # `self.repository`'s docstring in __init__) -- two code-writing
+        # tasks must never share a checkout.
+        if task.domain == "engineering" and self.repository is not None:
+            workspace = self._worktree_for(task, executor_id)
+        else:
+            workspace = self.workspace_root / task.id / executor_id
         self.engine.transition(task.id, TaskStatus.RUNNING, "execution-service", {"executor": executor_id})
-        result = await executor.execute(
-            ExecutionPacket(
-                task_id=task.id,
-                objective=task.objective,
-                workspace=workspace,
-                allowed_write_paths=(workspace,),
-                timeout_seconds=task.budget.timeout_seconds,
-                max_turns=task.budget.max_turns,
-                metadata=self._build_metadata(task),
-            )
+        packet = ExecutionPacket(
+            task_id=task.id,
+            objective=task.objective,
+            workspace=workspace,
+            allowed_write_paths=(workspace,),
+            timeout_seconds=task.budget.timeout_seconds,
+            max_turns=task.budget.max_turns,
+            metadata=self._build_metadata(task),
+        )
+        # WriteLockManager wraps every run so two tasks never write into the
+        # same resource concurrently. Render tasks (metadata.kind=="render")
+        # contend for one shared global key instead of their own workspace
+        # key, since this machine has no GPU and renders must always be
+        # strictly sequential -- see RENDER_LOCK_KEY and _run_locked.
+        if self._is_render_task(task):
+            lock_target = self.lock_manager.root / RENDER_LOCK_KEY
+        else:
+            lock_target = workspace
+        result = await self._run_locked(
+            lock_target, f"{executor_id}:{task.id}", lambda: executor.execute(packet)
         )
         # Reconcile whatever this specific run actually cost against today's
         # ledger. Two sources, mutually exclusive in practice by executor:
@@ -173,6 +264,11 @@ class ExecutionService:
         status = TaskStatus.REVIEW if result.status in {"completed", "simulated"} else TaskStatus.FAILED
         self.engine.transition(task.id, status, executor_id, {"execution_id": result.execution_id, "summary": result.summary[:500]})
         self.engine.store.save_execution(result, usage=usage_payload)
+        if status == TaskStatus.REVIEW:
+            # K2: copy workspace outputs into storage/artifacts/, record
+            # them on the execution row, and auto-close LOW-risk tasks
+            # (REVIEW -> DONE). See completion.py for the full contract.
+            complete_execution(self.engine, task, executor_id, result, workspace, self.artifacts_root, usage=usage_payload)
         return result
 
     def _write_evidence(self, task, executor_id: str, reason: str) -> Path:

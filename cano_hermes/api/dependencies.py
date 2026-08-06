@@ -46,6 +46,8 @@ def execution_service() -> ExecutionService:
         mode=settings.execution_mode,
         approvals=approvals(),
         budget=budget(),
+        artifacts_root=settings.artifact_path,
+        repository=settings.repository_root,
     )
 
 

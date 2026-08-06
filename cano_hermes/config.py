@@ -16,6 +16,13 @@ class Settings(BaseSettings):
     skill_path: Path = Path("skills")
     artifact_path: Path = Path("storage/artifacts")
     worktree_path: Path = Path("storage/worktrees")
+    # Git repository engineering-domain tasks get an isolated worktree
+    # inside. Defaults to cwd (this repo, when the process runs from its
+    # root) -- ExecutionService only activates worktree isolation when a
+    # `repository` is actually configured, so this only takes effect for
+    # the wiring in api/dependencies.py, not for tests that construct their
+    # own ExecutionService without it.
+    repository_root: Path = Path(".")
     forge_candidates_path: Path = Path("storage/forge/candidates")
     forge_sandbox_path: Path = Path("storage/forge/sandbox")
     max_concurrent_workers: int = Field(default=3, ge=1, le=12)

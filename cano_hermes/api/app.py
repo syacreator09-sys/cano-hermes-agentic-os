@@ -12,7 +12,7 @@ from pydantic import BaseModel
 
 from cano_hermes import __version__, monitoring
 from cano_hermes.config import settings
-from cano_hermes.domain.enums import ApprovalStatus
+from cano_hermes.domain.enums import ApprovalStatus, TaskStatus
 from cano_hermes.domain.models import TaskCreate
 from cano_hermes.forge.duplication import DuplicateCandidateError
 from cano_hermes.governance.budget import BudgetService
@@ -25,6 +25,11 @@ from .dependencies import approvals, budget, engine, execution_service, forge_pi
 class ApprovalResolution(BaseModel):
     approved: bool
     actor: str
+
+
+class TaskCompletion(BaseModel):
+    actor: str = "cano"
+    reason: str = "manual-completion"
 
 
 class ForgeCandidateRequest(BaseModel):
@@ -112,6 +117,27 @@ async def execute_task(task_id: str, executor_id: str | None = None):
         return await execution_service().run(task_id, executor_id)
     except KeyError as exc:
         raise HTTPException(status_code=404, detail="Task not found") from exc
+
+
+@app.post("/api/tasks/{task_id}/complete")
+def complete_task(task_id: str, request: TaskCompletion = TaskCompletion()):
+    """K2 — manual close for tasks `ExecutionService`/`completion.py` left in
+    REVIEW (MEDIUM/HIGH/CRITICAL risk; LOW risk auto-closes to DONE on its
+    own). This is a plain human-in-the-loop close, not an approval grant --
+    no auto-approval logic lives here, that is K12's job. A task not
+    currently in REVIEW is refused with 409 rather than silently
+    re-transitioned, since "complete" only makes sense as the next step
+    after a run actually finished.
+    """
+    task = store().get_task(task_id)
+    if task is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+    if task.status != TaskStatus.REVIEW:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Task {task_id} is '{task.status.value}', expected 'review'",
+        )
+    return engine().transition(task_id, TaskStatus.DONE, request.actor, {"reason": request.reason})
 
 
 @app.post("/api/forge/agents")

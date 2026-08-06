@@ -165,10 +165,12 @@ class ExecutionServiceWiringTests(unittest.TestCase):
             engine = self._engine(d)
             task = engine.create(TaskCreate(title="Sandbox smoke test", objective="run isolated command", domain="engineering"))
             engine.plan(task.id)
-            service = ExecutionService(engine, "dry_run", Path(d) / "ws")
+            service = ExecutionService(engine, "dry_run", Path(d) / "ws", artifacts_root=Path(d) / "artifacts")
             result = asyncio.run(service.run(task.id, "container-sandbox"))
             self.assertEqual(result.status, "simulated")
-            self.assertEqual(engine.require(task.id).status, TaskStatus.REVIEW)
+            # K2: LOW risk (the default -- this task never set one) closes
+            # itself out: REVIEW -> DONE, no human step needed.
+            self.assertEqual(engine.require(task.id).status, TaskStatus.DONE)
 
     def test_blocked_run_persists_a_full_approval_request(self):
         with tempfile.TemporaryDirectory() as d:

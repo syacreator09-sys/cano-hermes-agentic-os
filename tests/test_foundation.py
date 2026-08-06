@@ -32,7 +32,11 @@ class FoundationTests(unittest.TestCase):
             e=self.make_engine(d); t=e.create(TaskCreate(title='Build feature',objective='Implement a safe feature',domain='engineering')); p=e.plan(t.id); self.assertEqual(p.status,TaskStatus.PLANNED); self.assertIsNotNone(p.assigned_agent); self.assertEqual(len(e.store.list_events(t.id)),2)
     def test_execution_dry_run(self):
         with tempfile.TemporaryDirectory() as d:
-            e=self.make_engine(d); t=e.create(TaskCreate(title='Review repo',objective='Review architecture',domain='engineering')); e.plan(t.id); r=asyncio.run(ExecutionService(e,'dry_run',Path(d)/'ws').run(t.id,'claude-code')); self.assertEqual(r.status,'simulated'); self.assertEqual(e.require(t.id).status,TaskStatus.REVIEW)
+            # K2: a completed/simulated run on a LOW-risk task (the default
+            # here -- no risk given) auto-closes REVIEW -> DONE via
+            # completion.complete_execution; only MEDIUM+ risk stays in
+            # REVIEW pending POST /api/tasks/{id}/complete.
+            e=self.make_engine(d); t=e.create(TaskCreate(title='Review repo',objective='Review architecture',domain='engineering')); e.plan(t.id); r=asyncio.run(ExecutionService(e,'dry_run',Path(d)/'ws',artifacts_root=Path(d)/'artifacts').run(t.id,'claude-code')); self.assertEqual(r.status,'simulated'); self.assertEqual(e.require(t.id).status,TaskStatus.DONE)
     def test_nexus_context(self):
         v=MarkdownVault(ROOT/'vault'); c=ContextBuilder(v,KnowledgeGraph(v)).build('architecture autonomy'); self.assertGreaterEqual(len(c.notes),1)
     def test_path_policy(self):
