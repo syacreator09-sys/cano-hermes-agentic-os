@@ -25,3 +25,6 @@ vault/00-inbox/private/
 secrets/
 *.pem
 *.key
+
+# F10 media output — binaries stay local, only reports/ .md + ffprobe text are tracked
+reports/media/
