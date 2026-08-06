@@ -51,3 +51,37 @@ No se creó ni modificó `~/.hermes/config.yaml` en esta fase — activar un
 MCP server implica que hermes-agent empiece a invocarlo en producción, y
 eso es una decisión operativa, no de inventario. Queda documentado aquí
 para que F15 (bucle de convergencia) o Cano decidan activarlo.
+
+## Actualización 2026-08-06 — n8n-mcp y notion-mcp ACTIVADOS
+
+Cano pidió explícitamente conectar todo lo que ya tuviera credenciales
+listas. Se activaron los dos MCP que sí tenían llave completa:
+
+1. `~/.hermes/.env` creado (600, no trackeado en ningún repo) con
+   `N8N_API_URL` (copiado de `N8N_HOST` del vault, ya era una URL completa),
+   `N8N_API_KEY` y `NOTION_TOKEN` — copiados por script sin imprimir
+   valores en ningún momento.
+2. `hermes mcp add n8n-mcp --command npx --args -y n8n-mcp --env
+   'N8N_API_URL=${N8N_API_URL}' 'N8N_API_KEY=${N8N_API_KEY}'` — los
+   placeholders `${VAR}` quedan literales en `~/.hermes/config.yaml`, el
+   valor real solo vive en `~/.hermes/.env` y se interpola en tiempo de
+   conexión (mecanismo ya existente de `mcp_config.py`, no inventado).
+   **Conectado en vivo: 7 herramientas reales descubiertas contra la
+   instancia n8n real** (`tools_documentation`, `search_nodes`,
+   `get_node`, `validate_node`, `get_template`, `search_templates`,
+   `validate_workflow`).
+3. Mismo patrón para `notion-mcp` (`npx -y @notionhq/notion-mcp-server`,
+   `NOTION_TOKEN`). **Conectado en vivo: 24 herramientas reales** contra
+   el workspace real de Notion.
+4. `hermes mcp list` confirma ambos `✓ enabled`.
+5. `rapidapi-tiktok` sigue bloqueado — `RAPIDAPI_KEY` no existe en ningún
+   vault, confirmado por cuarta vez (F1, F2, F7, hoy).
+6. `factory-ia-channel MCP` sigue sin auditar — no es parte de
+   hermes-agent, vive en el `.mcp.json` de `~/repos/factory-ia-channel-v5`
+   (pendiente, no es urgente, ese repo ya tiene sus proveedores Apify/
+   Supadata/UploadPost como código Python directo, no como MCP).
+
+Nadie usó estas herramientas todavía para ninguna tarea real (ni workflows
+n8n ni escritura en Notion) — solo se conectaron y verificaron. Cualquier
+uso real (crear workflow, escribir página) sigue sujeto a las mismas
+reglas de aprobación que el resto del plan si toca producción.
