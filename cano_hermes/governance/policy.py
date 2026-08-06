@@ -3,7 +3,19 @@ from dataclasses import dataclass
 from pathlib import Path
 from cano_hermes.domain.enums import RiskLevel
 
-SENSITIVE_ACTIONS={"paid_api","publish","deploy","send_external_message","delete","merge","credential_change","production_write"}
+# K10 (plan HERMES-KICKOFF): "browser_with_session" marca cualquier tarea que
+# use el toolset `browser` (agent-browser) contra un dominio con
+# sesion/login -- no un simple GET publico como el smoke test a
+# example.com. Riesgo MEDIUM como minimo, nunca auto-aprobable (ver
+# docs/OPERATIONS.md, seccion "Browser automation"). Por eso vive en
+# SENSITIVE_ACTIONS: cualquier accion listada aqui fuerza
+# requires_approval=True sin importar el RiskLevel calculado (ver
+# evaluate_action abajo). Todavia no hay nada que *detecte*
+# automaticamente "esta tarea de browser toca un dominio con sesion" y
+# emita esta accion -- ese motor de clasificacion es K12. Por ahora esto
+# es solo la anotacion/contrato: cuando K12 exista, ya tiene aqui el
+# nombre de accion correcto para enchufarse sin tocar este archivo de nuevo.
+SENSITIVE_ACTIONS={"paid_api","publish","deploy","send_external_message","delete","merge","credential_change","production_write","browser_with_session"}
 SAFE_DRY_RUN_ACTIONS={"read","plan","search_local","simulate","validate","test"}
 
 @dataclass(frozen=True)

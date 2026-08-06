@@ -150,6 +150,145 @@ status hermes-gateway.service` (proceso completo con hijos) en chats o
 tickets; usar en su lugar `systemctl --user is-active hermes-gateway.service`
 o filtrar por `PID`/nombre de proceso solamente.
 
+## Browser automation (agent-browser) — K10
+
+`hermes-agent` trae el toolset `browser` (12 tools: `browser_navigate`,
+`browser_snapshot`, `browser_click`, `browser_type`, `browser_scroll`,
+`browser_back`, `browser_press`, `browser_get_images`, `browser_vision`,
+`browser_console`, `browser_cdp`, `browser_dialog` — `toolsets.py:199` en el
+repo `hermes-agent`), pero necesita el backend `agent-browser` (CLI npm)
+instalado en la máquina para funcionar. `computer_use` (control de escritorio
+vía `cua-driver`) es un toolset **separado** y queda fuera de alcance
+explícito de K10 — esta máquina no tiene GPU y 4 núcleos no dan para eso.
+
+### Instalación (hecha, K10)
+
+```bash
+npm i -g agent-browser        # instala el CLI (paquete npm)
+agent-browser install --with-deps   # descarga Chrome + libs del sistema
+```
+
+- `agent-browser install --with-deps` intenta `sudo apt-get install` un set de
+  libs GTK/X11 — en esta máquina falló por falta de contraseña sudo no
+  interactiva (`sudo: se requiere una contraseña`). **No bloqueante**: `ldd`
+  sobre el binario de Chrome descargado no reporta ninguna lib faltante, así
+  que las libs ya estaban presentes en el sistema (Ubuntu 24.04 desktop, no
+  server headless minimalista). Confirmado con `agent-browser doctor`.
+- Chrome for Testing queda en `~/.agent-browser/browsers/chrome-<version>/`
+  (no en `~/.cache`), gestionado por el propio `agent-browser`, no por
+  Playwright.
+- **Sandbox de Chromium**: Ubuntu 24.04 tiene
+  `apparmor_restrict_unprivileged_userns=1`
+  (`/proc/sys/kernel/apparmor_restrict_unprivileged_userns`), lo que rompe el
+  sandbox por defecto de Chrome (`No usable sandbox!`, exit sin
+  `DevToolsActivePort`). `hermes-agent` ya lo detecta solo
+  (`tools/browser_tool.py::_needs_chromium_sandbox_bypass`, issue #15765) e
+  inyecta `AGENT_BROWSER_ARGS=--no-sandbox,--disable-dev-shm-usage`
+  automáticamente — **no requiere ninguna acción manual**. Verificado con el
+  smoke test real (ver más abajo).
+- Verificación: `which agent-browser` → `~/.npm-global/bin/agent-browser` (o
+  el prefix npm global que corresponda). `agent-browser doctor` debe mostrar
+  `pass  Google Chrome for Testing ...` y, tras un `open` real, `Launch test`
+  en verde.
+
+### Alcance del toolset `browser` — solo research y UGC
+
+Política de seguridad: `browser` **no** está habilitado globalmente. Navegar
+la web real (sesiones, formularios, clicks) es superficie de riesgo que no
+debe estar disponible por defecto en cualquier oficina/perfil.
+
+Mecanismo real confirmado en el código de `hermes-agent` (no asumido):
+`hermes-agent` resuelve qué toolsets están activos por **plataforma**
+(`platform_toolsets` en `config.yaml`, `hermes_cli/tools_config.py::
+_get_platform_tools`) y luego resta `agent.disabled_toolsets`
+(`hermes_cli/tools_config.py`, comentario en `hermes_cli/setup.py:3251-3263`).
+Cada **perfil** (`hermes profile create <nombre>`) es un `HERMES_HOME`
+completamente aislado con su propio `config.yaml` — por eso "restringir por
+perfil" = restringir por `HERMES_HOME`, no una sub-clave dentro de un único
+config compartido.
+
+Aplicado:
+
+- `~/.hermes/config.yaml` (perfil default): `agent.disabled_toolsets:
+  [browser]` — apaga `browser` para cualquier sesión que no pase
+  `--toolsets` explícito (interactiva, cron, gateway).
+- `~/.hermes/profiles/hermes-research/config.yaml` y
+  `~/.hermes/profiles/hermes-ugc/config.yaml` (creados con `hermes profile
+  create <nombre> --no-skills`, uno por oficina — mismo nombre que
+  `offices/hermes-research/office.yaml` y `offices/hermes-ugc/office.yaml`
+  en este repo): `platform_toolsets.cli: [hermes-cli, browser]` — reactivan
+  `browser` explícitamente, sin depender de que el default global no cambie
+  algún día.
+- Verificado invocando directamente el resolver puro de `hermes-agent`
+  (`hermes_cli.tools_config._get_platform_tools`) sobre los tres
+  `config.yaml`: `browser` efectivamente **False** en el perfil default,
+  **True** en `hermes-research` y `hermes-ugc`.
+- **Gap conocido, no resuelto en K10**: StarHome (`HermesAgentExecutor` en
+  `cano_hermes/runtimes/hermes_agent.py`) todavía no invoca `hermes -p
+  hermes-research` / `-p hermes-ugc` según la oficina del task — hoy corre
+  siempre bajo el perfil default y solo hereda `browser` cuando el
+  `AgentManifest.tools` de la tarea lo lista explícito (`--toolsets`
+  explícito en la línea de comando, que gana sobre cualquier
+  `platform_toolsets`). Los dos perfiles nuevos quedan listos y correctos
+  para cuando se cablee esa selección de perfil por oficina (candidato
+  natural para K12, que ya toca gobernanza de acciones sensibles). Ver
+  también el comentario en `cano_hermes/orchestration/
+  execution_service.py::AGENT_RUNTIME_TO_EXECUTOR` — el runtime `browser`
+  de un `AgentManifest` hoy mapea al executor `openclaw` (stand-in), no a
+  `hermes-agent`; darle un executor dedicado también quedó fuera de este K10
+  por alcance (no estaba en las 5 tareas encargadas) y es otro candidato para
+  el mismo follow-up.
+
+### Política de riesgo: `browser_with_session`
+
+Regla (documentada aquí; el motor de auto-aprobación completo es K12):
+**cualquier tarea que use el toolset `browser` y toque un dominio con
+sesión/login (no un GET público simple como el smoke test a
+`example.com`) se clasifica como riesgo `MEDIUM` como mínimo y nunca es
+auto-aprobable.** Un GET anónimo a una página pública (documentación,
+`example.com`, un artículo) no dispara esta regla; login, cookies de sesión,
+un dominio real de Cano con cuenta (Shopify, Meta, YouTube, TikTok Shop) sí.
+
+Anotado en `cano_hermes/governance/policy.py`: `browser_with_session` se
+agregó a `SENSITIVE_ACTIONS`. Cualquier acción en ese set fuerza
+`requires_approval=True` en `PermissionEngine.evaluate_action` sin importar
+el `RiskLevel` calculado — es el mecanismo correcto para "nunca
+auto-aprobable" con el código que ya existe hoy (`RiskLevel.MEDIUM` por sí
+solo *no* fuerza aprobación en la lógica actual; `SENSITIVE_ACTIONS` sí,
+independientemente del risk level). Lo que **no** existe todavía — y es
+explícitamente alcance de K12, no de K10 — es el clasificador que mire una
+tarea de browser, detecte que el dominio objetivo requiere sesión, y emita
+la acción `browser_with_session` en vez de la genérica `production_write`
+que usa hoy `ExecutionService.run()`. Por ahora esto es el contrato/anotación
+para que K12 no tenga que inventar el nombre de la acción ni tocar este
+archivo de nuevo.
+
+### Camoufox (Firefox anti-detect) — opción futura, no instalada
+
+[Camoufox](https://camoufox.com) es un Firefox parcheado a nivel C++ para
+evadir fingerprinting/detección de automatización (a diferencia de
+parches JS en runtime, que son detectables). Es una alternativa de backend
+para navegación que necesite evadir detección de bot (a diferencia de
+Chrome/Chromium vía `agent-browser`, que no la evade). **No es prioridad
+ahora** — el backend actual (`agent-browser` + Chrome) cubre el caso de uso
+de K10 (research/UGC con navegación autorizada, no scraping adversarial).
+Queda anotado como opción futura si alguna oficina necesita navegar sitios
+con detección de bot agresiva.
+
+### Smoke test real (K10)
+
+```bash
+hermes --oneshot "Navega a https://example.com usando el toolset browser y \
+dime exactamente el texto del <title> de la pagina. Responde solo con el \
+titulo." --toolsets browser --usage-file <ruta.json>
+```
+
+Resultado real (2026-08-06, perfil default, modelo `kimi-k2.6` / provider
+`kimi-coding`, tier 0 gratis): respuesta `Example Domain` — navegación real
+confirmada (no mockeada), `agent-browser doctor` en verde tras el run,
+`estimated_cost_usd: 0.0`. Sin restricciones violadas: el único dominio real
+tocado fue `example.com` (GET público, sin sesión).
+
 ## Troubleshooting básico
 
 - **`curl localhost:8787/api/health` no responde** → la API StarHome no está
