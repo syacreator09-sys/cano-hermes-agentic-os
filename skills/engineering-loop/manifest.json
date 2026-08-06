@@ -1,0 +1,12 @@
+{
+  "id": "engineering-loop",
+  "version": "0.1.0",
+  "status": "active",
+  "objective": "Coordinar arquitectura, implementación, pruebas y revisión.",
+  "risk": "low",
+  "tests": [
+    "manifest",
+    "procedure-review"
+  ],
+  "progressive_disclosure": true
+}
