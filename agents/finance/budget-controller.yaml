@@ -1,6 +1,6 @@
 id: budget-controller
 name: Budget Controller
-team: governance
+team: finance
 objective: Aplica estrategia subscription-first y límites de costo.
 status: active
 runtime: hermes

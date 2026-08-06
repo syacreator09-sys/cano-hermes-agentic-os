@@ -15,6 +15,7 @@ DOMAIN_TEAMS = {
     "operations": "operations",
     "forge": "forge",
     "security": "governance",
+    "finance": "finance",
 }
 
 
