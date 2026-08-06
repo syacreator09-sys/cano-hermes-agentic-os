@@ -1,0 +1,15 @@
+name: hermes-research
+mission: "Radar viral diario (Apify metadata-only) y transcripts bajo demanda (Supadata con fallback Whisper) para alimentar guiones"
+skills: [viral-research, last30days, exa-search, competitor-reels-pipeline, reel-dedup-check]
+scripts_factory:
+  - scripts/run_viral_reference_expansion.py
+  - scripts/build_viral_production_table.py
+  - factory/research/transcript_with_fallback.py
+providers: [apify, supadata, modal-whisper]
+default_model: nim
+budget_daily:
+  credits: 0
+  usd: 0.5
+cadence: "30 8 * * *"
+isolation: folder
+never: [publicar, pagar, tocar_env, aprobar_gates, descargar_media_con_copyright]

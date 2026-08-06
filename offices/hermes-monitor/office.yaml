@@ -1,0 +1,14 @@
+name: hermes-monitor
+mission: "Ojos del sistema: briefing diario 8:15, vigilancia cada 10 min (procesos, disco, cola, creditos), resumen semanal, informe mensual"
+skills: [daily-ops-routine, ecosystem-overview]
+scripts_factory:
+  - scripts/factory_v5_preflight.py (salud de providers, 0 costo)
+  - reports/ (ledger, smokes)
+providers: []          # solo lectura local + Telegram saliente
+default_model: nim     # gratis — corre muy seguido
+budget_daily:
+  credits: 0
+  usd: 0
+cadence: "*/10 * * * *"
+isolation: none
+never: [publicar, pagar, tocar_env, aprobar_gates, modificar_cola, matar_procesos_sin_reportar]

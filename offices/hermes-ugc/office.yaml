@@ -1,0 +1,15 @@
+name: hermes-ugc
+mission: "UGC afiliado: scout de productos -> ProductManifest -> (gate derechos) -> plan Higgsfield -> (gate gasto) -> generacion -> draft"
+skills: [ugc-video-production, android-farm-ugc, higgsfield-generate, higgsfield-soul-id, higgsfield-product-photoshoot]
+scripts_factory:
+  - 01-offices/ugc-affiliate/ (scout + scoring 0-100)
+  - adapters/ugc/affiliate_scout_adapter.py
+  - engines/ugc/ugc-commerce-studio/ (plan -> approve -> generate, secuencial)
+providers: [higgsfield, tiktok-shop-mx, mercado-libre]
+default_model: sonnet
+budget_daily:
+  credits: 0        # TODO gasto Higgsfield es gate, sin excepcion
+  usd: 0
+cadence: on-demand
+isolation: docker    # toca proveedor pago: aislar cuando Docker este estable
+never: [publicar, pagar, tocar_env, aprobar_gates, generar_sin_approval_scope, aprobar_commercial_rights]

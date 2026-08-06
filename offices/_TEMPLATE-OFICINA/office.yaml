@@ -1,0 +1,17 @@
+# office.yaml — contrato de la oficina (llenar TODO antes de registrar)
+name: hermes-CAMBIAR
+mission: "CAMBIAR: una frase — que produce y para quien"
+skills: []                # skills asignados (nombres exactos)
+scripts_factory: []       # scripts de factory-v5 que usa/replica
+providers: []             # proveedores cloud permitidos (allowlist de red)
+default_model: nim        # nim | kimi | sonnet (opus solo lo asigna el master por tarea)
+budget_daily:
+  credits: 0              # 0 = no puede gastar sin gate
+  usd: 0
+cadence: on-demand        # cron ("30 8 * * *") o on-demand
+isolation: folder         # none | folder | docker
+never:                    # solo se puede AGREGAR a esta lista, jamas quitar
+  - publicar
+  - pagar
+  - tocar_env
+  - aprobar_gates

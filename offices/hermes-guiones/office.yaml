@@ -1,0 +1,15 @@
+name: hermes-guiones
+mission: "Escribir guiones reales por canal desde research: narracion 7 capitulos para largos, hooks y reels de 8s, reparacion de scripts corruptos"
+skills: [8s-script-optimizer, scroll-stopper-hooks, pattern-replicator, video-scripts, humanizalo]
+scripts_factory:
+  - runbook long-narration-writer-agent (checklist manual del origen)
+  - runbook content-repair-agent
+  - storage/campaign-packages/ (formato reel.json/long.json)
+providers: [nvidia-nim, kimi, anthropic]
+default_model: sonnet
+budget_daily:
+  credits: 0
+  usd: 1
+cadence: "0 10 * * *"
+isolation: folder
+never: [publicar, pagar, tocar_env, aprobar_gates, copiar_texto_de_fuentes_research]

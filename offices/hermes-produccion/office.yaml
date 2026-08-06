@@ -1,0 +1,17 @@
+name: hermes-produccion
+mission: "Renderizar reels/largos/carruseles: Remotion + ffmpeg + edge-tts + MoneyPrinter stock; QA con ffprobe y runbook de calidad"
+skills: [hyperframes, hyperframes-cli, remotion-best-practices, ffmpeg-shorts-editing, animated-captions, shorts-export-profiles, video-vision-audit]
+scripts_factory:
+  - scripts/produce_long_pilot.py
+  - scripts/produce_stock_short.py
+  - scripts/produce_vox_explainer.py
+  - scripts/final_remotion_v2.py
+  - renderers/remotion/
+providers: [pexels, pixabay, coverr, elevenlabs, modal]
+default_model: sonnet
+budget_daily:
+  credits: 0
+  usd: 1
+cadence: "15 10 * * *"
+isolation: folder
+never: [publicar, pagar, tocar_env, aprobar_gates, render_paralelo_multiple]
