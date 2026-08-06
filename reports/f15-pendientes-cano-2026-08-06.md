@@ -24,6 +24,46 @@ siguiera vigente.
 | 13 | Rotación recomendada de Kimi/NVIDIA | Ambas quedaron expuestas en transcript de F11 (texto de sesión, no en disco fuera de `.env`) | Rotar ambas keys por precaución | F11 |
 | 14 | Posibles llaves hardcodeadas en 3 archivos de command-center | `produce_video_historia.py:75`, `generate_documentary.py:43`, `setup-orion-server.sh:222` (hallazgo F1). command-center es **solo lectura** desde este agente — solo se puede reportar, nunca reparar desde aquí | Editar esos 3 archivos directamente en command-center (fuera de este agente) | F1 |
 | 15 | 2 hallazgos de seguridad adicionales en command-center | Ya documentados en `docs/SANTMUN_REFERENCE_MAP.md` / reportes de F1 — **no re-auditados en F15/F16 por instrucción explícita**, quedan anotados aquí solo como puntero | Ver `cano-ai-command-center/docs/SANTMUN_REFERENCE_MAP.md` (solo lectura) | F1 |
+| 16 | Posible bug real en command-center: `test_chatwoot_hmac_skip_when_no_token` | Suite `agents-platform` (57/61 en F15-it1): 3 fallos son 401 de Cloudflare esperables (credencial de test ausente), pero este cuarto fallo parece un bug de comportamiento real en la validación HMAC de Chatwoot cuando no hay token configurado — command-center es solo lectura, así que solo se puede reportar, nunca reparar desde aquí | Revisar el test y el código de validación HMAC de Chatwoot directamente en command-center (fuera de este agente) | F15-it1 |
+
+## Iteración 2 — declaración de convergencia (2026-08-06)
+
+Revisados los 16 puntos de la tabla: **los 16 son pendientes que solo Cano
+puede resolver** (credencial, cuenta, decisión de producto, o edición en un
+repo de solo lectura para este agente). No hay ningún ítem reparable por
+Sonnet que siga abierto — todo lo reparable de la iteración 1 (test frágil
+de investment-intelligence, skill `engineering-loop`, PR de finance-office,
+`.env.backup-0940`, scoring UGC) ya se aplicó y quedó en PRs abiertos
+(`cano-hermes-agentic-os` #5 y #6, `ugc-commerce-studio` #2) esperando
+revisión de Cano — mergearlos no es una acción de Sonnet.
+
+Los 3 PRs se abrieron hace minutos en esta misma sesión; no tiene sentido
+una iteración 3 de "¿ya los aprobó Cano?" — eso es esperar, no auditar. Se
+declara **F15 CONVERGIDO en la iteración 2**, con el criterio de éxito del
+plan maestro verificado punto por punto:
+
+| Criterio (plan maestro) | Estado |
+|---|---|
+| Matriz ✓ salvo manuales | ✓ (306✓/537✗/57— — los ✗ son proveedores no usados por diseño + los 16 pendientes de arriba) |
+| StarHome 100% verde | ✓ (70 unittest + 75 pytest) |
+| factory-v5 ≥196/203 | ✓ (exacto: 196/203, bloqueado por pendiente #4) |
+| agents-platform / content-studio | ⚠️ 57/61 y 14/23 — command-center es solo lectura, no reparable desde aquí; fallos documentados (Windows paths esperados, 1 posible bug real reportado como #16) |
+| fba-hunter pytest verde | ✓ (156/156) |
+| Demo Prometeo end-to-end | ✓ (F4: 3 candidatos en pending_approval, pipeline probado con Docker real) |
+| Gasto bloqueando en APPROVAL con solicitud completa | ✓ (F3: `ApprovalRequest` con schema completo + `BudgetService`) |
+| Video F10 verificado | ✓ (ffprobe limpio, 720p, 17s) |
+| Oficinas Docker estables bajo límites | ✓ (F11: 6.5g/1.8cpu de 8g/2cpu, analytics+ugc corridas real) |
+| Pipeline UGC gratis probado con fixtures | ✓ (F9, scoring ahora codificado en F15-it1) |
+| Market Intel con 3 señales + Risk Guardian | ✓ diseño (F14) — oficina Docker en sí diferida por presupuesto, documentado |
+| 4 study clones P0 en `.upstreams/` | ✓ (F14, gitignorado) |
+| Ciclo diario + dashboard agregado | ✓ (F13, corrido real, escribió en Baserow) |
+| Baserow arriba | ✓ (F11) |
+| Cero secretos en chat/git | ⚠️ Kimi/NVIDIA expuestas en transcript de un subagente (F11, no en disco) — rotación recomendada, pendiente #13, es acción de Cano |
+| Núcleo nativo intacto, máquina sin saturar | ✓ (StarHome/Hermes/Nexus nativos por systemd; Docker infra 6.5g/1.8cpu de 32GB/4 núcleos) |
+
+**Todo lo que sigue abierto es, sin excepción, un pendiente de Cano** (tabla
+de 16 arriba) o un PR esperando su revisión. F16 (auditoría de seguridad y
+cierre) puede arrancar.
 
 ## Notas de verificación F15 iteración 1
 
