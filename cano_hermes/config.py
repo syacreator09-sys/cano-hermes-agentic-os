@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -33,6 +34,21 @@ class Settings(BaseSettings):
     codex_command: str = "codex"
     agent_command: str = "hermes"
     openclaw_command: str = "openclaw"
+    # K4 (plan HERMES-KICKOFF, gap 6) -- Telegram Bot API credentials for
+    # cano_hermes.notifications. Unprefixed (no HERMES_ prefix, unlike every
+    # other field above): the token/chat id live in credential files owned
+    # by other systems -- hermes-agent's own `.env` and the shared vault
+    # (`~/.secrets/credenciales/credenciales/.env`) -- never in this repo's
+    # source, only (optionally) in this repo's own untracked `.env`, which
+    # already stores them unprefixed today and is loaded verbatim into the
+    # `starhome-os` systemd unit via `EnvironmentFile=`. `validation_alias`
+    # reads the bare name instead of the auto-derived `HERMES_TELEGRAM_*`,
+    # so no second, StarHome-specific env var is needed anywhere upstream.
+    # `TELEGRAM_CHAT_ID` (not hermes-agent's `TELEGRAM_HOME_CHANNEL`) was
+    # picked because it's the name this repo's own `.env` already uses --
+    # both names hold the identical chat id in practice.
+    telegram_bot_token: str = Field(default="", validation_alias="TELEGRAM_BOT_TOKEN")
+    telegram_chat_id: str = Field(default="", validation_alias="TELEGRAM_CHAT_ID")
 
     def ensure_directories(self) -> None:
         for path in (

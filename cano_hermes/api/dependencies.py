@@ -5,6 +5,7 @@ from cano_hermes.forge.pipeline import ForgePipeline
 from cano_hermes.governance.approvals import ApprovalService
 from cano_hermes.governance.budget import BudgetService
 from cano_hermes.intelligence.router import ModelRouter
+from cano_hermes.notifications.service import NotificationService
 from cano_hermes.orchestration.conductor import Conductor
 from cano_hermes.orchestration.execution_service import ExecutionService
 from cano_hermes.orchestration.queue_service import QueueService
@@ -26,13 +27,25 @@ def registry() -> AgentRegistry:
 
 
 @lru_cache
+def notification_service() -> NotificationService:
+    """K4 (plan HERMES-KICKOFF, gap 6) -- Telegram delivery, wired as an
+    observer into `engine()`/`approvals()` below rather than called
+    explicitly anywhere else. See `notifications/service.py`."""
+    return NotificationService(store())
+
+
+@lru_cache
 def engine() -> TaskEngine:
-    return TaskEngine(store(), Conductor(registry(), ModelRouter()))
+    return TaskEngine(
+        store(),
+        Conductor(registry(), ModelRouter()),
+        on_transition=notification_service().on_transition,
+    )
 
 
 @lru_cache
 def approvals() -> ApprovalService:
-    return ApprovalService(store())
+    return ApprovalService(store(), on_request=notification_service().on_approval_requested)
 
 
 @lru_cache

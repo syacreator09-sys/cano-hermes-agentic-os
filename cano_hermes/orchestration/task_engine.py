@@ -1,17 +1,37 @@
 from __future__ import annotations
 
+import logging
+from collections.abc import Callable
 from datetime import datetime, timezone
 
 from cano_hermes.domain.enums import TaskStatus
 from cano_hermes.domain.models import TaskCreate, TaskEvent, TaskRecord
 from cano_hermes.storage.sqlite import SQLiteStore
+
 from .conductor import Conductor
+
+logger = logging.getLogger(__name__)
 
 
 class TaskEngine:
-    def __init__(self, store: SQLiteStore, conductor: Conductor) -> None:
+    def __init__(
+        self,
+        store: SQLiteStore,
+        conductor: Conductor,
+        on_transition: Callable[[TaskRecord, TaskStatus, dict], None] | None = None,
+    ) -> None:
+        """`on_transition`, when given, is called after every `transition()`
+        with the up-to-date task, its new status and the transition payload
+        -- K4's `NotificationService.on_transition` hooks in here so DONE/
+        FAILED get a Telegram message regardless of which call site (K2
+        auto-complete, the manual `/complete` endpoint, `ExecutionService`
+        failing a run, the K0 reaper) triggered it. Wrapped in try/except:
+        a notification failure must never take a state transition down with
+        it (see notifications/telegram.py, which itself already never
+        raises -- this is a second, defensive layer)."""
         self.store = store
         self.conductor = conductor
+        self.on_transition = on_transition
 
     def create(self, request: TaskCreate) -> TaskRecord:
         task = TaskRecord.model_validate(request.model_dump())
@@ -69,6 +89,11 @@ class TaskEngine:
         task.updated_at = datetime.now(timezone.utc)
         self.store.save_task(task)
         self.store.add_event(TaskEvent(task_id=task.id, kind=f"task.{status.value}", actor=actor, payload=payload or {}))
+        if self.on_transition is not None:
+            try:
+                self.on_transition(task, status, payload or {})
+            except Exception:
+                logger.warning("on_transition callback failed for task %s -> %s", task.id, status.value, exc_info=True)
         return task
 
     def require(self, task_id: str) -> TaskRecord:
