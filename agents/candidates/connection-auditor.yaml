@@ -1,0 +1,28 @@
+id: connection-auditor
+name: Connection Auditor
+team: operations
+objective: Corre scripts/connection_matrix.py periodicamente sobre los 5 sistemas
+  conocidos (StarHome, factory-v5, command-center x2, hermes-agent) y reporta cambios
+  de estado en sus credenciales (presente/vacia/ausente) sin imprimir nunca un valor
+  real.
+status: testing
+runtime: hermes
+model_profiles:
+- kimi-office
+skills:
+- infra-ops
+tools:
+- task_events
+permissions:
+  filesystem: workspace-only
+  network: allowlist
+  production: approval-required
+budget:
+  max_cost_usd: 0.15
+  max_turns: 6
+  timeout_seconds: 300
+evaluations:
+- schema
+- safety
+- task-contract
+max_concurrency: 1

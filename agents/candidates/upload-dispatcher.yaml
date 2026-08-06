@@ -1,0 +1,27 @@
+id: upload-dispatcher
+name: Upload Dispatcher
+team: content
+objective: Prepara publicaciones en modo dry-run/draft para revision humana; JAMAS
+  publica de verdad. Cualquier accion real de publish cae en SENSITIVE_ACTIONS (cano_hermes/governance/policy.py)
+  y requiere aprobacion humana explicita antes de ejecutarse.
+status: testing
+runtime: hermes
+model_profiles:
+- kimi-office
+skills:
+- content-pipeline
+tools:
+- task_events
+permissions:
+  filesystem: workspace-only
+  network: allowlist
+  production: approval-required
+budget:
+  max_cost_usd: 0.2
+  max_turns: 6
+  timeout_seconds: 300
+evaluations:
+- schema
+- safety
+- task-contract
+max_concurrency: 1
