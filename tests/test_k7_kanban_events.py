@@ -374,6 +374,59 @@ class AggregatorUnitTests(unittest.TestCase):
             self.assertEqual(store.list_children(order.id), [])
             fake_send.assert_not_called()
 
+    def test_synthesis_needing_approval_blocks_order_not_fails_it(self):
+        """K8 regression (live demo, 2026-08-06, `order-c334c655cf60`):
+        under this machine's real `execution_mode=supervised` default,
+        `PermissionEngine` can route the synthesis task through
+        `TaskStatus.APPROVAL` *before* it ever runs, regardless of the
+        task's own LOW risk. The aggregator's own docstring already treats
+        `TaskStatus.REVIEW` (a post-run human gate) as BLOCKED, not FAILED
+        -- `TaskStatus.APPROVAL` (a pre-run human gate) must get the exact
+        same treatment: it is not a subprocess/infrastructure failure any
+        more than REVIEW is, and `api/app.py`'s `dispatch_order` docstring
+        reserves BLOCKED for exactly this "genuinely waiting on a human
+        gate" case.
+
+        Simulated here by monkeypatching `execution_service.run` to leave
+        the synthesis task in APPROVAL (mirroring what
+        `ExecutionService.run` really does when `PermissionEngine` denies
+        an action outright) rather than spinning up the real supervised
+        governance stack.
+        """
+        with tempfile.TemporaryDirectory() as d:
+            engine, store, execution_service, notifier, _budget = _rig(d)
+            order = OrderRecord(objective="orden que dispara aprobacion", source="telegram")
+            order.status = OrderStatus.DISPATCHED
+            store.save_order(order)
+
+            import asyncio
+            from unittest.mock import AsyncMock
+
+            from cano_hermes.domain.models import ExecutionResult
+
+            def _leave_in_approval(task_id, executor_id=None, execution_id=None):
+                engine.transition(task_id, TaskStatus.APPROVAL, "policy-engine", {"reason": "sensitive action"})
+                return ExecutionResult(
+                    task_id=task_id, executor="hermes-agent", status="approval_required",
+                    summary="esperando aprobacion humana",
+                )
+
+            execution_service.run = AsyncMock(side_effect=_leave_in_approval)
+
+            with patch("cano_hermes.notifications.service.send_telegram_message") as fake_send:
+                result = asyncio.run(aggregator.close_order_with_synthesis(
+                    engine=engine, store=store, execution_service=execution_service,
+                    notifier=notifier, artifacts_root=Path(d) / "artifacts",
+                    order=order, trigger_summary="trabajo de kanban ya termino",
+                ))
+
+            self.assertEqual(result.status, OrderStatus.BLOCKED)
+            events = [e for e in store.list_events(order.id) if e.kind.startswith("order.")]
+            self.assertEqual(events[-1].kind, "order.blocked")
+            self.assertEqual(events[-1].payload["synthesis_status"], "approval")
+            # BLOCKED, unlike DONE, never fires the order-done Telegram notification.
+            fake_send.assert_not_called()
+
 
 class KanbanEventsApiTests(unittest.TestCase):
     """(f): the real HTTP route, signature verification included.

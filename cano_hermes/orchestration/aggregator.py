@@ -151,11 +151,28 @@ async def close_order_with_synthesis(
 
     refreshed = engine.require(synthesis_task.id)
     if refreshed.status != TaskStatus.DONE:
-        # Shouldn't happen -- synthesis tasks are always created at LOW risk
-        # so K2's completion.py auto-closes them -- but an order must never
-        # be left silently stuck in AGGREGATING if the run itself failed or
-        # somehow needed a human (REVIEW).
-        order.status = OrderStatus.BLOCKED if refreshed.status == TaskStatus.REVIEW else OrderStatus.FAILED
+        # Shouldn't happen on the LOW-risk-always-auto-closes path -- but an
+        # order must never be left silently stuck in AGGREGATING if the run
+        # itself failed or somehow needed a human. Two distinct "needed a
+        # human" states exist and both map to BLOCKED, never FAILED: REVIEW
+        # (`completion.py` only auto-closes LOW risk; a run that somehow
+        # produced non-LOW risk lands here) and APPROVAL (K8 live demo,
+        # 2026-08-06, `order-c334c655cf60` -- under this machine's real
+        # `execution_mode=supervised` default, `PermissionEngine` routes
+        # every non-dry-run action through approval_required *before* it
+        # runs, regardless of the synthesis task's LOW risk; the original
+        # code here only anticipated the post-run REVIEW gate and
+        # mis-classified this equally-legitimate pre-run human gate as an
+        # unexpected failure). Both are exactly the "genuinely waiting on a
+        # human gate" case `api/app.py`'s `dispatch_order` docstring
+        # describes BLOCKED as being reserved for -- a pending approval is
+        # not a subprocess/infrastructure failure, so FAILED must never be
+        # the label for it.
+        order.status = (
+            OrderStatus.BLOCKED
+            if refreshed.status in (TaskStatus.REVIEW, TaskStatus.APPROVAL)
+            else OrderStatus.FAILED
+        )
         order.updated_at = datetime.now(UTC)
         store.save_order(order)
         store.add_event(TaskEvent(

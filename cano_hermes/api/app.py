@@ -130,6 +130,16 @@ def create_order(request: OrderCreate):
     return store().save_order(order)
 
 
+@app.get("/api/orders")
+def list_orders():
+    """K8 -- symmetric with `GET /api/tasks`; added alongside the CLI's
+    `order list` (`cano_hermes/cli.py`) so the CLI can stay a pure HTTP
+    client for all three `order` verbs instead of mixing HTTP for
+    submit/status with direct `SQLiteStore` access for list. Newest first
+    (`SQLiteStore.list_orders` already orders by `created_at DESC`)."""
+    return store().list_orders()
+
+
 @app.get("/api/orders/{order_id}")
 def get_order(order_id: str):
     """K5 -- resolves child tasks via `list_children(order_id)` (matching
