@@ -1,0 +1,28 @@
+id: media-render-worker
+name: Media Render Worker
+team: content
+objective: 'Mantiene una cola SECUENCIAL (nunca paralela: esta maquina no tiene GPU
+  dedicada) de trabajos de render Remotion/ffmpeg, ejecutados dentro de container-sandbox
+  rootless, sin red y sin credenciales.'
+status: testing
+runtime: hermes
+model_profiles:
+- kimi-office
+skills:
+- content-pipeline
+- container-sandbox
+tools:
+- task_events
+permissions:
+  filesystem: workspace-only
+  network: denied
+  production: approval-required
+budget:
+  max_cost_usd: 0.3
+  max_turns: 10
+  timeout_seconds: 900
+evaluations:
+- schema
+- safety
+- task-contract
+max_concurrency: 1

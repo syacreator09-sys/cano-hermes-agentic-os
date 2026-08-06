@@ -101,16 +101,34 @@ class AgentManifest(BaseModel):
 
 
 class ApprovalRequest(BaseModel):
+    """A human-in-the-loop gate raised by PermissionEngine/BudgetLedger.
+
+    Every field below is mandatory by design (Plan Prometeo F3): an approval
+    that Cano can't fully evaluate — what it costs, what's left in the
+    budget, which office asked, and what evidence backs it — is not a real
+    approval. Pydantic rejects construction with a clear per-field message
+    when any of them is missing, instead of silently defaulting.
+    """
+
     id: str = Field(default_factory=lambda: f"approval-{uuid4().hex[:12]}")
     task_id: str
     action: str
-    reason: str
+    motivo: str = Field(min_length=1, description="Por qué se requiere aprobación humana")
     risk: RiskLevel
     requested_by: str
+    costo_estimado_usd: float = Field(ge=0, description="Costo estimado en USD de la acción solicitada")
+    presupuesto_restante: float = Field(description="Presupuesto restante en el BudgetLedger del día, al momento de la solicitud")
+    canal: str = Field(min_length=1, description="Oficina o canal que origina la solicitud")
+    evidencia: str = Field(min_length=1, description="Ruta a un draft/dry-run que respalda la solicitud")
     status: ApprovalStatus = ApprovalStatus.PENDING
     created_at: datetime = Field(default_factory=utcnow)
     resolved_at: datetime | None = None
     resolved_by: str | None = None
+
+    @property
+    def reason(self) -> str:
+        """Backward-compatible alias for `motivo` (pre-F3 field name)."""
+        return self.motivo
 
 
 class ExecutionResult(BaseModel):

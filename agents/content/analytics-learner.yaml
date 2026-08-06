@@ -1,7 +1,7 @@
 id: analytics-learner
 name: Analytics Learner
 team: content
-objective: Convierte métricas en aprendizajes y experimentos.
+objective: Lee YouTube Analytics por canal (RPM, retención, CTR), puntúa cada video publicado y convierte patrones ganadores en aprendizajes y experimentos.
 status: approved
 runtime: api
 model_profiles:

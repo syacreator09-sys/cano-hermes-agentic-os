@@ -1,0 +1,27 @@
+id: supervisor
+name: Supervisor
+team: governance
+objective: Vigila que ninguna oficina se salga de su toolset, tier de modelo o presupuesto asignado. Escala a Cano cualquier desviación.
+status: candidate
+runtime: hermes
+model_profiles:
+- kimi-office
+skills:
+- forge-governance
+- budget-routing
+tools:
+- nexus_search
+- task_events
+permissions:
+  filesystem: workspace-only
+  network: none
+  production: approval-required
+budget:
+  max_cost_usd: 0.2
+  max_turns: 8
+  timeout_seconds: 600
+evaluations:
+- schema
+- safety
+- task-contract
+max_concurrency: 1
