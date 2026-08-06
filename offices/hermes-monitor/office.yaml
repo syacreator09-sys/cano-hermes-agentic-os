@@ -10,5 +10,14 @@ budget_daily:
   credits: 0
   usd: 0
 cadence: "*/10 * * * *"
+# K9: kept `none` (this profile still runs fine natively, no isolation is
+# actually required for it) -- but office-analytics
+# (infrastructure/offices/analytics/, F11) already wraps exactly this
+# office's own task (connection_matrix.py) in a container. K9 maps this
+# profile's kanban worker onto that container as a strict superset (docker
+# isolation >= none), because it's also the office K9 demoed for real with
+# `docker compose --profile analytics up` -- not because `none` stopped
+# being correct. See K9 report for the full office.yaml <-> Docker office
+# mapping table.
 isolation: none
 never: [publicar, pagar, tocar_env, aprobar_gates, modificar_cola, matar_procesos_sin_reportar]

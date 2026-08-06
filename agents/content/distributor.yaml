@@ -1,0 +1,40 @@
+id: distributor
+name: Distributor
+team: content
+# K9 (plan HERMES-KICKOFF): no publish/distribution agent existed before
+# this -- created minimal, following the pattern already used by the other
+# agents/content/*.yaml manifests, to give "reel-dedup-check" (orphan skill
+# from the 30-day audit) a real home instead of forcing it into an
+# unrelated agent. Maps to office-publish / hermes-distribucion.yaml
+# (mission: "preparar drafts de subida verificados, dedup contra ledger,
+# metadata veraz; el dispatch SIEMPRE es gate") -- team stays `content`
+# (DOMAIN_TEAMS in cano_hermes/orchestration/conductor.py has no separate
+# "publish" domain; distribution is downstream of content, same as the
+# other 3 content-pipeline agents in this directory).
+objective: Prepara drafts de subida verificados (dedup obligatorio contra el ledger real antes de producir/publicar), nunca ejecuta el dispatch.
+status: approved
+runtime: hermes
+model_profiles:
+- deepseek-daily
+skills:
+- reel-dedup-check
+# hermes-distribucion/office.yaml also lists `upload-post`/`crosspost`, but
+# neither has a skills/<name>/ folder in this repo yet (checked: only
+# reel-dedup-check exists) -- not referenced here to avoid a dangling
+# skill id; add them once they're built.
+tools:
+- nexus_search
+- task_events
+permissions:
+  filesystem: workspace-only
+  network: allowlist
+  production: approval-required
+budget:
+  max_cost_usd: 0.5
+  max_turns: 16
+  timeout_seconds: 1200
+evaluations:
+- schema
+- safety
+- task-contract
+max_concurrency: 1

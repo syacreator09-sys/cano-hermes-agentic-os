@@ -1,14 +1,26 @@
-# Plan Prometeo F11 — the 4 "offices" as on-demand Docker containers.
+# Plan Prometeo F11 (Baserow + 4 offices) -> K9 (plan HERMES-KICKOFF):
+# the offices become real kanban workers, interconnected on a shared
+# network with Baserow, plus a 5th office (market-intel).
 #
 # Each office is built from starhome/office-base:latest (build it first:
-# ./build-base.sh) plus its own task.sh. A container does one cycle and
-# exits (no restart policy, no daemon) -- this mirrors "las oficinas se
-# levantan BAJO DEMANDA", not a standing service. Nothing here has a
-# `profiles:` default membership, so `docker compose up` with no flags
-# starts nothing; you must ask for an office by name:
+# ./build-base.sh) plus its own task.sh. Nothing here has a `profiles:`
+# default membership, so `docker compose up` with no flags starts nothing;
+# you must ask for an office by name:
 #
-#   docker compose --profile analytics up --build
-#   docker compose --profile ugc up --build
+#   docker compose --profile analytics up -d
+#   docker compose --profile ugc up -d
+#   docker compose --profile market-intel up -d
+#
+# K9 change -- workers, not one-shot cycles: entrypoint.sh now defaults to
+# WORKER_MODE=kanban (infrastructure/offices/common/entrypoint.sh): each
+# container polls board `starhome` for READY tasks assigned to its own
+# kanban profile (OFFICE_PROFILE), claims, runs task.sh + hermes --oneshot,
+# and closes the loop with `hermes kanban complete`/`block`. `docker
+# compose --profile <x> up -d` now starts a live worker, not a cron cycle
+# that exits; stop it with `docker compose --profile <x> down` (SIGTERM is
+# trapped and the loop exits cleanly after the in-flight task). The old
+# F11 single-cycle behaviour is preserved as WORKER_MODE=oneshot for manual
+# debugging (`docker compose run -e WORKER_MODE=oneshot office-analytics`).
 #
 # Credential allowlist (mirrors cano_hermes/runtimes/subprocess_executor.py's
 # EXECUTOR_SECRET_ALLOWLIST pattern from F3, at the Docker layer instead of
@@ -19,25 +31,69 @@
 # never mounted or copied into any container). Generate it once with
 # ./write-office-env.sh before `up`.
 #
-# Resource budget (hard rule: all Docker infra <= 8GB RAM / 2 CPU, sandbox's
-# own 512m/1cpu from F3 counted separately -- see F11 report):
-#   baserow          2g   / 1.0 cpu   (../baserow/docker-compose.yml)
-#   office-analytics 1g   / 0.2 cpu
-#   office-ugc       1.5g / 0.2 cpu
-#   office-content   1g   / 0.2 cpu
-#   office-publish   1g   / 0.2 cpu
+# Network isolation, reconciled for K9: F11 never actually added any
+# network-level restriction to these services (no `network_mode: none`,
+# no per-service `networks:` block existed before this change -- checked
+# against the F11 diff and this file's own history) -- its isolation was
+# always credential-based only (the allowlist above), not network-based.
+# So adding `starhome-net` here does not weaken any pre-existing network
+# restriction; it only lets these services and Baserow (previously two
+# unrelated Compose *projects* with two separate private default networks
+# -- offices could already reach each other freely within this project,
+# just never Baserow) reach each other. `office-publish` still gets
+# exactly zero real publish credentials -- that boundary was, and remains,
+# enforced by the environment: allowlist, not by network policy.
+# `starhome-net` is declared `external: true` here: create it once with
+# `../create-shared-network.sh` before the first `up` in either this
+# directory or `../baserow/`.
+#
+# Resource budget (raised K9: all Docker infra <= 16GB RAM / 3 CPU per
+# HERMES-KICKOFF; sandbox's own 512m/1cpu from F3 counted separately):
+#   baserow             2g   / 1.0 cpu   (../baserow/docker-compose.yml)
+#   office-analytics     1g   / 0.2 cpu
+#   office-ugc          1.5g / 0.2 cpu
+#   office-content       1g   / 0.2 cpu
+#   office-publish        1g   / 0.2 cpu
+#   office-market-intel   1g   / 0.2 cpu   (K9, new)
 #   ------------------------------------------
-#   total            6.5g / 1.8 cpu   (1.5g / 0.2cpu margin under budget)
+#   total               7.5g / 1.9 cpu   (8.5g / 1.1cpu margin under the new 16g/3cpu ceiling)
 
 # NOTE: YAML's `<<` merge key only works on mappings, not sequences -- a
 # `- *anchor` item inside a `volumes:` list would nest as a list-within-a-
-# list, which compose rejects. So the 3 hermes mount lines below are
-# repeated verbatim in each service's `volumes:` instead of aliased. Keep
-# them in sync if the mount paths ever change:
+# list, which compose rejects. So the hermes + kanban-board mount lines
+# below are repeated verbatim in each service's `volumes:` instead of
+# aliased. Keep them in sync if the mount paths ever change:
 #   - /home/cano/repos/hermes-agent:/home/cano/repos/hermes-agent:ro
 #   - /home/cano/.local/share/uv/python:/home/cano/.local/share/uv/python:ro
 #   - ./common/empty.env:/home/cano/repos/hermes-agent/.env:ro   (masks the
 #     0600 .env hermes_cli's dotenv-load would otherwise crash on)
+#   - /home/cano/.hermes/kanban/boards/starhome:/office/hermes-home/kanban/boards/starhome:rw
+#     (K9 -- scoped kanban access: ONLY this one board's task data, never
+#     the host's ~/.hermes/config.yaml, .env or auth.json, which are never
+#     mounted at all. Verified live: `HERMES_HOME=<dir with just
+#     kanban/boards/starhome> hermes kanban --board starhome list --json`
+#     works with nothing else present -- task titles/bodies/comments are
+#     not secrets, so this is proportionate, not a broad mount.)
+#
+# Board-mount write access (K9): the office-base image's built-in `office`
+# user (uid 10001, F11) needs write access to the host-owned board
+# directory above. Two approaches were tried:
+#   1. Override the container's `user:` to the host `cano` uid/gid
+#      (1000:1000) instead. REJECTED -- verified live: the image's `/office`
+#      home directory is created by `useradd -m` at mode 0700 owned by
+#      office:office, so uid 1000 can't even traverse into `/office` (tini
+#      itself fails with "Permission denied" trying to exec
+#      /office/entrypoint.sh). Would require also loosening /office's own
+#      permissions, which is a bigger surface than the fix below.
+#   2. `chmod -R o+rwX ~/.hermes/kanban/boards/<board>` on the host, once,
+#      for each board an office worker needs to write to (done here for
+#      `starhome`; see `../create-shared-network.sh` sibling note -- this
+#      isn't scripted yet, it's a one-time manual step documented in the K9
+#      report). Containers keep running as the built-in uid 10001 (`office`,
+#      unchanged from F11) which then falls into that directory's "other"
+#      class. Scoped to exactly one board's task data (titles/bodies/
+#      comments/logs/workspaces -- no credentials ever live there) so this
+#      is a narrow, deliberate relaxation, not a broad one.
 
 x-hermes-tier0-env: &hermes-tier0-env
   HERMES_MODEL: kimi-k2.6
@@ -47,27 +103,40 @@ x-hermes-tier0-env: &hermes-tier0-env
   KIMI_BASE_URL: ${KIMI_BASE_URL:?falta KIMI_BASE_URL -- correr ./write-office-env.sh}
   NVIDIA_API_KEY: ${NVIDIA_NIM_API_KEY:-}
 
+networks:
+  starhome-net:
+    external: true
+    name: starhome-net
+
 services:
   office-analytics:
     build:
       context: ./analytics
     image: starhome/office-analytics:latest
     profiles: ["analytics"]
+    networks: ["starhome-net"]
     environment:
       <<: *hermes-tier0-env
       OFFICE_NAME: analytics
+      OFFICE_PROFILE: hermes-monitor
+      WORKER_MODE: kanban
+      KANBAN_BOARD: starhome
+      HERMES_HOME: /office/hermes-home
+      POLL_INTERVAL_SECONDS: "20"
     volumes:
       - /home/cano/repos/cano-hermes-agentic-os:/home/cano/repos/cano-hermes-agentic-os:ro
       - /home/cano/repos/hermes-agent:/home/cano/repos/hermes-agent:ro
       - /home/cano/.local/share/uv/python:/home/cano/.local/share/uv/python:ro
       - ./common/empty.env:/home/cano/repos/hermes-agent/.env:ro
+      - /home/cano/.hermes/kanban/boards/starhome:/office/hermes-home/kanban/boards/starhome:rw
       # StarHome's own .env is 0600, owned by the host user -- this
-      # container runs as uid 10001, not that user, so it can't read it
-      # even though the parent dir is mounted. connection_matrix.py (F2)
-      # only needs to know the *names* it would check, not their values,
-      # so masking with an empty file (same trick as hermes-agent's .env
-      # above) is correct here, not a workaround-around-a-bug: this office
-      # was never supposed to see StarHome's real key material anyway.
+      # container runs as uid 10001 (unchanged from F11, see board-mount
+      # note above), not the host user that owns it, so it can't read it.
+      # connection_matrix.py (F2) only needs to know the *names* it would
+      # check, not their values, so masking with an empty file (same trick
+      # as hermes-agent's .env above) is correct here, not a
+      # workaround-around-a-bug: this office was never supposed to see
+      # StarHome's real key material anyway.
       - ./common/empty.env:/home/cano/repos/cano-hermes-agentic-os/.env:ro
       # connection_matrix.py (F2, unmodified) hardcodes its own output path
       # to <repo>/reports/connection-matrix-<date>.md. Rather than patch a
@@ -87,9 +156,15 @@ services:
       context: ./ugc
     image: starhome/office-ugc:latest
     profiles: ["ugc"]
+    networks: ["starhome-net"]
     environment:
       <<: *hermes-tier0-env
       OFFICE_NAME: ugc
+      OFFICE_PROFILE: hermes-ugc
+      WORKER_MODE: kanban
+      KANBAN_BOARD: starhome
+      HERMES_HOME: /office/hermes-home
+      POLL_INTERVAL_SECONDS: "20"
       # Allowlisted for the office's function (scraping/tracking, per F9's
       # pipeline design) even though today's task.sh doesn't call them yet
       # -- ugc-commerce-studio's `plan` step is offline/fixture-based.
@@ -100,6 +175,7 @@ services:
       - /home/cano/repos/hermes-agent:/home/cano/repos/hermes-agent:ro
       - /home/cano/.local/share/uv/python:/home/cano/.local/share/uv/python:ro
       - ./common/empty.env:/home/cano/repos/hermes-agent/.env:ro
+      - /home/cano/.hermes/kanban/boards/starhome:/office/hermes-home/kanban/boards/starhome:rw
       - ./data/ugc/output:/office/output:rw
     mem_limit: 1.5g
     cpus: 0.2
@@ -112,14 +188,32 @@ services:
       context: ./content
     image: starhome/office-content:latest
     profiles: ["content"]
+    networks: ["starhome-net"]
     environment:
       <<: *hermes-tier0-env
       OFFICE_NAME: content
+      # K9 mapping: office-content <-> hermes-produccion (reclassified
+      # isolation: folder -> docker, see offices/hermes-produccion/office.yaml).
+      # hermes-guiones stays a native folder-isolated worker (pure LLM
+      # scriptwriting, no factory-v5 mount needed) -- NOT this container.
+      OFFICE_PROFILE: hermes-produccion
+      WORKER_MODE: kanban
+      KANBAN_BOARD: starhome
+      HERMES_HOME: /office/hermes-home
+      POLL_INTERVAL_SECONDS: "20"
     volumes:
       - /home/cano/repos/factory-ia-channel-v5:/home/cano/repos/factory-ia-channel-v5:ro
       - /home/cano/repos/hermes-agent:/home/cano/repos/hermes-agent:ro
       - /home/cano/.local/share/uv/python:/home/cano/.local/share/uv/python:ro
       - ./common/empty.env:/home/cano/repos/hermes-agent/.env:ro
+      # factory-ia-channel-v5's own .env is 0600, owned by the host user --
+      # same masking trick as hermes-agent's/StarHome's own .env above:
+      # provider-health legitimately needs to run (it's read-only/plan,
+      # SAFE_DRY_RUN_ACTIONS) but must never see factory-v5's real key
+      # material inside this container; verified live that an empty file
+      # here turns a PermissionError into a clean "not configured" read.
+      - ./common/empty.env:/home/cano/repos/factory-ia-channel-v5/.env:ro
+      - /home/cano/.hermes/kanban/boards/starhome:/office/hermes-home/kanban/boards/starhome:rw
       - ./data/content/output:/office/output:rw
     mem_limit: 1g
     cpus: 0.2
@@ -132,9 +226,17 @@ services:
       context: ./publish
     image: starhome/office-publish:latest
     profiles: ["publish"]
+    networks: ["starhome-net"]
     environment:
       <<: *hermes-tier0-env
       OFFICE_NAME: publish
+      # K9 mapping: office-publish <-> hermes-distribucion (1:1 by name and
+      # mission -- "preparar drafts de subida... dispatch SIEMPRE gate").
+      OFFICE_PROFILE: hermes-distribucion
+      WORKER_MODE: kanban
+      KANBAN_BOARD: starhome
+      HERMES_HOME: /office/hermes-home
+      POLL_INTERVAL_SECONDS: "20"
       # No publish credentials here, ever. Do not add UPLOAD_POST_*,
       # TIKTOK_*, META_*, YOUTUBE_* etc. to this service. Real dispatch is
       # gated by ApprovalService (F3) outside this container.
@@ -142,7 +244,46 @@ services:
       - /home/cano/repos/hermes-agent:/home/cano/repos/hermes-agent:ro
       - /home/cano/.local/share/uv/python:/home/cano/.local/share/uv/python:ro
       - ./common/empty.env:/home/cano/repos/hermes-agent/.env:ro
+      - /home/cano/.hermes/kanban/boards/starhome:/office/hermes-home/kanban/boards/starhome:rw
+      # command-center is read-only, by contract (root CLAUDE.md rule 1) --
+      # only mounted so task.sh's dedup step can read
+      # 01-offices/ugc-affiliate/upload_log_ugc.db (skills/reel-dedup-check).
+      # This db is created at RUNTIME by uploader.py and usually will NOT
+      # exist yet -- task.sh reports that absence explicitly rather than
+      # assuming "no rows means no duplicates" (see task.sh).
+      - /home/cano/repos/cano-ai-command-center/01-offices/ugc-affiliate:/home/cano/repos/cano-ai-command-center/01-offices/ugc-affiliate:ro
       - ./data/publish/output:/office/output:rw
+    mem_limit: 1g
+    cpus: 0.2
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: ["ALL"]
+
+  office-market-intel:
+    build:
+      context: ./market-intel
+    image: starhome/office-market-intel:latest
+    profiles: ["market-intel"]
+    networks: ["starhome-net"]
+    environment:
+      <<: *hermes-tier0-env
+      OFFICE_NAME: market-intel
+      OFFICE_PROFILE: hermes-market-intel
+      WORKER_MODE: kanban
+      KANBAN_BOARD: starhome
+      HERMES_HOME: /office/hermes-home
+      POLL_INTERVAL_SECONDS: "20"
+      # No broker/exchange credential names here, ever (ALPACA_*/IBKR_*/
+      # BINANCE_* or equivalent) -- see docs/MARKET_INTEL_OFFICE_DESIGN.md
+      # sec. 0/4/5 and offices/hermes-market-intel/office.yaml `never:`.
+    volumes:
+      - /home/cano/repos/amazon-fba-product-hunter:/home/cano/repos/amazon-fba-product-hunter:ro
+      - /home/cano/repos/cano-investment-intelligence:/home/cano/repos/cano-investment-intelligence:ro
+      - /home/cano/repos/hermes-agent:/home/cano/repos/hermes-agent:ro
+      - /home/cano/.local/share/uv/python:/home/cano/.local/share/uv/python:ro
+      - ./common/empty.env:/home/cano/repos/hermes-agent/.env:ro
+      - /home/cano/.hermes/kanban/boards/starhome:/office/hermes-home/kanban/boards/starhome:rw
+      - ./data/market-intel/output:/office/output:rw
     mem_limit: 1g
     cpus: 0.2
     security_opt:

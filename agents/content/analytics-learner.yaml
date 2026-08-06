@@ -8,6 +8,13 @@ model_profiles:
 - deepseek-daily
 skills:
 - metrics-learning
+# K9 (plan HERMES-KICKOFF): wired the "command-center-contract" orphan skill
+# from the "auditoría de skills últimos 30 días" -- this agent already reads
+# analytics (YouTube RPM/retención/CTR); command-center-contract lets it also
+# invoke command-center's own 01-offices/ Python offices by contract
+# (subprocess, their own .env, read-only on that repo) when a pattern needs
+# corroboration from command-center's analytics.
+- command-center-contract
 tools:
 - nexus_search
 - task_events

@@ -26,7 +26,7 @@ ENV HOME=/office \
 
 COPY entrypoint.sh /office/entrypoint.sh
 RUN chmod +x /office/entrypoint.sh && \
-    mkdir -p /office/output /office/state && \
+    mkdir -p /office/output /office/state /office/hermes-home/kanban/boards && \
     chown -R office:office /office
 
 USER office

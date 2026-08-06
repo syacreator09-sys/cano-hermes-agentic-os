@@ -13,5 +13,13 @@ budget_daily:
   credits: 0
   usd: 1
 cadence: "15 10 * * *"
-isolation: folder
+# K9 reconciliation (was `folder`): rendering (ffmpeg/Remotion/MoneyPrinter
+# stock) is the heaviest, most dependency-laden work of the 6 offices --
+# real container sandboxing (cap_drop, mem_limit, no-new-privileges) is a
+# better fit than a native folder-isolated worker, and office-content's
+# Docker container (infrastructure/offices/content/, F11) already exists
+# with the right mounts. Reclassified so this profile maps 1:1 onto that
+# real container instead of leaving it native. See K9 report for the full
+# office.yaml <-> Docker office mapping table.
+isolation: docker
 never: [publicar, pagar, tocar_env, aprobar_gates, render_paralelo_multiple]

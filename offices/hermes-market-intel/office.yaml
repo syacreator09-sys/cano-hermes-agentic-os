@@ -1,0 +1,15 @@
+name: hermes-market-intel
+mission: "Cruzar 3 senales de solo lectura (producto fisico FBA, financiera investment-intelligence offline, tendencia office-ugc) en un reporte diario; PROPONE candidatos a Baserow, nunca ejecuta compra/trade/publish"
+skills: [command-center-contract]
+scripts_factory:
+  - amazon-fba-product-hunter/reports/ (solo lectura, scorer_agent.py ya corrido)
+  - cano-investment-intelligence/docs/reports/ (solo lectura, council offline)
+  - infrastructure/offices/market-intel/task.sh
+providers: []          # tier-0 (KIMI) solo para el supervisor hermes --oneshot
+default_model: kimi
+budget_daily:
+  credits: 0
+  usd: 0
+cadence: "0 9 * * *"
+isolation: docker       # construida K9, docker-compose.yml + Dockerfile + task.sh reales
+never: [publicar, pagar, tocar_env, aprobar_gates, colocar_orden, ejecutar_trade, comprar_inventario, tocar_broker_port]

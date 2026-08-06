@@ -63,6 +63,11 @@ class Settings(BaseSettings):
     starhome_bridge_hmac_secret: str = Field(
         default="", validation_alias="STARHOME_BRIDGE_HMAC_SECRET"
     )
+    # K9 (plan HERMES-KICKOFF, gaps 12/13) -- hard cap on simultaneously
+    # active Docker offices (cano_hermes/bridge/office_launcher.py). The
+    # whole Docker infra budget (16GB/3CPU) assumes at most 2 offices up at
+    # once alongside Baserow + the F3 sandbox.
+    offices_max_active: int = Field(default=2, ge=1, le=5)
 
     def ensure_directories(self) -> None:
         for path in (

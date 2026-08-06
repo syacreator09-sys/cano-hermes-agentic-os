@@ -9,6 +9,15 @@
 #
 # Bring up: docker compose up -d   (from this directory)
 # Health:   curl -s http://localhost:8085/_health
+#
+# K9 (plan HERMES-KICKOFF): joined to `starhome-net`, the bridge network
+# shared with the 5 offices (infrastructure/offices/docker-compose.yml) so
+# an office worker can reach Baserow's API (e.g. office-market-intel
+# writing to `productos_ugc`, once it has a BASEROW_API_TOKEN -- see K9
+# report) without exposing anything new: `ports:` below is unchanged
+# (still only bound to 127.0.0.1 on the host), and `starhome-net` is a
+# private bridge network, not a public one. Create the network once with
+# ../create-shared-network.sh before the first `up` here.
 services:
   baserow:
     image: baserow/baserow:1.31.1
@@ -21,12 +30,18 @@ services:
       DISABLE_VOLUME_CHECK: "yes"
     ports:
       - "127.0.0.1:8085:80"
+    networks: ["starhome-net"]
     volumes:
       - baserow_data:/baserow/data
     mem_limit: 2g
     cpus: 1.0
     security_opt:
       - no-new-privileges:true
+
+networks:
+  starhome-net:
+    external: true
+    name: starhome-net
 
 volumes:
   baserow_data:

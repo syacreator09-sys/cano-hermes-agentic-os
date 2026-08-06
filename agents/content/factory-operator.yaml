@@ -8,6 +8,14 @@ model_profiles:
 - deepseek-daily
 skills:
 - factory-v5
+# K9 (plan HERMES-KICKOFF): wired the 2 orphan skills from the "auditoría de
+# skills últimos 30 días" that belong to content/office-content. factory-v5
+# above is a thin 11-line stub; factory-v5-contract is the real, evidence-
+# backed skill (smoke-tested 2026-08-06 against factory.py provider-health,
+# documents the known runtime/stage-handlers.yaml gap) -- kept both rather
+# than deleting factory-v5 to avoid touching an unrelated reference.
+- factory-v5-contract
+- adaptive-content-orchestrator
 tools:
 - nexus_search
 - task_events
