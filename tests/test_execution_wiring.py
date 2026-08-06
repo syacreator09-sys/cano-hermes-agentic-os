@@ -23,7 +23,7 @@ from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
 from cano_hermes.domain.enums import RiskLevel, TaskStatus
-from cano_hermes.domain.models import ApprovalRequest, TaskCreate
+from cano_hermes.domain.models import ApprovalRequest, ExecutionResult, TaskCreate
 from cano_hermes.governance.approvals import ApprovalService
 from cano_hermes.governance.budget import BudgetLedger, BudgetService
 from cano_hermes.intelligence.router import ModelRouter
@@ -31,6 +31,7 @@ from cano_hermes.orchestration.conductor import Conductor
 from cano_hermes.orchestration.execution_service import ExecutionService
 from cano_hermes.orchestration.task_engine import TaskEngine
 from cano_hermes.registry.agents import AgentRegistry
+from cano_hermes.runtimes.base import Executor
 from cano_hermes.storage.sqlite import SQLiteStore
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -215,6 +216,214 @@ class ExecutionServiceWiringTests(unittest.TestCase):
             service = ExecutionService(engine, "dry_run", Path(d) / "ws", budget=budget)
             result = asyncio.run(service.run(task.id, "claude-code"))
             self.assertEqual(result.status, "approval_required")
+
+
+class _RecordingExecutor(Executor):
+    """Stands in for a real executor so tests can inspect exactly what
+    ExecutionPacket ExecutionService built, without spawning a subprocess
+    (the `claude`/`codex`/`hermes`/`docker` binaries are actually installed
+    on this machine, so any non-dry_run real executor call here would be a
+    real, billable invocation)."""
+
+    def __init__(self, executor_id: str) -> None:
+        self.id = executor_id
+        self.received_packet = None
+
+    async def execute(self, packet):
+        self.received_packet = packet
+        return ExecutionResult(task_id=packet.task_id, executor=self.id, status="simulated", summary="recorded")
+
+
+class ExecutorDerivationTests(unittest.TestCase):
+    """K1 task 1: executor_id must come from the Conductor's Assignment
+    (task.assigned_agent -> AgentManifest.runtime), not the old two-way
+    domain ternary that ignored the plan entirely."""
+
+    def _engine(self, d: str) -> TaskEngine:
+        return TaskEngine(SQLiteStore(f"sqlite:///{d}/db.sqlite"), Conductor(AgentRegistry(ROOT / "agents"), ModelRouter()))
+
+    def test_executor_id_comes_from_assignment_not_domain_ternary(self):
+        with tempfile.TemporaryDirectory() as d:
+            engine = self._engine(d)
+            task = engine.create(TaskCreate(title="Research pricing", objective="research pricing landscape", domain="research"))
+            planned = engine.plan(task.id)
+            agent = engine.conductor.registry.get(planned.assigned_agent)
+            # research's first active agent (deepseek-analyst) has
+            # runtime "api", which maps to hermes-agent -- NOT claude-code,
+            # which is what the old `"claude-code" if domain in
+            # {research, engineering} else "hermes-agent"` ternary would
+            # have picked for every research task regardless of the plan.
+            self.assertEqual(agent.id, "deepseek-analyst")
+            self.assertEqual(agent.runtime, "api")
+            service = ExecutionService(engine, "dry_run", Path(d) / "ws")
+            result = asyncio.run(service.run(task.id))
+            self.assertEqual(result.executor, "hermes-agent")
+
+    def test_executor_id_falls_back_to_domain_heuristic_when_task_never_planned(self):
+        with tempfile.TemporaryDirectory() as d:
+            engine = self._engine(d)
+            task = engine.create(TaskCreate(title="Ad-hoc engineering task", objective="do something", domain="engineering"))
+            # Deliberately skip engine.plan(task.id): no Assignment exists,
+            # so there is nothing for the new logic to read -- it must fall
+            # back to the pre-K1 domain heuristic instead of crashing.
+            self.assertIsNone(task.assigned_agent)
+            service = ExecutionService(engine, "dry_run", Path(d) / "ws")
+            result = asyncio.run(service.run(task.id))
+            self.assertEqual(result.executor, "claude-code")
+
+    def test_explicit_executor_id_argument_still_wins(self):
+        with tempfile.TemporaryDirectory() as d:
+            engine = self._engine(d)
+            task = engine.create(TaskCreate(title="Research pricing", objective="research pricing", domain="research"))
+            engine.plan(task.id)
+            service = ExecutionService(engine, "dry_run", Path(d) / "ws")
+            result = asyncio.run(service.run(task.id, "container-sandbox"))
+            self.assertEqual(result.executor, "container-sandbox")
+
+
+class PacketMetadataWiringTests(unittest.TestCase):
+    """K1 task 2: metadata/allowed_write_paths must actually reach the
+    ExecutionPacket ExecutionService builds, not just exist as unused
+    dataclass fields."""
+
+    def _engine(self, d: str) -> TaskEngine:
+        return TaskEngine(SQLiteStore(f"sqlite:///{d}/db.sqlite"), Conductor(AgentRegistry(ROOT / "agents"), ModelRouter()))
+
+    def test_metadata_and_allowed_write_paths_reach_the_packet(self):
+        with tempfile.TemporaryDirectory() as d:
+            engine = self._engine(d)
+            task = engine.create(TaskCreate(title="Research pricing", objective="research pricing", domain="research"))
+            engine.plan(task.id)
+            service = ExecutionService(engine, "dry_run", Path(d) / "ws")
+            recorder = _RecordingExecutor("hermes-agent")
+            service.executors["hermes-agent"] = recorder
+            asyncio.run(service.run(task.id))
+
+            packet = recorder.received_packet
+            self.assertIsNotNone(packet)
+            self.assertEqual(packet.metadata.get("agent_id"), "deepseek-analyst")
+            self.assertTrue(packet.metadata.get("route_profile"))
+            self.assertTrue(packet.metadata.get("model"))
+            self.assertTrue(packet.metadata.get("provider"))
+            expected_workspace = Path(d) / "ws" / task.id / "hermes-agent"
+            self.assertEqual(packet.allowed_write_paths, (expected_workspace,))
+
+    def test_metadata_activates_hermes_agent_build_args_override(self):
+        """Feeds the exact metadata shape ExecutionService now builds
+        straight into HermesAgentExecutor.build_args, confirming the
+        overrides already written there (hermes_agent.py:38-43) actually
+        fire once metadata is populated."""
+        from cano_hermes.runtimes.base import ExecutionPacket
+        from cano_hermes.runtimes.hermes_agent import HermesAgentExecutor
+
+        packet = ExecutionPacket(
+            task_id="t-1",
+            objective="do the thing",
+            workspace=Path("/tmp/ws/t-1/hermes-agent"),
+            metadata={"model": "kimi-k2.6", "provider": "moonshot", "toolsets": ["nexus_search", "task_events"]},
+        )
+        args = list(HermesAgentExecutor(mode="supervised").build_args(packet))
+        self.assertIn("--model", args)
+        self.assertEqual(args[args.index("--model") + 1], "kimi-k2.6")
+        self.assertIn("--provider", args)
+        self.assertEqual(args[args.index("--provider") + 1], "moonshot")
+        self.assertIn("--toolsets", args)
+        self.assertEqual(args[args.index("--toolsets") + 1], "nexus_search,task_events")
+
+    def test_metadata_activates_container_sandbox_build_args_override(self):
+        from cano_hermes.runtimes.base import ExecutionPacket
+        from cano_hermes.runtimes.container_sandbox import ContainerSandboxExecutor
+
+        packet = ExecutionPacket(
+            task_id="t-1",
+            objective="do the thing",
+            workspace=Path("/tmp/ws/t-1/container-sandbox"),
+            metadata={"image": "starhome/custom:latest", "command": ["python", "script.py"], "network": "allowlist"},
+        )
+        args = list(ContainerSandboxExecutor(mode="supervised").build_args(packet))
+        self.assertIn("starhome/custom:latest", args)
+        self.assertIn("python", args)
+        self.assertIn("script.py", args)
+        self.assertEqual(args[args.index("--network") + 1], "allowlist")
+
+
+class ExecutionsTableTests(unittest.TestCase):
+    """K1 task 3: a structured `executions` row per run, distinct from the
+    truncated task.summary event TaskEngine already writes."""
+
+    def _engine(self, d: str) -> TaskEngine:
+        return TaskEngine(SQLiteStore(f"sqlite:///{d}/db.sqlite"), Conductor(AgentRegistry(ROOT / "agents"), ModelRouter()))
+
+    def test_run_populates_the_executions_table(self):
+        with tempfile.TemporaryDirectory() as d:
+            engine = self._engine(d)
+            task = engine.create(TaskCreate(title="Sandbox smoke", objective="run isolated command", domain="engineering"))
+            engine.plan(task.id)
+            service = ExecutionService(engine, "dry_run", Path(d) / "ws")
+            result = asyncio.run(service.run(task.id, "container-sandbox"))
+
+            rows = engine.store.get_executions_for_task(task.id)
+            self.assertEqual(len(rows), 1)
+            row = rows[0]
+            self.assertEqual(row["id"], result.execution_id)
+            self.assertEqual(row["task_id"], task.id)
+            self.assertEqual(row["executor"], "container-sandbox")
+            self.assertEqual(row["status"], result.status)
+            self.assertIsInstance(row["metrics"], dict)
+            self.assertIsInstance(row["artifacts"], list)
+            self.assertIsInstance(row["usage"], dict)
+            self.assertTrue(row["started_at"])
+            self.assertTrue(row["finished_at"])
+
+    def test_no_executions_recorded_when_run_is_blocked_for_approval(self):
+        with tempfile.TemporaryDirectory() as d:
+            engine = self._engine(d)
+            task = engine.create(
+                TaskCreate(
+                    title="Publish external content",
+                    objective="Publish a video to the channel",
+                    domain="engineering",
+                    risk=RiskLevel.HIGH,
+                    metadata={"requested_by": "office-content"},
+                )
+            )
+            engine.plan(task.id)
+            service = ExecutionService(engine, "supervised", Path(d) / "ws")
+            result = asyncio.run(service.run(task.id, "claude-code"))
+            self.assertEqual(result.status, "approval_required")
+            self.assertEqual(engine.store.get_executions_for_task(task.id), [])
+
+    def test_claude_code_cost_from_metrics_is_reconciled_against_budget_without_a_usage_file(self):
+        """Mirrors how HermesAgentExecutor's --usage-file is reconciled,
+        but for claude-code, which reports total_cost_usd inline in its
+        parsed stream-json `result` event instead of a sidecar file."""
+        with tempfile.TemporaryDirectory() as d:
+            engine = self._engine(d)
+            task = engine.create(TaskCreate(title="Costed run", objective="do work", domain="engineering"))
+            engine.plan(task.id)
+            budget = BudgetService(engine.store, daily_limit_usd=5.0)
+            service = ExecutionService(engine, "dry_run", Path(d) / "ws", budget=budget)
+
+            class _CostedExecutor(Executor):
+                id = "claude-code"
+
+                async def execute(self, packet):
+                    return ExecutionResult(
+                        task_id=packet.task_id,
+                        executor="claude-code",
+                        status="completed",
+                        summary="done",
+                        metrics={"total_cost_usd": 0.37, "usage": {"input_tokens": 100, "output_tokens": 50}},
+                    )
+
+            service.executors["claude-code"] = _CostedExecutor()
+            asyncio.run(service.run(task.id, "claude-code"))
+
+            today = BudgetService.today()
+            self.assertAlmostEqual(budget.ledger_for(today).spent_usd, 0.37)
+            rows = engine.store.get_executions_for_task(task.id)
+            self.assertEqual(rows[0]["usage"]["total_cost_usd"], 0.37)
+            self.assertEqual(rows[0]["usage"]["usage"]["input_tokens"], 100)
 
 
 class ApprovalApiTests(unittest.TestCase):

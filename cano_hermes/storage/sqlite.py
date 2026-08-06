@@ -6,7 +6,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Iterator
 
-from cano_hermes.domain.models import ApprovalRequest, TaskEvent, TaskRecord
+from cano_hermes.domain.models import ApprovalRequest, ExecutionResult, TaskEvent, TaskRecord
 from cano_hermes.governance.budget import BudgetLedger
 
 
@@ -69,6 +69,19 @@ class SQLiteStore:
                     spent_usd REAL NOT NULL,
                     updated_at TEXT NOT NULL
                 );
+                CREATE TABLE IF NOT EXISTS executions (
+                    id TEXT PRIMARY KEY,
+                    task_id TEXT NOT NULL,
+                    executor TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    summary TEXT NOT NULL,
+                    metrics_json TEXT NOT NULL,
+                    artifacts_json TEXT NOT NULL,
+                    usage_json TEXT NOT NULL,
+                    started_at TEXT NOT NULL,
+                    finished_at TEXT NOT NULL
+                );
+                CREATE INDEX IF NOT EXISTS idx_executions_task ON executions(task_id, started_at);
                 """
             )
 
@@ -141,6 +154,59 @@ class SQLiteStore:
         if row is None:
             return None
         return BudgetLedger(daily_limit_usd=row["daily_limit_usd"], spent_usd=row["spent_usd"])
+
+    def save_execution(self, execution: ExecutionResult, usage: dict | None = None) -> ExecutionResult:
+        """Structured, queryable record of one executor run — the durable
+        counterpart to the truncated `task.execution_id`/`summary` event
+        TaskEngine already writes. `usage` is stored separately from
+        `execution.metrics` because it can be sourced differently per
+        executor (hermes-agent's --usage-file JSON vs. claude-code's parsed
+        stream-json `usage`/`total_cost_usd`), so callers pass it explicitly
+        rather than ExecutionService guessing which metrics keys count."""
+        with self.connect() as db:
+            db.execute(
+                """INSERT INTO executions(
+                    id,task_id,executor,status,summary,metrics_json,artifacts_json,usage_json,started_at,finished_at
+                ) VALUES(?,?,?,?,?,?,?,?,?,?)
+                ON CONFLICT(id) DO UPDATE SET
+                    status=excluded.status, summary=excluded.summary,
+                    metrics_json=excluded.metrics_json, artifacts_json=excluded.artifacts_json,
+                    usage_json=excluded.usage_json, finished_at=excluded.finished_at""",
+                (
+                    execution.execution_id,
+                    execution.task_id,
+                    execution.executor,
+                    execution.status,
+                    execution.summary,
+                    json.dumps(execution.metrics),
+                    json.dumps(execution.artifacts),
+                    json.dumps(usage or {}),
+                    execution.started_at.isoformat(),
+                    execution.finished_at.isoformat(),
+                ),
+            )
+        return execution
+
+    def get_executions_for_task(self, task_id: str) -> list[dict]:
+        with self.connect() as db:
+            rows = db.execute(
+                "SELECT * FROM executions WHERE task_id=? ORDER BY started_at", (task_id,)
+            ).fetchall()
+        return [
+            {
+                "id": row["id"],
+                "task_id": row["task_id"],
+                "executor": row["executor"],
+                "status": row["status"],
+                "summary": row["summary"],
+                "metrics": json.loads(row["metrics_json"]),
+                "artifacts": json.loads(row["artifacts_json"]),
+                "usage": json.loads(row["usage_json"]),
+                "started_at": row["started_at"],
+                "finished_at": row["finished_at"],
+            }
+            for row in rows
+        ]
 
     def add_memory_candidate(self, candidate_id: str, namespace: str, payload: dict) -> None:
         from datetime import datetime, timezone

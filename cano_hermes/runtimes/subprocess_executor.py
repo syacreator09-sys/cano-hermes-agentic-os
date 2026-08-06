@@ -106,16 +106,36 @@ class CommandExecutor(Executor):
                 started_at=started,
                 finished_at=datetime.now(timezone.utc),
             )
+        return self.parse_result(packet, stdout, stderr, process.returncode, started, datetime.now(timezone.utc))
+
+    def parse_result(
+        self,
+        packet: ExecutionPacket,
+        stdout: bytes,
+        stderr: bytes,
+        returncode: int,
+        started: datetime,
+        finished: datetime,
+    ) -> ExecutionResult:
+        """Turn raw subprocess output into an ExecutionResult.
+
+        Only called for a real (non-dry_run) run that actually produced
+        stdout/stderr — timeout/unavailable/dry_run all return earlier in
+        `execute()` and never reach here. Executors whose CLI emits a
+        structured format (e.g. claude-code's stream-json) override this to
+        extract cost/usage/artifacts instead of the flat truncated-text
+        summary built here.
+        """
         output = stdout.decode("utf-8", errors="replace")
         error = stderr.decode("utf-8", errors="replace")
         summary = (output or error or "No output")[-8000:]
         return ExecutionResult(
             task_id=packet.task_id,
             executor=self.id,
-            status="completed" if process.returncode == 0 else "failed",
+            status="completed" if returncode == 0 else "failed",
             summary=summary,
-            exit_code=process.returncode,
+            exit_code=returncode,
             metrics={"stdout_chars": len(output), "stderr_chars": len(error)},
             started_at=started,
-            finished_at=datetime.now(timezone.utc),
+            finished_at=finished,
         )

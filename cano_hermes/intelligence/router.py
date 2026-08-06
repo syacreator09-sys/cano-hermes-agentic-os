@@ -25,6 +25,8 @@ class RouteDecision:
 class ModelRouter:
     def __init__(self, profiles: Iterable[ModelProfile]=DEFAULT_PROFILES) -> None:
         self.profiles=list(profiles)
+    def profile_by_id(self, profile_id: str) -> ModelProfile | None:
+        return next((p for p in self.profiles if p.id == profile_id), None)
     def from_task(self, task: TaskRecord) -> RouteRequest:
         return RouteRequest(domain=task.domain, complexity=int(task.metadata.get("complexity",3)), context_need=int(task.metadata.get("context_need",2)), tools_required=task.domain in {"engineering","operations","content","forge"}, vision_required=bool(task.metadata.get("vision_required",False)), risk=RiskLevel(task.risk), prefer_subscription=bool(task.metadata.get("prefer_subscription",True)), max_cost_tier=int(task.metadata.get("max_cost_tier",5)))
     def route_task(self, task: TaskRecord) -> RouteDecision:

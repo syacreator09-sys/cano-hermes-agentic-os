@@ -16,6 +16,27 @@ from cano_hermes.runtimes.hermes_agent import HermesAgentExecutor
 from cano_hermes.runtimes.openclaw import OpenClawExecutor
 
 
+# AgentManifest.runtime (agents/**/*.yaml `runtime:` field) -> registered
+# Executor id. Not a 1:1 name match by accident in three cases: "hermes" is
+# the manifest spelling of the "hermes-agent" executor; "api" (model-profile
+# tier, e.g. kimi/deepseek/nvidia-NIM agents) also runs through hermes-agent,
+# which reads packet.metadata["model"/"provider"] to pick the right backend
+# (see HermesAgentExecutor.build_args); "browser" maps to openclaw (K10 will
+# give it a dedicated runtime, this is the current stand-in); "python" maps
+# to container-sandbox, the only executor that runs arbitrary local code in
+# an isolated, capability-dropped container rather than shelling out to a
+# specific vendor CLI.
+AGENT_RUNTIME_TO_EXECUTOR: dict[str, str] = {
+    "hermes": "hermes-agent",
+    "api": "hermes-agent",
+    "claude-code": "claude-code",
+    "codex": "codex",
+    "browser": "openclaw",
+    "python": "container-sandbox",
+}
+DEFAULT_EXECUTOR_ID = "hermes-agent"
+
+
 class ExecutionService:
     def __init__(
         self,
@@ -44,9 +65,41 @@ class ExecutionService:
         self.approvals = approvals or ApprovalService(engine.store)
         self.budget = budget or BudgetService(engine.store)
 
+    def _resolve_executor_id(self, task) -> str:
+        """Derive the executor from the Conductor's Assignment
+        (`task.assigned_agent` -> AgentManifest.runtime), instead of the
+        domain-only ternary this replaces. Falls back to that same ternary
+        only when there is no assignment to read yet (task never went
+        through `/api/tasks/{id}/plan`) — an explicit `executor_id` argument
+        to `run()` always wins over both and never reaches this method."""
+        manifest = self.engine.conductor.registry.get(task.assigned_agent) if task.assigned_agent else None
+        if manifest is None:
+            return "claude-code" if task.domain in {"research", "engineering"} else DEFAULT_EXECUTOR_ID
+        mapped = AGENT_RUNTIME_TO_EXECUTOR.get(manifest.runtime, DEFAULT_EXECUTOR_ID)
+        return mapped if mapped in self.executors else DEFAULT_EXECUTOR_ID
+
+    def _build_metadata(self, task) -> dict:
+        """Carry the Conductor/ModelRouter's decision into the
+        ExecutionPacket so runtime-level overrides already written in
+        hermes_agent.py/container_sandbox.py (which read packet.metadata)
+        actually activate instead of being unreachable."""
+        metadata: dict = {}
+        if task.assigned_agent:
+            metadata["agent_id"] = task.assigned_agent
+        if task.route_profile:
+            metadata["route_profile"] = task.route_profile
+            profile = self.engine.conductor.router.profile_by_id(task.route_profile)
+            if profile is not None:
+                metadata["model"] = profile.model
+                metadata["provider"] = profile.provider
+        manifest = self.engine.conductor.registry.get(task.assigned_agent) if task.assigned_agent else None
+        if manifest is not None and manifest.tools:
+            metadata["toolsets"] = list(manifest.tools)
+        return metadata
+
     async def run(self, task_id: str, executor_id: str | None = None) -> ExecutionResult:
         task = self.engine.require(task_id)
-        executor_id = executor_id or ("claude-code" if task.domain in {"research", "engineering"} else "hermes-agent")
+        executor_id = executor_id or self._resolve_executor_id(task)
         decision = self.policy.evaluate("simulate" if self.mode == "dry_run" else "production_write", task.risk)
 
         estimated_cost = task.budget.max_cost_usd
@@ -86,20 +139,40 @@ class ExecutionService:
                 task_id=task.id,
                 objective=task.objective,
                 workspace=workspace,
+                allowed_write_paths=(workspace,),
                 timeout_seconds=task.budget.timeout_seconds,
                 max_turns=task.budget.max_turns,
+                metadata=self._build_metadata(task),
             )
         )
-        # Reconcile whatever this specific run actually cost (e.g.
-        # hermes-agent's --usage-file) against today's ledger. Ingesting by
-        # exact path (not a directory sweep) keeps this exactly-once even
-        # across many task runs — see BudgetService.ingest_workspace for why
-        # a tree-wide sweep is deliberately *not* used here.
+        # Reconcile whatever this specific run actually cost against today's
+        # ledger. Two sources, mutually exclusive in practice by executor:
+        # hermes-agent writes a --usage-file; claude-code reports
+        # total_cost_usd inline in its parsed stream-json `result` event
+        # (ClaudeCodeExecutor.parse_result). Ingesting by exact path/field
+        # (not a directory sweep) keeps this exactly-once even across many
+        # task runs — see BudgetService.ingest_workspace for why a tree-wide
+        # sweep is deliberately *not* used here.
         usage_file = workspace / f"usage-{task.id}.json"
+        usage_payload: dict = {}
         if usage_file.exists():
             self.budget.ingest_usage_file(usage_file)
+            try:
+                usage_payload = json.loads(usage_file.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                usage_payload = {}
+        else:
+            cost = result.metrics.get("total_cost_usd")
+            if isinstance(cost, (int, float)) and cost > 0:
+                self.budget.record_spend(float(cost), force=True)
+        if "usage" in result.metrics:
+            usage_payload["usage"] = result.metrics["usage"]
+        if "total_cost_usd" in result.metrics:
+            usage_payload["total_cost_usd"] = result.metrics["total_cost_usd"]
+
         status = TaskStatus.REVIEW if result.status in {"completed", "simulated"} else TaskStatus.FAILED
         self.engine.transition(task.id, status, executor_id, {"execution_id": result.execution_id, "summary": result.summary[:500]})
+        self.engine.store.save_execution(result, usage=usage_payload)
         return result
 
     def _write_evidence(self, task, executor_id: str, reason: str) -> Path:
