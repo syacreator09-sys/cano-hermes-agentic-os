@@ -17,6 +17,94 @@ contexto de "forja para agentes" del ecosistema Prometeo.
 - **NO instalado, NO desplegado, NO conectado a ningún canal real** — solo clonado para lectura/evaluación. Desplegarlo requeriría: `pnpm install`, cuenta Cloudflare + `wrangler login` (pendiente #1 de Cano, mismo bloqueo que el resto del plan), Cloudflare D1, y una llave de IA propia del bot — nada de eso se hizo aquí.
 - Este clon es la excepción puntual; el resto de repos santmun de este documento sigue sin permiso, sin clonar, sin ejecutar.
 
+### F7c: evaluación técnica (2026-08-06)
+
+**Instalación (sin desplegar, sin credenciales reales):**
+
+- `pnpm install` en `~/repos/forja` — 631 paquetes, lockfile pasa la
+  política de supply-chain de pnpm (731 entradas verificadas). pnpm 11.20
+  bloqueó 7 scripts `postinstall`/`install` nativos por su gate
+  `allowBuilds` (`bufferutil`, `core-js-pure`, `esbuild` ×2, `keccak`,
+  `sharp`, `utf-8-validate`, `workerd`). Se aprobaron los 7 creando
+  `pnpm-workspace.yaml` (archivo nuevo, no existía en el repo) con
+  `allowBuilds: <paquete>: true` — los 7 son tooling nativo estándar
+  (bindings de Cloudflare/esbuild/sharp/ws/keccak), compilación 100% local,
+  sin acción de red ni de despliegue.
+- `pnpm typecheck` (`tsc --noEmit`) → **limpio, sin errores**.
+- `pnpm test` (`vitest run`) → **437/437 tests, 65 archivos, verde**
+  (93.7s). Usa **Miniflare** (workerd embebido, arrancado en
+  `test/helpers/miniflareSetup.ts` con el schema real de D1) más stubs
+  propios de `cloudflare:workers`/`cloudflare:email` (`test/stubs/`,
+  confirmado en `vitest.config.ts`) — **ninguna cuenta de Cloudflare real,
+  ninguna llave de IA real, ninguna credencial de canal real.**
+- No se corrió `wrangler dev`, `wrangler deploy`, `wrangler login`, ni
+  ningún comando que toque una cuenta Cloudflare real — cero contacto con
+  infraestructura real, tal como pidió Cano.
+- No se tocó `member/` (datos del negocio del usuario final, protegidos por
+  el propio `CLAUDE.md` del repo) ni se creó `.bot-state.json` (el marcador
+  de "ya instalado" del skill `/configurar-mi-chatbot`).
+
+**Arquitectura real (lectura de `src/`, `cli/`, `skill/`, `docs/`):**
+
+- Cloudflare Worker (Hono) con un **Durable Object por conversación**
+  (`env.AGENT.idFromName(`${channel}:${channelUserId}`)`, en `src/index.ts`)
+  — aísla el estado de cada cliente sin colisión entre canales.
+- **Adaptador uniforme por canal** (`src/channels/shared.ts`, interfaz
+  `ChannelAdapter` con `parseIncoming`/`sendReply`/`showTyping`) implementado
+  para Telegram, ManyChat, Twilio (WhatsApp), Meta oficial (Messenger +
+  Instagram DMs) y WhatsApp Cloud API — cada webhook normaliza a un mismo
+  `IncomingMessage` antes de tocar al agente.
+- Verificación de firma fail-closed en los webhooks de Meta/WhatsApp
+  (`x-hub-signature-256`), anti-duplicado explícito entre Instagram-oficial
+  y ManyChat (evita procesar el mismo DM dos veces cuando ambos canales
+  están activos), RAG sobre Vectorize (`src/tools/searchKb.ts`),
+  transcripción de notas de voz (`src/media/transcribe.ts`), y
+  **escalamiento humano** vía la tool `handoffHuman`
+  (`src/tools/handoffHuman.ts`: crea ticket en D1 + notifica al dueño por
+  Telegram/email, con estado visible en `/admin`).
+- Cron diario (`scheduled()` en `src/index.ts`): purga de mensajes (90
+  días), analizador de insights, "flywheel" (`src/flywheel/`: detecta
+  huecos de KB / lecciones de takeovers humanos y propone mejoras, con un
+  modo "copiloto" que las auto-aplica si son seguras) y watchdog (avisa al
+  dueño si el bot falla en cadena).
+- Multi-LLM vía Vercel AI SDK (`@ai-sdk/anthropic|openai|xai`) con llave
+  propia del operador — el diseño nunca comparte ni requiere credenciales de
+  Hermes/StarHome.
+
+**Recomendación — ¿bot propio, patrón de referencia, o ninguno?**
+
+- **(b) Patrón de referencia para `office-publish` — confirma lo ya
+  documentado, sin necesidad de extraer más código.** El patrón
+  `omnichannel-inbound-routing` (marcado como ya extraído en la tabla de
+  este mismo documento) está fielmente representado en el código real:
+  adaptador uniforme + Durable Object por conversación + normalización +
+  anti-duplicado + escalamiento humano es exactamente el problema que
+  `office-publish` necesita resolver para enrutar entradas multicanal. Esta
+  lectura no cambia el patrón ya capturado; lo que aporta es la confirmación
+  de que funciona en un repo real, con 437 tests en verde, no solo en
+  teoría.
+- **(a) Bot de soporte propio para LUZYA/cass-health/etc. — no por ahora.**
+  Instalarlo de verdad requiere `wrangler login` (pendiente exclusivo de
+  Cano), una cuenta Cloudflare, D1/Vectorize/R2 provisionados, y una llave
+  de IA propia del bot — explícitamente fuera del alcance de esta
+  evaluación. Además, adoptar Forja como bot de soporte dedicado añadiría
+  una segunda pila de infraestructura (Cloudflare Workers + D1) corriendo en
+  paralelo a StarHome nativo por systemd, sin que el caso de uso actual
+  justifique claramente esa duplicación. Si más adelante Cano quiere un bot
+  de soporte real y standalone para un negocio específico (no para el
+  ecosistema Hermes en sí), Forja es una base sólida y probada — pero esa es
+  una decisión de producto nueva, no una consecuencia automática de esta
+  evaluación.
+
+**Cambios dejados en el repo (editable, sin desplegar):**
+
+- `pnpm-workspace.yaml` (nuevo, `allowBuilds: true` para los 7 paquetes
+  nativos) — necesario para que `pnpm install`/`pnpm test` corran sin
+  quedarse bloqueados; no descarga nada de la red que no estuviera ya en el
+  lockfile.
+- `node_modules/` instalado (gitignorado). No se modificó `wrangler.toml`,
+  `.dev.vars`, ni ningún secreto.
+
 Este documento resume lo que hay en `~/repos/cano-ai-command-center` (checkout
 local, rama `feat/factory-v5-upload-campaign-10-day`, **repo externo,
 SOLO LECTURA — nunca se edita**) sobre los 21 repos de `github.com/santmun`

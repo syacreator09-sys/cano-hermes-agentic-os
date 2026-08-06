@@ -66,3 +66,91 @@ llaves porque no aplican al criterio de categoría:
 - **1 evaluado y no clonado** por estar fuera de la categoría del filtro
   (TTS/audio, no video/grabación/docs): `qwen3-tts-api`.
 - **35** fuera de categoría, no evaluados a fondo.
+
+## F7b: dry-run real (2026-08-06)
+
+**Contexto.** F7 ya había corrido `rehearse.ts` (valida selectores/navegación
+con un navegador real, pero **sin grabar video ni generar audio**) contra una
+app fixture de una sola página — resultado documentado en
+`docs/SKILLS_MATRIX.md` (2/2 pasos OK). Esta fase va más allá: corre el
+**pipeline completo real** (TTS → grabación de navegador → ensamblaje FFmpeg)
+y produce un `.mp4` de verdad, para confirmar que la herramienta funciona de
+punta a punta y no solo que sus selectores son válidos.
+
+**Instalación (dentro del propio repo `~/repos/video-docs-builder`, nada
+fuera de él):**
+
+- `npm install` — ya estaba resuelto desde F7 (20 paquetes; Playwright
+  `^1.50.1` declarado, `1.59.1` instalado).
+- `npx playwright install chromium` — el binario ya estaba cacheado en
+  `~/.cache/ms-playwright/`; no se descargó nada nuevo.
+- Piper TTS: `python3 -m venv tools/piper-tts/.venv && pip install piper-tts`
+  (v1.6.0 de PyPI, dentro de un venv aislado **dentro del propio repo** — el
+  Python del sistema en esta máquina es "externally managed" y rechaza `pip
+  install` fuera de un venv). No hizo falta el `espeak-ng` del sistema: la
+  versión instalada de `piper-tts` (proyecto sucesor `OHF-voice/piper1-gpl`)
+  trae el phonemizer embebido, sin depender del binario CLI de espeak-ng.
+- Voz descargada: `es_AR-daniela-high.onnx` (109MB, HuggingFace
+  `rhasspy/piper-voices`) — la misma que documentan `TTS-PROVIDERS.md` y
+  `tools/piper-tts/README.md`.
+- Nota de compatibilidad: `piper-tts` 1.6.0 expone flags con guion
+  (`--length-scale`, `--noise-scale`, `--noise-w-scale`) pero también acepta
+  los alias con guion bajo (`--length_scale`, `--noise_scale`,
+  `--noise_w`) que usan `scripts/generate-audio.ts` y
+  `tools/piper-tts/src/generate.ts` — no hizo falta parchear nada.
+- `.env` en la raíz del repo con `TTS_PROVIDER=piper` (gitignorado, igual que
+  `tools/piper-tts/.venv/` y `tools/piper-tts/voices/*.onnx`) — cero llaves
+  de pago tocadas.
+
+**Fixture usada:** la misma app trivial de una sola página de F7
+(`index.html`: título + botón que cambia un párrafo), servida con
+`python3 -m http.server` en `127.0.0.1`, con su flow de 2 pasos (cada uno
+con narración real en español). No se tocó ninguna app pública ni de
+terceros.
+
+**Pipeline real corrido, paso a paso:**
+
+1. `rehearse.ts` → 2/2 pasos OK (repite la validación de F7, confirma que
+   nada cambió).
+2. `generate-audio.ts` con `TTS_PROVIDER=piper` → **2 clips MP3 generados de
+   verdad** (1.9s + 1.2s) vía Piper local — $0, sin llave de API.
+3. `generate-video.ts` → grabación real de navegador con Playwright/Chromium
+   headless → `.webm` de 4.84s.
+4. `assemble.ts` → FFmpeg mezcla los 2 audios sobre el video y transcodea a
+   H.264/AAC.
+
+**Resultado verificado con `ffprobe`:** `01-click-demo.mp4`, 52KB, **4.45s,
+un stream de video h264 + un stream de audio aac** — un tutorial real
+narrado en español, no un mock ni un placeholder. Costo total: **$0** (Piper
++ Playwright + FFmpeg, 100% local, sin llamadas a API de pago).
+
+**¿Reemplaza o complementa la integración ya existente en Factory V5?**
+**Complementa, no reemplaza.**
+`01-offices/factory-ia-channel-v5/docs/integrations/video-docs-builder.md`
+(command-center, solo lectura) ya documenta un clon **aislado y separado**
+del mismo repo tecnomanu (`tools/external/video-docs-builder/`, con su
+propio `.git`, instalado también como skill local
+`.agents/skills/video-docs-builder`) para un caso de uso específico:
+documentar las apps internas que construye Factory V5 (dashboards, paneles
+de cliente). El clon evaluado aquí (`~/repos/video-docs-builder`, F7 de
+Prometeo) es una instancia independiente del mismo repo open-source, para el
+ecosistema Hermes/StarHome (p. ej., documentar en el futuro el propio
+dashboard de StarHome OS en `:8787` o `hermes dashboard`). Las dos
+instancias:
+
+- Son clones separados con su propio `.git` — no hay dependencia cruzada, no
+  hay riesgo de que uno rompa al otro, y ninguno de los dos se registró como
+  dependencia del otro.
+- Usan la misma estrategia de costo cero (`TTS_PROVIDER=piper`) que la doc de
+  factory-v5 recomienda explícitamente.
+- No se solapan en propósito: factory-v5 la usa para su pipeline editorial
+  adyacente (apps que Factory V5 construye); esta instancia documenta apps
+  propias del ecosistema Hermes/StarHome — nunca el pipeline de contenido de
+  Factory V5.
+
+Lo que esta fase añade y que la doc de factory-v5 todavía no tenía verificado
+explícitamente: una corrida real de punta a punta más allá de `rehearse.ts`
+(que por diseño NO graba video ni genera audio) — confirma que el pipeline
+completo (TTS + grabación + ensamblaje) funciona de verdad en esta máquina,
+con Piper instalado desde cero vía venv, sin tocar nada del sistema ni de
+command-center.
