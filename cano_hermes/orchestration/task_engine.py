@@ -41,6 +41,28 @@ class TaskEngine:
         )
         return task
 
+    def reap_orphaned(self, actor: str = "system") -> list[TaskRecord]:
+        """Fail any task left in RUNNING state by an unclean restart.
+
+        A task can only be RUNNING while a live process is executing it. If the
+        process died (crash, restart, kill -9), the record is orphaned: nothing
+        will ever transition it again. Call this once at startup, before any new
+        work is dispatched, so orphaned tasks don't block downstream logic that
+        assumes RUNNING means "actively being worked".
+        """
+        reaped: list[TaskRecord] = []
+        for task in self.store.list_tasks():
+            if task.status == TaskStatus.RUNNING:
+                reaped.append(
+                    self.transition(
+                        task.id,
+                        TaskStatus.FAILED,
+                        actor,
+                        {"reason": "orphaned-on-restart"},
+                    )
+                )
+        return reaped
+
     def transition(self, task_id: str, status: TaskStatus, actor: str, payload: dict | None = None) -> TaskRecord:
         task = self.require(task_id)
         task.status = status

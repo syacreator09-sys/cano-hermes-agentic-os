@@ -38,6 +38,7 @@ class ForgeCandidateRequest(BaseModel):
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     settings.ensure_directories()
+    engine().reap_orphaned()
     yield
 
 
