@@ -1,0 +1,150 @@
+# Plan Prometeo F11 — the 4 "offices" as on-demand Docker containers.
+#
+# Each office is built from starhome/office-base:latest (build it first:
+# ./build-base.sh) plus its own task.sh. A container does one cycle and
+# exits (no restart policy, no daemon) -- this mirrors "las oficinas se
+# levantan BAJO DEMANDA", not a standing service. Nothing here has a
+# `profiles:` default membership, so `docker compose up` with no flags
+# starts nothing; you must ask for an office by name:
+#
+#   docker compose --profile analytics up --build
+#   docker compose --profile ugc up --build
+#
+# Credential allowlist (mirrors cano_hermes/runtimes/subprocess_executor.py's
+# EXECUTOR_SECRET_ALLOWLIST pattern from F3, at the Docker layer instead of
+# the Python subprocess layer): each office's `environment:` block lists,
+# by name, exactly the secrets it gets -- nothing is bulk-injected via
+# env_file. Values come from ./​.env (compose auto-loads a file literally
+# named .env next to this file for ${VAR} substitution ONLY -- that file is
+# never mounted or copied into any container). Generate it once with
+# ./write-office-env.sh before `up`.
+#
+# Resource budget (hard rule: all Docker infra <= 8GB RAM / 2 CPU, sandbox's
+# own 512m/1cpu from F3 counted separately -- see F11 report):
+#   baserow          2g   / 1.0 cpu   (../baserow/docker-compose.yml)
+#   office-analytics 1g   / 0.2 cpu
+#   office-ugc       1.5g / 0.2 cpu
+#   office-content   1g   / 0.2 cpu
+#   office-publish   1g   / 0.2 cpu
+#   ------------------------------------------
+#   total            6.5g / 1.8 cpu   (1.5g / 0.2cpu margin under budget)
+
+# NOTE: YAML's `<<` merge key only works on mappings, not sequences -- a
+# `- *anchor` item inside a `volumes:` list would nest as a list-within-a-
+# list, which compose rejects. So the 3 hermes mount lines below are
+# repeated verbatim in each service's `volumes:` instead of aliased. Keep
+# them in sync if the mount paths ever change:
+#   - /home/cano/repos/hermes-agent:/home/cano/repos/hermes-agent:ro
+#   - /home/cano/.local/share/uv/python:/home/cano/.local/share/uv/python:ro
+#   - ./common/empty.env:/home/cano/repos/hermes-agent/.env:ro   (masks the
+#     0600 .env hermes_cli's dotenv-load would otherwise crash on)
+
+x-hermes-tier0-env: &hermes-tier0-env
+  HERMES_MODEL: kimi-k2.6
+  HERMES_PROVIDER: kimi
+  HERMES_TOOLSETS: ""
+  KIMI_API_KEY: ${KIMI_API_KEY:?falta KIMI_API_KEY -- correr ./write-office-env.sh}
+  KIMI_BASE_URL: ${KIMI_BASE_URL:?falta KIMI_BASE_URL -- correr ./write-office-env.sh}
+  NVIDIA_API_KEY: ${NVIDIA_NIM_API_KEY:-}
+
+services:
+  office-analytics:
+    build:
+      context: ./analytics
+    image: starhome/office-analytics:latest
+    profiles: ["analytics"]
+    environment:
+      <<: *hermes-tier0-env
+      OFFICE_NAME: analytics
+    volumes:
+      - /home/cano/repos/cano-hermes-agentic-os:/home/cano/repos/cano-hermes-agentic-os:ro
+      - /home/cano/repos/hermes-agent:/home/cano/repos/hermes-agent:ro
+      - /home/cano/.local/share/uv/python:/home/cano/.local/share/uv/python:ro
+      - ./common/empty.env:/home/cano/repos/hermes-agent/.env:ro
+      # StarHome's own .env is 0600, owned by the host user -- this
+      # container runs as uid 10001, not that user, so it can't read it
+      # even though the parent dir is mounted. connection_matrix.py (F2)
+      # only needs to know the *names* it would check, not their values,
+      # so masking with an empty file (same trick as hermes-agent's .env
+      # above) is correct here, not a workaround-around-a-bug: this office
+      # was never supposed to see StarHome's real key material anyway.
+      - ./common/empty.env:/home/cano/repos/cano-hermes-agentic-os/.env:ro
+      # connection_matrix.py (F2, unmodified) hardcodes its own output path
+      # to <repo>/reports/connection-matrix-<date>.md. Rather than patch a
+      # completed F2 script to take a CLI flag it was never given, overlay
+      # just that one subdirectory as writable on top of the otherwise
+      # read-only repo mount above -- everything else in the repo stays ro.
+      - ./data/analytics/reports:/home/cano/repos/cano-hermes-agentic-os/reports:rw
+      - ./data/analytics/output:/office/output:rw
+    mem_limit: 1g
+    cpus: 0.2
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: ["ALL"]
+
+  office-ugc:
+    build:
+      context: ./ugc
+    image: starhome/office-ugc:latest
+    profiles: ["ugc"]
+    environment:
+      <<: *hermes-tier0-env
+      OFFICE_NAME: ugc
+      # Allowlisted for the office's function (scraping/tracking, per F9's
+      # pipeline design) even though today's task.sh doesn't call them yet
+      # -- ugc-commerce-studio's `plan` step is offline/fixture-based.
+      RAPIDAPI_KEY: ${RAPIDAPI_KEY:-}
+      APIFY_API_KEY: ${APIFY_API_KEY:-}
+    volumes:
+      - /home/cano/repos/ugc-commerce-studio:/home/cano/repos/ugc-commerce-studio:ro
+      - /home/cano/repos/hermes-agent:/home/cano/repos/hermes-agent:ro
+      - /home/cano/.local/share/uv/python:/home/cano/.local/share/uv/python:ro
+      - ./common/empty.env:/home/cano/repos/hermes-agent/.env:ro
+      - ./data/ugc/output:/office/output:rw
+    mem_limit: 1.5g
+    cpus: 0.2
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: ["ALL"]
+
+  office-content:
+    build:
+      context: ./content
+    image: starhome/office-content:latest
+    profiles: ["content"]
+    environment:
+      <<: *hermes-tier0-env
+      OFFICE_NAME: content
+    volumes:
+      - /home/cano/repos/factory-ia-channel-v5:/home/cano/repos/factory-ia-channel-v5:ro
+      - /home/cano/repos/hermes-agent:/home/cano/repos/hermes-agent:ro
+      - /home/cano/.local/share/uv/python:/home/cano/.local/share/uv/python:ro
+      - ./common/empty.env:/home/cano/repos/hermes-agent/.env:ro
+      - ./data/content/output:/office/output:rw
+    mem_limit: 1g
+    cpus: 0.2
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: ["ALL"]
+
+  office-publish:
+    build:
+      context: ./publish
+    image: starhome/office-publish:latest
+    profiles: ["publish"]
+    environment:
+      <<: *hermes-tier0-env
+      OFFICE_NAME: publish
+      # No publish credentials here, ever. Do not add UPLOAD_POST_*,
+      # TIKTOK_*, META_*, YOUTUBE_* etc. to this service. Real dispatch is
+      # gated by ApprovalService (F3) outside this container.
+    volumes:
+      - /home/cano/repos/hermes-agent:/home/cano/repos/hermes-agent:ro
+      - /home/cano/.local/share/uv/python:/home/cano/.local/share/uv/python:ro
+      - ./common/empty.env:/home/cano/repos/hermes-agent/.env:ro
+      - ./data/publish/output:/office/output:rw
+    mem_limit: 1g
+    cpus: 0.2
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: ["ALL"]

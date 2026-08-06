@@ -1,0 +1,33 @@
+# Plan Prometeo F11 -- Baserow (self-hosted, free), mirror tables for
+# ApprovalRequest / gastos / productos_ugc / metricas_diarias.
+#
+# All-in-one image (bundles its own Postgres + Redis + Caddy inside a
+# single container) -- simplest thing that fits the "one mem_limit per
+# service" budget rule cleanly, at the cost of everything sharing one
+# 2g/1cpu ceiling. Data persists in a named volume so restarts don't lose
+# the workspace/tables/token.
+#
+# Bring up: docker compose up -d   (from this directory)
+# Health:   curl -s http://localhost:8085/_health
+services:
+  baserow:
+    image: baserow/baserow:1.31.1
+    container_name: starhome-baserow
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      BASEROW_PUBLIC_URL: http://localhost:8085
+      DISABLE_VOLUME_CHECK: "yes"
+    ports:
+      - "127.0.0.1:8085:80"
+    volumes:
+      - baserow_data:/baserow/data
+    mem_limit: 2g
+    cpus: 1.0
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  baserow_data:
+    name: starhome_baserow_data

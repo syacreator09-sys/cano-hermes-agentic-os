@@ -33,3 +33,12 @@ secrets/
 
 # F10 media output — binaries stay local, only reports/ .md + ffprobe text are tracked
 reports/media/
+
+# F11 — Docker infra: office run artifacts (task/hermes output, usage files)
+# and any plaintext secret handoff files stay local, never committed.
+infrastructure/offices/data/*/output/*
+infrastructure/offices/data/*/reports/*
+!infrastructure/offices/data/*/output/.gitkeep
+!infrastructure/offices/data/*/reports/.gitkeep
+infrastructure/baserow/baserow_api_token.txt
+infrastructure/baserow/data/

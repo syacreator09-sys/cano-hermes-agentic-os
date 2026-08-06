@@ -1,0 +1,23 @@
+[Unit]
+Description=StarHome Prometeo — Baserow (self-hosted, F11)
+After=network-online.target
+# NOTE: no Requires=/After=docker.service -- that's a *system* unit and
+# isn't resolvable from a --user manager instance (confirmed: adding it
+# made `systemctl --user start` fail with "Unit docker.service not
+# found"). Same reason starhome-os.service/hermes-gateway.service (the two
+# other --user units already on this machine) don't reference it either.
+# The Docker daemon itself is expected to already be up by the time
+# default.target is reached; docker compose will just fail loudly and this
+# oneshot won't retry on its own if it isn't -- acceptable for a
+# dev/single-operator box, revisit if that ever bites.
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/home/cano/repos/cano-hermes-agentic-os/infrastructure/baserow
+ExecStart=/usr/bin/docker compose up -d
+ExecStop=/usr/bin/docker compose down
+TimeoutStartSec=300
+
+[Install]
+WantedBy=default.target
