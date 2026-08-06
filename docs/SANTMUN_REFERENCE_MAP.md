@@ -3,6 +3,20 @@
 **Fase:** F7 del plan Prometeo · **Generado:** 2026-08-05 · **Tipo:** resumen de
 lectura, sin cambios de código, sin ejecución de nada de santmun.
 
+## Excepción explícita — `santmun/forja` (2026-08-06)
+
+Cano autorizó explícitamente (en conversación, confirmado dos veces) sacar
+de la regla "nunca clonar sin decisión nueva" únicamente el repo
+`santmun/forja` (no el resto de la lista, que sigue en cuarentena). Motivo
+dado por Cano: quiere evaluarlo como chatbot omnicanal self-hosted, en el
+contexto de "forja para agentes" del ecosistema Prometeo.
+
+- **Clonado en `~/repos/forja`** (`git clone https://github.com/santmun/forja.git`).
+- **Licencia confirmada MIT** vía `gh api repos/santmun/forja` (`license.spdx_id: "MIT"`) — pasa el mismo filtro de licencia usado con los repos tecnomanu (F7).
+- Qué es: chatbot de soporte con IA (WhatsApp/Instagram/Telegram/Messenger) self-hosted en Cloudflare Workers (Hono + Cloudflare D1 + Workers AI), con RAG sobre documentos propios, transcripción de notas de voz, handoff humano y panel `/admin`. Dependencias de IA: Claude/OpenAI/xAI vía `@ai-sdk/*` (llave propia del operador, no compartida).
+- **NO instalado, NO desplegado, NO conectado a ningún canal real** — solo clonado para lectura/evaluación. Desplegarlo requeriría: `pnpm install`, cuenta Cloudflare + `wrangler login` (pendiente #1 de Cano, mismo bloqueo que el resto del plan), Cloudflare D1, y una llave de IA propia del bot — nada de eso se hizo aquí.
+- Este clon es la excepción puntual; el resto de repos santmun de este documento sigue sin permiso, sin clonar, sin ejecutar.
+
 Este documento resume lo que hay en `~/repos/cano-ai-command-center` (checkout
 local, rama `feat/factory-v5-upload-campaign-10-day`, **repo externo,
 SOLO LECTURA — nunca se edita**) sobre los 21 repos de `github.com/santmun`
