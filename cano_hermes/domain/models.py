@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, Literal
 from uuid import uuid4
 
 from pydantic import BaseModel, Field, model_validator
 
-from .enums import AgentStatus, ApprovalStatus, RiskLevel, TaskStatus
+from .enums import AgentStatus, ApprovalStatus, OrderStatus, RiskLevel, TaskStatus
 
 
 def utcnow() -> datetime:
@@ -28,6 +28,13 @@ class TaskCreate(BaseModel):
     requested_runtime: str | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)
     budget: Budget = Field(default_factory=Budget)
+    # K5 (plan HERMES-KICKOFF, gap 1): when set, this task is a subtask of
+    # another task OR of an `OrderRecord` (K6 decomposes one order into many
+    # tasks with parent_task_id=order.id -- orders and tasks share the same
+    # id-string namespace convention, so no separate "parent kind" field is
+    # needed). Settable at creation so K6's decompose step can stamp it in
+    # one write instead of create-then-patch.
+    parent_task_id: str | None = None
 
 
 class TaskRecord(TaskCreate):
@@ -142,3 +149,30 @@ class ExecutionResult(BaseModel):
     metrics: dict[str, Any] = Field(default_factory=dict)
     started_at: datetime = Field(default_factory=utcnow)
     finished_at: datetime = Field(default_factory=utcnow)
+
+
+class OrderCreate(BaseModel):
+    """Request shape for `POST /api/orders` -- mirrors the TaskCreate/
+    TaskRecord split so the API never lets a caller set `status`,
+    `subtask_ids` or `aggregate_artifact` directly; those are owned by the
+    engine (K5 forces RECEIVED at creation; K6/K7 own the rest)."""
+
+    objective: str = Field(min_length=3, max_length=10_000)
+    source: Literal["telegram", "cli", "api"]
+    budget: Budget = Field(default_factory=Budget)
+
+
+class OrderRecord(OrderCreate):
+    """One owner request -- "yo mando UNA orden" (plan HERMES-KICKOFF) --
+    that K6 decomposes into `subtask_ids` (TaskRecord.parent_task_id ==
+    this id) and K7 recombines into `aggregate_artifact`. Deliberately
+    thin at K5: no decompose/aggregate logic lives here, only the shape
+    those phases will fill in.
+    """
+
+    id: str = Field(default_factory=lambda: f"order-{uuid4().hex[:12]}")
+    status: OrderStatus = OrderStatus.RECEIVED
+    subtask_ids: list[str] = Field(default_factory=list)
+    aggregate_artifact: str | None = None
+    created_at: datetime = Field(default_factory=utcnow)
+    updated_at: datetime = Field(default_factory=utcnow)

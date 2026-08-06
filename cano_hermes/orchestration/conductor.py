@@ -18,12 +18,47 @@ DOMAIN_TEAMS = {
     "finance": "finance",
 }
 
+# K5 (plan HERMES-KICKOFF, gap 1): team -> hermes kanban profile name that
+# K6's `bridge/kanban_bridge.py` will pass to `hermes kanban add --profile
+# <this>`. Checked before inventing anything: `~/.hermes/profiles/` does not
+# exist on this machine (no named profiles registered yet), and
+# `~/.hermes/kanban.db`'s `tasks.profile` column has no rows to crib real
+# names from either -- so there is nothing "real" to look up for most teams.
+#
+# Where a StarHome team maps unambiguously to one of the 6 Docker offices
+# merged in PR #7 (`offices/*/office.yaml`, this repo) by name/mission, we
+# use that office's name directly -- those ARE real ids, and K9 registering
+# their kanban workers will make them live profiles without touching this
+# map:
+#   - "research"   -> hermes-research  (mission: "radar viral diario ...
+#     transcripts ... para alimentar guiones" == StarHome's research domain)
+#   - "operations" -> hermes-monitor   (mission: "Ojos del sistema: ...
+#     vigilancia" == StarHome's operations domain)
+#
+# Every other team gets a provisional `team-<team>` placeholder: "content"
+# is deliberately NOT pointed at any single office because four of the six
+# (guiones/produccion/distribucion/ugc) all touch content and none is a
+# clean 1:1 match; "engineering", "forge", "governance" and "finance" have
+# no corresponding Docker office at all yet. K6 can use these placeholders
+# as-is (they are valid, stable strings); K9 should replace each with the
+# real `office.yaml` profile id once that team gets its own office.
+TEAM_TO_KANBAN_PROFILE = {
+    "engineering": "team-engineering",
+    "research": "hermes-research",
+    "content": "team-content",
+    "operations": "hermes-monitor",
+    "forge": "team-forge",
+    "governance": "team-governance",
+    "finance": "team-finance",
+}
+
 
 @dataclass(frozen=True)
 class Assignment:
     agent_id: str
     route_profile: str
     rationale: list[str]
+    kanban_profile: str | None = None
 
 
 class Conductor:
@@ -52,4 +87,5 @@ class Conductor:
                 max_cost_tier=int(task.metadata.get("max_cost_tier", 5)),
             )
         )
-        return Assignment(agent.id, route.profile.id, route.reasons)
+        kanban_profile = TEAM_TO_KANBAN_PROFILE.get(team)
+        return Assignment(agent.id, route.profile.id, route.reasons, kanban_profile)

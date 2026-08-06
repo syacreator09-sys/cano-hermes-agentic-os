@@ -13,7 +13,7 @@ from pydantic import BaseModel
 from cano_hermes import __version__, monitoring
 from cano_hermes.config import settings
 from cano_hermes.domain.enums import ApprovalStatus, TaskStatus
-from cano_hermes.domain.models import TaskCreate
+from cano_hermes.domain.models import OrderCreate, OrderRecord, TaskCreate
 from cano_hermes.forge.duplication import DuplicateCandidateError
 from cano_hermes.governance.budget import BudgetService
 from cano_hermes.nexus.context import ContextBuilder
@@ -107,6 +107,33 @@ def plan_task(task_id: str):
 @app.get("/api/tasks/{task_id}/events")
 def task_events(task_id: str):
     return store().list_events(task_id)
+
+
+@app.post("/api/orders", status_code=201)
+def create_order(request: OrderCreate):
+    """K5 -- CRUD-only creation: an order always starts at
+    `OrderStatus.RECEIVED` with no subtasks, regardless of what the caller
+    sends (`OrderCreate` has no `status`/`subtask_ids` fields to smuggle
+    those in). Decomposing it into tasks and dispatching them to Kanban is
+    K6's job, not this endpoint's.
+    """
+    order = OrderRecord(objective=request.objective, source=request.source, budget=request.budget)
+    return store().save_order(order)
+
+
+@app.get("/api/orders/{order_id}")
+def get_order(order_id: str):
+    """K5 -- resolves child tasks via `list_children(order_id)` (matching
+    on `TaskRecord.parent_task_id`) rather than trusting
+    `OrderRecord.subtask_ids`, since nothing populates that field yet
+    (K6/K7 own decomposition and aggregation) -- `list_children` is the
+    live source of truth for "which tasks currently belong to this order."
+    """
+    order = store().get_order(order_id)
+    if order is None:
+        raise HTTPException(status_code=404, detail="Order not found")
+    tasks = store().list_children(order_id)
+    return {**order.model_dump(mode="json"), "tasks": [t.model_dump(mode="json") for t in tasks]}
 
 
 @app.get("/api/agents")

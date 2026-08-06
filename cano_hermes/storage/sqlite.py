@@ -6,7 +6,13 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Iterator
 
-from cano_hermes.domain.models import ApprovalRequest, ExecutionResult, TaskEvent, TaskRecord
+from cano_hermes.domain.models import (
+    ApprovalRequest,
+    ExecutionResult,
+    OrderRecord,
+    TaskEvent,
+    TaskRecord,
+)
 from cano_hermes.governance.budget import BudgetLedger
 
 
@@ -82,6 +88,12 @@ class SQLiteStore:
                     finished_at TEXT NOT NULL
                 );
                 CREATE INDEX IF NOT EXISTS idx_executions_task ON executions(task_id, started_at);
+                CREATE TABLE IF NOT EXISTS orders (
+                    id TEXT PRIMARY KEY,
+                    payload TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                );
                 """
             )
 
@@ -104,6 +116,21 @@ class SQLiteStore:
         with self.connect() as db:
             rows = db.execute("SELECT payload FROM tasks ORDER BY created_at DESC").fetchall()
         return [TaskRecord.model_validate_json(row["payload"]) for row in rows]
+
+    def list_children(self, parent_task_id: str) -> list[TaskRecord]:
+        """K5 -- filters in Python over `list_tasks()` rather than adding a
+        `parent_task_id` column (+ index) to the `tasks` table. Trade-off:
+        an O(n) scan of every task per call instead of an indexed lookup,
+        which is the right call at this volume (this store is sized for
+        dozens/hundreds of tasks, not the row counts where that scan would
+        show up) and it avoids a schema migration on a table whose payload
+        is already the single source of truth -- `save_task`/`get_task`
+        round-trip the full `TaskRecord` JSON blob, so a new field like
+        `parent_task_id` is already readable/writable with zero DDL change.
+        Revisit (add the column + `CREATE INDEX`) if task volume ever grows
+        enough for the scan to matter.
+        """
+        return [t for t in self.list_tasks() if t.parent_task_id == parent_task_id]
 
     def add_event(self, event: TaskEvent) -> TaskEvent:
         with self.connect() as db:
@@ -133,6 +160,29 @@ class SQLiteStore:
         with self.connect() as db:
             rows = db.execute("SELECT payload FROM approvals ORDER BY created_at DESC").fetchall()
         return [ApprovalRequest.model_validate_json(row["payload"]) for row in rows]
+
+    def save_order(self, order: OrderRecord) -> OrderRecord:
+        """Same pattern as `save_task`: `orders.payload` is the full
+        `OrderRecord` JSON blob, so every field (including ones K6/K7 add
+        later) round-trips with zero DDL change."""
+        payload = order.model_dump_json()
+        with self.connect() as db:
+            db.execute(
+                """INSERT INTO orders(id,payload,created_at,updated_at) VALUES(?,?,?,?)
+                ON CONFLICT(id) DO UPDATE SET payload=excluded.payload, updated_at=excluded.updated_at""",
+                (order.id, payload, order.created_at.isoformat(), order.updated_at.isoformat()),
+            )
+        return order
+
+    def get_order(self, order_id: str) -> OrderRecord | None:
+        with self.connect() as db:
+            row = db.execute("SELECT payload FROM orders WHERE id=?", (order_id,)).fetchone()
+        return OrderRecord.model_validate_json(row["payload"]) if row else None
+
+    def list_orders(self) -> list[OrderRecord]:
+        with self.connect() as db:
+            rows = db.execute("SELECT payload FROM orders ORDER BY created_at DESC").fetchall()
+        return [OrderRecord.model_validate_json(row["payload"]) for row in rows]
 
     def save_budget_state(self, day: str, ledger: BudgetLedger) -> BudgetLedger:
         from datetime import datetime, timezone
