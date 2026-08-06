@@ -11,9 +11,11 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from cano_hermes import __version__, monitoring
+from cano_hermes.bridge import kanban_bridge
+from cano_hermes.bridge.kanban_bridge import KanbanBridgeError
 from cano_hermes.config import settings
-from cano_hermes.domain.enums import ApprovalStatus, TaskStatus
-from cano_hermes.domain.models import OrderCreate, OrderRecord, TaskCreate
+from cano_hermes.domain.enums import ApprovalStatus, OrderStatus, TaskStatus
+from cano_hermes.domain.models import OrderCreate, OrderRecord, TaskCreate, TaskEvent
 from cano_hermes.forge.duplication import DuplicateCandidateError
 from cano_hermes.governance.budget import BudgetService
 from cano_hermes.nexus.context import ContextBuilder
@@ -134,6 +136,79 @@ def get_order(order_id: str):
         raise HTTPException(status_code=404, detail="Order not found")
     tasks = store().list_children(order_id)
     return {**order.model_dump(mode="json"), "tasks": [t.model_dump(mode="json") for t in tasks]}
+
+
+@app.post("/api/orders/{order_id}/dispatch")
+def dispatch_order(order_id: str):
+    """K6 -- deliberately an explicit trigger, not automatic inside
+    `POST /api/orders`. The architecture diagram in the plan
+    (`~/.claude/plans/fluffy-twirling-lecun.md`) draws a governance step
+    between order intake and the bridge -- "POST /api/orders -> riesgo/
+    presupuesto/aprobación -> audit ... ▼ aprobada -> KanbanBridge" -- and
+    K12 ("Autonomía gobernada") is explicitly the future phase that decides
+    *when* an order clears that gate automatically. Making dispatch its own
+    endpoint keeps that seam real today (a human, or a future policy
+    engine, calls this once an order is actually approved to spend kanban/
+    worker resources) instead of collapsing intake and dispatch into one
+    step now and having to split them apart again later.
+
+    Only a `RECEIVED` order can be dispatched (409 otherwise) -- this is a
+    one-way, one-time transition; re-dispatching a `DISPATCHED`/`FAILED`
+    order is refused rather than silently creating a second bridge link
+    (the bridge's own `--idempotency-key` already makes the *kanban* side
+    idempotent, but the *order* side still only gets one bridge_links row
+    via `save_bridge_link`'s upsert-on-starhome_id, so a second dispatch
+    attempt against an already-dispatched order would just overwrite that
+    row with nothing new to show for it).
+
+    On success: `bridge_links` row saved, order -> DISPATCHED.
+    On any `KanbanBridgeError` (hermes CLI missing, non-zero exit, timeout,
+    unparseable output): order -> FAILED with the captured error message on
+    an `order.dispatch_failed` event -- never left in RECEIVED/DISPATCHED
+    limbo. FAILED (not BLOCKED) because every failure mode here is a bridge/
+    infrastructure problem the plan's `OrderStatus.FAILED` docstring already
+    covers ("decompose error, all subtasks failed, aggregation error");
+    BLOCKED is reserved for an order genuinely waiting on a human gate,
+    which a subprocess failure is not.
+    """
+    order = store().get_order(order_id)
+    if order is None:
+        raise HTTPException(status_code=404, detail="Order not found")
+    if order.status != OrderStatus.RECEIVED:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Order {order_id} is '{order.status.value}', expected 'received'",
+        )
+
+    try:
+        submission = kanban_bridge.submit_order_to_kanban(order)
+    except KanbanBridgeError as exc:
+        order.status = OrderStatus.FAILED
+        order.updated_at = datetime.now(UTC)
+        store().save_order(order)
+        store().add_event(
+            TaskEvent(
+                task_id=order.id,
+                kind="order.dispatch_failed",
+                actor="kanban-bridge",
+                payload={"error": str(exc)},
+            )
+        )
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+    bridge_link = store().save_bridge_link(order.id, submission.kanban_task_id, submission.board)
+    order.status = OrderStatus.DISPATCHED
+    order.updated_at = datetime.now(UTC)
+    store().save_order(order)
+    store().add_event(
+        TaskEvent(
+            task_id=order.id,
+            kind="order.dispatched",
+            actor="kanban-bridge",
+            payload={"kanban_task_id": submission.kanban_task_id, "board": submission.board},
+        )
+    )
+    return {**order.model_dump(mode="json"), "bridge_link": bridge_link}
 
 
 @app.get("/api/agents")

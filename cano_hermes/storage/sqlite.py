@@ -94,6 +94,14 @@ class SQLiteStore:
                     created_at TEXT NOT NULL,
                     updated_at TEXT NOT NULL
                 );
+                CREATE TABLE IF NOT EXISTS bridge_links (
+                    starhome_id TEXT PRIMARY KEY,
+                    kanban_task_id TEXT NOT NULL,
+                    board TEXT NOT NULL,
+                    created_at TEXT NOT NULL
+                );
+                CREATE INDEX IF NOT EXISTS idx_bridge_links_kanban_task
+                    ON bridge_links(kanban_task_id);
                 """
             )
 
@@ -274,3 +282,60 @@ class SQLiteStore:
                 "INSERT INTO memory_candidates VALUES(?,?,?,?,?)",
                 (candidate_id, namespace, json.dumps(payload), "candidate", datetime.now(timezone.utc).isoformat()),
             )
+
+    def save_bridge_link(self, starhome_id: str, kanban_task_id: str, board: str) -> dict:
+        """K6 -- one row per StarHome id (order or task) that has been
+        dispatched to Kanban, resolvable in both directions:
+        `get_bridge_link_by_starhome_id` (StarHome already knows the id it
+        dispatched) and `get_bridge_link_by_kanban_task_id` (K7's inbound
+        webhook only knows the Kanban task id and needs to find the
+        StarHome side). Upserts on `starhome_id`: a retried dispatch for the
+        same order overwrites its own link rather than erroring, matching
+        the idempotency `kanban_bridge.submit_order_to_kanban` already
+        gets from the CLI's own `--idempotency-key` dedup."""
+        from datetime import datetime, timezone
+
+        created_at = datetime.now(timezone.utc).isoformat()
+        with self.connect() as db:
+            db.execute(
+                """INSERT INTO bridge_links(starhome_id,kanban_task_id,board,created_at) VALUES(?,?,?,?)
+                ON CONFLICT(starhome_id) DO UPDATE SET
+                    kanban_task_id=excluded.kanban_task_id, board=excluded.board""",
+                (starhome_id, kanban_task_id, board, created_at),
+            )
+        return {
+            "starhome_id": starhome_id,
+            "kanban_task_id": kanban_task_id,
+            "board": board,
+            "created_at": created_at,
+        }
+
+    @staticmethod
+    def _bridge_link_row_to_dict(row: sqlite3.Row) -> dict:
+        return {
+            "starhome_id": row["starhome_id"],
+            "kanban_task_id": row["kanban_task_id"],
+            "board": row["board"],
+            "created_at": row["created_at"],
+        }
+
+    def get_bridge_link_by_starhome_id(self, starhome_id: str) -> dict | None:
+        with self.connect() as db:
+            row = db.execute(
+                "SELECT * FROM bridge_links WHERE starhome_id=?", (starhome_id,)
+            ).fetchone()
+        return self._bridge_link_row_to_dict(row) if row is not None else None
+
+    def get_bridge_link_by_kanban_task_id(self, kanban_task_id: str) -> dict | None:
+        """K7 will call this from the inbound webhook handler to resolve a
+        Kanban task lifecycle event back to the StarHome order/task that
+        dispatched it. `kanban_task_id` is not unique-constrained (no
+        current caller writes more than one row per kanban task, but
+        nothing here assumes that either) -- returns the first match by
+        `created_at`."""
+        with self.connect() as db:
+            row = db.execute(
+                "SELECT * FROM bridge_links WHERE kanban_task_id=? ORDER BY created_at LIMIT 1",
+                (kanban_task_id,),
+            ).fetchone()
+        return self._bridge_link_row_to_dict(row) if row is not None else None
