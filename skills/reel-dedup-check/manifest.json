@@ -1,0 +1,12 @@
+{
+  "id": "reel-dedup-check",
+  "version": "0.1.0",
+  "status": "active",
+  "objective": "Bloquear la producción de un reel/video si su producto+canal+fecha ya fue publicado, verificando el ledger real antes de gastar créditos.",
+  "risk": "low",
+  "tests": [
+    "manifest",
+    "procedure-review"
+  ],
+  "progressive_disclosure": true
+}
