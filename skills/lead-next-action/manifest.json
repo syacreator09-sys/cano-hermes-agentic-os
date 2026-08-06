@@ -1,0 +1,9 @@
+{
+  "id": "lead-next-action",
+  "version": "0.3.0",
+  "status": "candidate",
+  "objective": "Recomendar una siguiente acción comercial basada en evidencia.",
+  "risk": "medium",
+  "tests": ["manifest", "procedure-review", "communications-boundary"],
+  "progressive_disclosure": true
+}

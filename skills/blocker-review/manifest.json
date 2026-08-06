@@ -1,0 +1,9 @@
+{
+  "id": "blocker-review",
+  "version": "0.3.0",
+  "status": "candidate",
+  "objective": "Analizar bloqueos y proponer la intervención mínima reversible.",
+  "risk": "medium",
+  "tests": ["manifest", "procedure-review", "approval-boundary"],
+  "progressive_disclosure": true
+}

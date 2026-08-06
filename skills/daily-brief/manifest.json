@@ -1,0 +1,9 @@
+{
+  "id": "daily-brief",
+  "version": "0.3.0",
+  "status": "candidate",
+  "objective": "Generar un panorama diario priorizado y verificable.",
+  "risk": "low",
+  "tests": ["manifest", "procedure-review", "approval-boundary"],
+  "progressive_disclosure": true
+}

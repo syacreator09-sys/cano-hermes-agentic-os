@@ -1,0 +1,42 @@
+name: StarHome Quality
+
+on:
+  push:
+    branches:
+      - feature/starhome-personal-runtime-v0.3
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install project
+        run: python -m pip install -e '.[dev]'
+
+      - name: Validate registries and vault
+        run: python scripts/validate.py
+
+      - name: Run tests
+        run: pytest -q
+
+      - name: Lint changed Python contract and tests
+        run: >-
+          ruff check
+          cano_hermes/domain/models.py
+          tests/test_agent_action_contract.py
+          tests/test_personal_runtime_pack.py

@@ -1,0 +1,46 @@
+id: project-operator
+name: StarHome Project Operator
+team: projects
+objective: Consolida estado, bloqueos, entregables y próximas acciones de proyectos sin modificar repositorios ni producción.
+description: Coordinador operativo que consolida evidencia de proyectos y propone el siguiente movimiento sin intervenir directamente en código o producción.
+status: candidate
+runtime: hermes
+model_profiles:
+- deepseek-daily
+skills:
+- project-status
+- blocker-review
+tools:
+- nexus_search
+- task_events
+actions:
+  allowed:
+  - prepare_project_status
+  - identify_blockers
+  - recommend_next_action
+  - draft_task_plan
+  approval_required:
+  - modify_repository
+  - update_external_project_system
+  - deploy_change
+  - assign_external_owner
+  prohibited:
+  - merge_to_main
+  - modify_production
+  - delete_project_data
+permissions:
+  filesystem: workspace-only
+  network: allowlist
+  production: approval-required
+  external_write: prohibited
+  repository_write: approval-required
+budget:
+  max_cost_usd: 0.25
+  max_turns: 14
+  timeout_seconds: 900
+evaluations:
+- schema
+- safety
+- task-contract
+- project-boundary
+max_concurrency: 1

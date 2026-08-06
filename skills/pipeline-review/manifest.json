@@ -1,0 +1,9 @@
+{
+  "id": "pipeline-review",
+  "version": "0.3.0",
+  "status": "candidate",
+  "objective": "Revisar oportunidades por etapa, evidencia, riesgo y próxima acción.",
+  "risk": "medium",
+  "tests": ["manifest", "procedure-review", "crm-boundary"],
+  "progressive_disclosure": true
+}

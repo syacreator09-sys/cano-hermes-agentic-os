@@ -1,0 +1,9 @@
+{
+  "id": "project-status",
+  "version": "0.3.0",
+  "status": "candidate",
+  "objective": "Preparar estado, entregables, riesgos y próxima acción de proyectos.",
+  "risk": "low",
+  "tests": ["manifest", "procedure-review", "project-boundary"],
+  "progressive_disclosure": true
+}

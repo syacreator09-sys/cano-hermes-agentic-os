@@ -1,0 +1,9 @@
+{
+  "id": "cash-position",
+  "version": "0.3.0",
+  "status": "candidate",
+  "objective": "Calcular efectivo disponible y comprometido por entidad.",
+  "risk": "medium",
+  "tests": ["manifest", "procedure-review", "reconciliation-review"],
+  "progressive_disclosure": true
+}

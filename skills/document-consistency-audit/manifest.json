@@ -1,0 +1,9 @@
+{
+  "id": "document-consistency-audit",
+  "version": "0.3.0",
+  "status": "candidate",
+  "objective": "Auditar consistencia y evidencia sin modificar documentos fuente.",
+  "risk": "medium",
+  "tests": ["manifest", "procedure-review", "evidence-preservation"],
+  "progressive_disclosure": true
+}
