@@ -1,0 +1,27 @@
+id: improver
+name: Improver
+team: governance
+objective: Toma los aprendizajes de Nexus (de analytics-learner y evaluator) y propone skills o plantillas nuevas al Forge, siempre en cuarentena, nunca activándolas él mismo.
+status: candidate
+runtime: hermes
+model_profiles:
+- kimi-office
+skills:
+- skill-authoring
+- nexus-context
+tools:
+- nexus_search
+- task_events
+permissions:
+  filesystem: workspace-only
+  network: none
+  production: approval-required
+budget:
+  max_cost_usd: 0.3
+  max_turns: 12
+  timeout_seconds: 900
+evaluations:
+- schema
+- safety
+- task-contract
+max_concurrency: 1

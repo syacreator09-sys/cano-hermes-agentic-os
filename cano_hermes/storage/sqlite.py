@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Iterator
 
 from cano_hermes.domain.models import ApprovalRequest, TaskEvent, TaskRecord
+from cano_hermes.governance.budget import BudgetLedger
 
 
 class SQLiteStore:
@@ -60,6 +61,12 @@ class SQLiteStore:
                     status TEXT NOT NULL,
                     created_at TEXT NOT NULL
                 );
+                CREATE TABLE IF NOT EXISTS budget_ledger (
+                    day TEXT PRIMARY KEY,
+                    daily_limit_usd REAL NOT NULL,
+                    spent_usd REAL NOT NULL,
+                    updated_at TEXT NOT NULL
+                );
                 """
             )
 
@@ -111,6 +118,27 @@ class SQLiteStore:
         with self.connect() as db:
             rows = db.execute("SELECT payload FROM approvals ORDER BY created_at DESC").fetchall()
         return [ApprovalRequest.model_validate_json(row["payload"]) for row in rows]
+
+    def save_budget_state(self, day: str, ledger: BudgetLedger) -> BudgetLedger:
+        from datetime import datetime, timezone
+
+        with self.connect() as db:
+            db.execute(
+                """INSERT INTO budget_ledger(day,daily_limit_usd,spent_usd,updated_at) VALUES(?,?,?,?)
+                ON CONFLICT(day) DO UPDATE SET daily_limit_usd=excluded.daily_limit_usd,
+                    spent_usd=excluded.spent_usd, updated_at=excluded.updated_at""",
+                (day, ledger.daily_limit_usd, ledger.spent_usd, datetime.now(timezone.utc).isoformat()),
+            )
+        return ledger
+
+    def get_budget_state(self, day: str) -> BudgetLedger | None:
+        with self.connect() as db:
+            row = db.execute(
+                "SELECT daily_limit_usd, spent_usd FROM budget_ledger WHERE day=?", (day,)
+            ).fetchone()
+        if row is None:
+            return None
+        return BudgetLedger(daily_limit_usd=row["daily_limit_usd"], spent_usd=row["spent_usd"])
 
     def add_memory_candidate(self, candidate_id: str, namespace: str, payload: dict) -> None:
         from datetime import datetime, timezone

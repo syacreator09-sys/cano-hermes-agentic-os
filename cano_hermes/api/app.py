@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
 
 from cano_hermes import __version__
 from cano_hermes.config import settings
@@ -13,7 +14,12 @@ from cano_hermes.domain.models import TaskCreate
 from cano_hermes.nexus.context import ContextBuilder
 from cano_hermes.nexus.graph import KnowledgeGraph
 from cano_hermes.nexus.markdown import MarkdownVault
-from .dependencies import engine, registry, store
+from .dependencies import approvals, engine, execution_service, registry, store
+
+
+class ApprovalResolution(BaseModel):
+    approved: bool
+    actor: str
 
 
 @asynccontextmanager
@@ -72,8 +78,26 @@ def list_agents():
 
 
 @app.get("/api/approvals")
-def approvals():
+def list_approvals():
     return store().list_approvals()
+
+
+@app.post("/api/approvals/{approval_id}/resolve")
+def resolve_approval(approval_id: str, request: ApprovalResolution):
+    try:
+        return approvals().resolve(approval_id, request.approved, request.actor)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Approval not found") from exc
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+
+
+@app.post("/api/tasks/{task_id}/execute")
+async def execute_task(task_id: str, executor_id: str | None = None):
+    try:
+        return await execution_service().run(task_id, executor_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Task not found") from exc
 
 
 @app.get("/api/nexus/search")

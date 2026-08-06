@@ -1,12 +1,16 @@
 {
   "id": "container-sandbox",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "status": "active",
-  "objective": "Crear contenedor rootless limitado.",
+  "objective": "Ejecutar tareas en contenedor Docker rootless, efimero y sin socket de Docker.",
   "risk": "low",
+  "executor": "cano_hermes.runtimes.container_sandbox.ContainerSandboxExecutor",
+  "worker_image": "skills/container-sandbox/worker/Dockerfile",
   "tests": [
     "manifest",
-    "procedure-review"
+    "procedure-review",
+    "tests/test_container_sandbox.py"
   ],
-  "progressive_disclosure": true
+  "progressive_disclosure": true,
+  "notes": "Registrado en ExecutionService.executors['container-sandbox'] (cano_hermes/orchestration/execution_service.py). Imagen starhome/sandbox-worker:latest construida y verificada (usuario 10001:10001, sin red, sin socket Docker). Propiedades de seguridad cubiertas por tests/test_container_sandbox.py sin requerir Docker en vivo."
 }

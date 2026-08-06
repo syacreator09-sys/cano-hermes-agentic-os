@@ -1,0 +1,25 @@
+id: cost-controller
+name: Cost Controller
+team: governance
+objective: Reconcilia el --usage-file de cada ejecución de oficina contra el presupuesto diario. Alerta a Cano antes de que una oficina agote su cuota, nunca gasta por su cuenta.
+status: candidate
+runtime: hermes
+model_profiles:
+- kimi-office
+skills:
+- budget-routing
+tools:
+- task_events
+permissions:
+  filesystem: workspace-only
+  network: none
+  production: approval-required
+budget:
+  max_cost_usd: 0.1
+  max_turns: 6
+  timeout_seconds: 300
+evaluations:
+- schema
+- safety
+- task-contract
+max_concurrency: 1

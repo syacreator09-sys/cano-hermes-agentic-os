@@ -16,10 +16,12 @@ storage/*.sqlite*
 storage/logs/*
 storage/artifacts/*
 storage/worktrees/*
+storage/workspaces/*
 !storage/.gitkeep
 !storage/logs/.gitkeep
 !storage/artifacts/.gitkeep
 !storage/worktrees/.gitkeep
+!storage/workspaces/.gitkeep
 vault/.obsidian/workspace*.json
 vault/00-inbox/private/
 secrets/
