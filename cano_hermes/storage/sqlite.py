@@ -187,26 +187,35 @@ class SQLiteStore:
             )
         return execution
 
+    @staticmethod
+    def _execution_row_to_dict(row: sqlite3.Row) -> dict:
+        return {
+            "id": row["id"],
+            "task_id": row["task_id"],
+            "executor": row["executor"],
+            "status": row["status"],
+            "summary": row["summary"],
+            "metrics": json.loads(row["metrics_json"]),
+            "artifacts": json.loads(row["artifacts_json"]),
+            "usage": json.loads(row["usage_json"]),
+            "started_at": row["started_at"],
+            "finished_at": row["finished_at"],
+        }
+
     def get_executions_for_task(self, task_id: str) -> list[dict]:
         with self.connect() as db:
             rows = db.execute(
                 "SELECT * FROM executions WHERE task_id=? ORDER BY started_at", (task_id,)
             ).fetchall()
-        return [
-            {
-                "id": row["id"],
-                "task_id": row["task_id"],
-                "executor": row["executor"],
-                "status": row["status"],
-                "summary": row["summary"],
-                "metrics": json.loads(row["metrics_json"]),
-                "artifacts": json.loads(row["artifacts_json"]),
-                "usage": json.loads(row["usage_json"]),
-                "started_at": row["started_at"],
-                "finished_at": row["finished_at"],
-            }
-            for row in rows
-        ]
+        return [self._execution_row_to_dict(row) for row in rows]
+
+    def get_execution(self, execution_id: str) -> dict | None:
+        """K3 -- single-row lookup backing `GET /api/executions/{id}`, so a
+        caller that enqueued a run through `QueueService` can poll it by the
+        id it got back at enqueue time instead of scanning by task."""
+        with self.connect() as db:
+            row = db.execute("SELECT * FROM executions WHERE id=?", (execution_id,)).fetchone()
+        return self._execution_row_to_dict(row) if row is not None else None
 
     def add_memory_candidate(self, candidate_id: str, namespace: str, payload: dict) -> None:
         from datetime import datetime, timezone

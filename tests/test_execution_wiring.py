@@ -14,7 +14,6 @@ from __future__ import annotations
 
 import asyncio
 import json
-import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -456,6 +455,7 @@ class ApprovalApiTests(unittest.TestCase):
         dependencies.approvals.cache_clear()
         dependencies.budget.cache_clear()
         dependencies.execution_service.cache_clear()
+        dependencies.queue_service.cache_clear()
         from cano_hermes.api.app import app
 
         self.client = TestClient(app)
@@ -473,48 +473,76 @@ class ApprovalApiTests(unittest.TestCase):
         dependencies.approvals.cache_clear()
         dependencies.budget.cache_clear()
         dependencies.execution_service.cache_clear()
+        dependencies.queue_service.cache_clear()
 
     def test_execute_endpoint_triggers_approval_flow_and_resolve_blocks_self_approval(self):
-        created = self.client.post(
-            "/api/tasks",
-            json={
-                "title": "Deploy the office",
-                "objective": "Deploy a production change",
-                "domain": "engineering",
-                "risk": "critical",
-                "metadata": {"requested_by": "office-content"},
-            },
-        )
-        self.assertEqual(created.status_code, 200)
-        task_id = created.json()["id"]
-        self.client.post(f"/api/tasks/{task_id}/plan")
-
+        # K3: /execute is now async (202 + enqueue) instead of running
+        # inline. `with TestClient(app) as client:` (rather than
+        # `self.client`, which never sends the lifespan startup event)
+        # guarantees QueueService's worker loop is actually running so the
+        # enqueued request gets drained instead of sitting "pending"
+        # forever.
         from cano_hermes.api import dependencies
+        from cano_hermes.api.app import app
 
-        dependencies.execution_service().mode = "supervised"
-        dependencies.execution_service().policy.execution_mode = "supervised"
+        with TestClient(app) as client:
+            created = client.post(
+                "/api/tasks",
+                json={
+                    "title": "Deploy the office",
+                    "objective": "Deploy a production change",
+                    "domain": "engineering",
+                    "risk": "critical",
+                    "metadata": {"requested_by": "office-content"},
+                },
+            )
+            self.assertEqual(created.status_code, 200)
+            task_id = created.json()["id"]
+            client.post(f"/api/tasks/{task_id}/plan")
 
-        executed = self.client.post(f"/api/tasks/{task_id}/execute")
-        self.assertEqual(executed.status_code, 200)
-        self.assertEqual(executed.json()["status"], "approval_required")
+            dependencies.execution_service().mode = "supervised"
+            dependencies.execution_service().policy.execution_mode = "supervised"
 
-        approvals_list = self.client.get("/api/approvals").json()
-        self.assertEqual(len(approvals_list), 1)
-        approval_id = approvals_list[0]["id"]
+            executed = client.post(f"/api/tasks/{task_id}/execute")
+            self.assertEqual(executed.status_code, 202)
+            execution_id = executed.json()["execution_id"]
+            self.assertEqual(executed.json()["status"], "pending")
 
-        # nobody approves their own request, enforced through the HTTP layer
-        self_resolve = self.client.post(
-            f"/api/approvals/{approval_id}/resolve",
-            json={"approved": True, "actor": "office-content"},
-        )
-        self.assertEqual(self_resolve.status_code, 403)
+            state = self._poll_execution_state(client, execution_id, {"approval_required"})
+            self.assertEqual(state["status"], "approval_required")
 
-        other_resolve = self.client.post(
-            f"/api/approvals/{approval_id}/resolve",
-            json={"approved": True, "actor": "cano"},
-        )
-        self.assertEqual(other_resolve.status_code, 200)
-        self.assertEqual(other_resolve.json()["status"], "approved")
+            approvals_list = client.get("/api/approvals").json()
+            self.assertEqual(len(approvals_list), 1)
+            approval_id = approvals_list[0]["id"]
+
+            # nobody approves their own request, enforced through the HTTP layer
+            self_resolve = client.post(
+                f"/api/approvals/{approval_id}/resolve",
+                json={"approved": True, "actor": "office-content"},
+            )
+            self.assertEqual(self_resolve.status_code, 403)
+
+            other_resolve = client.post(
+                f"/api/approvals/{approval_id}/resolve",
+                json={"approved": True, "actor": "cano"},
+            )
+            self.assertEqual(other_resolve.status_code, 200)
+            self.assertEqual(other_resolve.json()["status"], "approved")
+
+    @staticmethod
+    def _poll_execution_state(client, execution_id: str, terminal_statuses: set, timeout: float = 5.0) -> dict:
+        import time
+
+        deadline = time.monotonic() + timeout
+        last = None
+        while time.monotonic() < deadline:
+            response = client.get(f"/api/executions/{execution_id}")
+            if response.status_code == 200:
+                last = response.json()
+                if last["status"] in terminal_statuses:
+                    return last
+            time.sleep(0.02)
+        raise AssertionError(f"execution {execution_id} never reached {terminal_statuses}, last seen: {last}")
 
     def test_resolve_unknown_approval_is_404(self):
         response = self.client.post(

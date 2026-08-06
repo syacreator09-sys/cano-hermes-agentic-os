@@ -202,8 +202,11 @@ class ForgeApiTests(unittest.TestCase):
         # settings is a module-level singleton read at import time; rebuild it
         # against the env vars just set, mirroring how the other API tests
         # reset dependencies.* lru_caches per test.
+        import cano_hermes.api.app as app_module
         import cano_hermes.config as config_module
         from cano_hermes.api import dependencies
+
+        self._original_settings = config_module.settings
 
         config_module.settings = config_module.Settings()
         dependencies.settings = config_module.settings
@@ -213,9 +216,8 @@ class ForgeApiTests(unittest.TestCase):
         dependencies.approvals.cache_clear()
         dependencies.budget.cache_clear()
         dependencies.execution_service.cache_clear()
+        dependencies.queue_service.cache_clear()
         dependencies.forge_pipeline.cache_clear()
-
-        import cano_hermes.api.app as app_module
 
         app_module.settings = config_module.settings
         self.client = TestClient(app_module.app)
@@ -231,6 +233,30 @@ class ForgeApiTests(unittest.TestCase):
             "HERMES_EXECUTION_MODE",
         ):
             os.environ.pop(var, None)
+
+        # Undo the module-level `settings` swap from setUp -- left in place,
+        # every dependencies.*() singleton constructed by *any later test in
+        # the whole process* would silently resolve against this test's
+        # already-deleted temp directories (e.g. AgentRegistry finding zero
+        # agents instead of this repo's real `agents/` tree) instead of the
+        # real ones. This bug pre-dates K3; K3's test suite is what surfaced
+        # it, since it's the first to exercise dependencies.engine()/
+        # registry() through HTTP for a test class that runs after this one.
+        import cano_hermes.api.app as app_module
+        import cano_hermes.config as config_module
+        from cano_hermes.api import dependencies
+
+        config_module.settings = self._original_settings
+        dependencies.settings = self._original_settings
+        app_module.settings = self._original_settings
+        dependencies.store.cache_clear()
+        dependencies.registry.cache_clear()
+        dependencies.engine.cache_clear()
+        dependencies.approvals.cache_clear()
+        dependencies.budget.cache_clear()
+        dependencies.execution_service.cache_clear()
+        dependencies.queue_service.cache_clear()
+        dependencies.forge_pipeline.cache_clear()
 
     def test_propose_agent_endpoint_reaches_pending_approval(self):
         response = self.client.post(

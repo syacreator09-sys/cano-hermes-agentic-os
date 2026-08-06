@@ -19,7 +19,6 @@ from cano_hermes.runtimes.locks import WriteLockManager
 from cano_hermes.runtimes.openclaw import OpenClawExecutor
 from cano_hermes.runtimes.worktrees import SAFE_NAME, WorktreeManager
 
-
 # AgentManifest.runtime (agents/**/*.yaml `runtime:` field) -> registered
 # Executor id. Not a 1:1 name match by accident in three cases: "hermes" is
 # the manifest spelling of the "hermes-agent" executor; "api" (model-profile
@@ -171,7 +170,16 @@ class ExecutionService:
             metadata["toolsets"] = list(manifest.tools)
         return metadata
 
-    async def run(self, task_id: str, executor_id: str | None = None) -> ExecutionResult:
+    async def run(self, task_id: str, executor_id: str | None = None, execution_id: str | None = None) -> ExecutionResult:
+        """`execution_id`, when given, pins the `ExecutionResult.execution_id`
+        this run produces instead of letting `ExecutionResult`'s own
+        `default_factory` mint a random one. K3's `QueueService` uses this to
+        let a caller learn the execution's id *before* the run finishes (at
+        enqueue time) and poll `GET /api/executions/{id}` for it -- every
+        write path below (the approval-required early return, and the
+        normal-completion save further down) is threaded to honor it. Every
+        pre-K3 caller omits it and gets the exact same auto-generated-id
+        behavior as before."""
         task = self.engine.require(task_id)
         executor_id = executor_id or self._resolve_executor_id(task)
         decision = self.policy.evaluate("simulate" if self.mode == "dry_run" else "production_write", task.risk)
@@ -197,13 +205,16 @@ class ExecutionService:
                     evidencia=str(evidence_path),
                 )
             )
-            return ExecutionResult(
+            blocked_result = ExecutionResult(
                 task_id=task.id,
                 executor=executor_id,
                 status="approval_required",
                 summary=reason,
                 metrics={"approval_id": approval.id},
             )
+            if execution_id is not None:
+                blocked_result.execution_id = execution_id
+            return blocked_result
 
         executor = self.executors[executor_id]
         # Engineering-domain tasks get an isolated git worktree instead of
@@ -236,6 +247,8 @@ class ExecutionService:
         result = await self._run_locked(
             lock_target, f"{executor_id}:{task.id}", lambda: executor.execute(packet)
         )
+        if execution_id is not None:
+            result.execution_id = execution_id
         # Reconcile whatever this specific run actually cost against today's
         # ledger. Two sources, mutually exclusive in practice by executor:
         # hermes-agent writes a --usage-file; claude-code reports

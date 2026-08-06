@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from pathlib import Path
-from contextlib import asynccontextmanager
 from typing import Any
 
 from fastapi import FastAPI, HTTPException
@@ -19,7 +19,16 @@ from cano_hermes.governance.budget import BudgetService
 from cano_hermes.nexus.context import ContextBuilder
 from cano_hermes.nexus.graph import KnowledgeGraph
 from cano_hermes.nexus.markdown import MarkdownVault
-from .dependencies import approvals, budget, engine, execution_service, forge_pipeline, registry, store
+
+from .dependencies import (
+    approvals,
+    budget,
+    engine,
+    forge_pipeline,
+    queue_service,
+    registry,
+    store,
+)
 
 
 class ApprovalResolution(BaseModel):
@@ -44,7 +53,16 @@ class ForgeCandidateRequest(BaseModel):
 async def lifespan(_app: FastAPI):
     settings.ensure_directories()
     engine().reap_orphaned()
-    yield
+    # K3: the worker loop that actually drains QueueService's queue lives for
+    # the app's lifetime, started here alongside the K0 startup reaper (which
+    # stays as the immediate once-at-boot pass; QueueService's own reaper
+    # loop then repeats that same reap_orphaned() periodically while the app
+    # keeps running).
+    await queue_service().start()
+    try:
+        yield
+    finally:
+        await queue_service().stop()
 
 
 app = FastAPI(title="Cano Hermes OS", version=__version__, lifespan=lifespan)
@@ -111,12 +129,37 @@ def resolve_approval(approval_id: str, request: ApprovalResolution):
         raise HTTPException(status_code=403, detail=str(exc)) from exc
 
 
-@app.post("/api/tasks/{task_id}/execute")
+_RAW_TO_STATE = {
+    "pending": "pending",
+    "running": "running",
+    "completed": "done",
+    "simulated": "done",
+    "failed": "failed",
+    "approval_required": "approval_required",
+}
+
+
+@app.post("/api/tasks/{task_id}/execute", status_code=202)
 async def execute_task(task_id: str, executor_id: str | None = None):
-    try:
-        return await execution_service().run(task_id, executor_id)
-    except KeyError as exc:
-        raise HTTPException(status_code=404, detail="Task not found") from exc
+    """K3: no longer runs the executor inline and blocks the request until it
+    finishes (up to the full 24h timeout) -- enqueues onto `QueueService` and
+    returns immediately. The task-existence check stays synchronous (still a
+    404 for an unknown id) since that's a cheap, meaningful pre-check;
+    everything past it (governance, executor dispatch, the actual run) now
+    happens on the worker loop. Poll `GET /api/executions/{execution_id}`
+    for progress."""
+    if store().get_task(task_id) is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+    execution_id = await queue_service().enqueue(task_id, executor_id)
+    return {"execution_id": execution_id, "task_id": task_id, "status": "pending"}
+
+
+@app.get("/api/executions/{execution_id}")
+def get_execution(execution_id: str):
+    row = store().get_execution(execution_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="Execution not found")
+    return {**row, "state": _RAW_TO_STATE.get(row["status"], row["status"])}
 
 
 @app.post("/api/tasks/{task_id}/complete")
