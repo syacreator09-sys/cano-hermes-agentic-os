@@ -9,9 +9,19 @@ contra el vault de credenciales.
 
 No toca cano-ai-command-center (solo lectura). No hace red salvo los dos
 GET gratuitos descritos en el plan. No imprime valores de llaves.
+
+F13 (plan Prometeo) añadió `compute_and_render()` + `--json`: el resto del
+módulo (parseo, matriz, reporte markdown) es exactamente el de F2, sin
+tocar. `compute_and_render()` factoriza lo que `main()` ya hacía en una
+función que además escribe un espejo JSON del resumen junto al `.md`
+(`reports/connection-matrix-<fecha>.json`), para que `daily_cycle.py` y
+`GET /api/dashboard` puedan leer "la última matriz" sin reinvocar red ni
+reparsear el markdown.
 """
 from pathlib import Path
 from urllib import request, error
+import argparse
+import json
 import re
 import socket
 import datetime
@@ -283,7 +293,11 @@ def render_report(rows, parsed, apify_result, rapidapi_result, apify_presence, o
     return totals_by_system, totals_overall
 
 
-def main():
+def compute_and_render() -> dict:
+    """Runs the full F2 audit, writes the markdown report (unchanged shape)
+    plus a JSON mirror next to it, and returns the same summary dict as a
+    Python object -- the shared entry point for the CLI, `daily_cycle.py`,
+    and `GET /api/dashboard`."""
     rows, parsed = build_matrix()
 
     vault_exists, vault_active, _ = parse_env(VAULT_PATH)
@@ -297,11 +311,46 @@ def main():
         rows, parsed, apify_result, rapidapi_result, apify_result[3], out_path
     )
 
-    print(f"reporte: {out_path}")
-    print(f"totales: ✓{totals_overall['✓']} "
-          f"✗{totals_overall['✗']} —{totals_overall['—']}")
-    print(f"apify: {apify_result[0]} — {apify_result[1]}")
-    print(f"rapidapi: {rapidapi_result[0]} — {rapidapi_result[1]}")
+    summary = {
+        "date": today,
+        "report_path": str(out_path),
+        "systems": {
+            sysname: {
+                "found": parsed[sysname][0],
+                "counts": totals_by_system[sysname],
+            }
+            for sysname, _ in SYSTEMS
+        },
+        "totals": totals_overall,
+        "apify": {"status": apify_result[0], "detail": apify_result[1]},
+        "rapidapi": {"status": rapidapi_result[0], "detail": rapidapi_result[1]},
+    }
+
+    json_path = out_path.with_suffix(".json")
+    json_path.write_text(json.dumps(summary, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    summary["json_path"] = str(json_path)
+    return summary
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--json", action="store_true",
+        help="ademas del reporte markdown de siempre, imprime el resumen en JSON a stdout",
+    )
+    args = parser.parse_args()
+
+    summary = compute_and_render()
+
+    if args.json:
+        print(json.dumps(summary, indent=2, ensure_ascii=False))
+        return
+
+    print(f"reporte: {summary['report_path']}")
+    print(f"totales: ✓{summary['totals']['✓']} "
+          f"✗{summary['totals']['✗']} —{summary['totals']['—']}")
+    print(f"apify: {summary['apify']['status']} — {summary['apify']['detail']}")
+    print(f"rapidapi: {summary['rapidapi']['status']} — {summary['rapidapi']['detail']}")
 
 
 if __name__ == "__main__":

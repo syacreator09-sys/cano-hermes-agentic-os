@@ -219,8 +219,24 @@ class ExecutionServiceWiringTests(unittest.TestCase):
 
 class ApprovalApiTests(unittest.TestCase):
     def setUp(self):
+        # `settings` is a module-level singleton built once at the first
+        # import of cano_hermes.config -- pydantic BaseSettings only reads
+        # env vars at *construction* time, so setting HERMES_DATABASE_URL
+        # here (after that first import already happened, somewhere earlier
+        # in the whole-suite run) is a no-op: `store()` would keep resolving
+        # to whatever settings.database_url already was -- the real
+        # `storage/hermes.db` in a full `unittest discover` run, silently
+        # writing real approval rows into it every time this test ran.
+        # Mutate the already-built singleton's attribute directly instead,
+        # like the other API test classes do; store()/etc. read
+        # settings.database_url fresh on each call once their lru_cache is
+        # cleared, so this actually isolates the test.
+        from cano_hermes.config import settings
+
         self.tmp = tempfile.TemporaryDirectory()
-        os.environ["HERMES_DATABASE_URL"] = f"sqlite:///{self.tmp.name}/api.db"
+        self._original_database_url = settings.database_url
+        settings.database_url = f"sqlite:///{self.tmp.name}/api.db"
+
         from cano_hermes.api import dependencies
 
         dependencies.store.cache_clear()
@@ -235,7 +251,17 @@ class ApprovalApiTests(unittest.TestCase):
 
     def tearDown(self):
         self.tmp.cleanup()
-        os.environ.pop("HERMES_DATABASE_URL", None)
+        from cano_hermes.config import settings
+
+        settings.database_url = self._original_database_url
+        from cano_hermes.api import dependencies
+
+        dependencies.store.cache_clear()
+        dependencies.registry.cache_clear()
+        dependencies.engine.cache_clear()
+        dependencies.approvals.cache_clear()
+        dependencies.budget.cache_clear()
+        dependencies.execution_service.cache_clear()
 
     def test_execute_endpoint_triggers_approval_flow_and_resolve_blocks_self_approval(self):
         created = self.client.post(

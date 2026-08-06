@@ -1,0 +1,59 @@
+{
+  "date": "2026-08-06",
+  "report_path": "/home/cano/repos/cano-hermes-agentic-os/reports/connection-matrix-2026-08-06.md",
+  "systems": {
+    "StarHome": {
+      "found": true,
+      "counts": {
+        "✓": 119,
+        "✗": 58,
+        "—": 3
+      }
+    },
+    "factory-v5": {
+      "found": true,
+      "counts": {
+        "✓": 12,
+        "✗": 166,
+        "—": 2
+      }
+    },
+    "command-center (root)": {
+      "found": true,
+      "counts": {
+        "✓": 33,
+        "✗": 126,
+        "—": 21
+      }
+    },
+    "command-center (content-studio)": {
+      "found": true,
+      "counts": {
+        "✓": 22,
+        "✗": 155,
+        "—": 3
+      }
+    },
+    "hermes-agent": {
+      "found": true,
+      "counts": {
+        "✓": 120,
+        "✗": 32,
+        "—": 28
+      }
+    }
+  },
+  "totals": {
+    "✓": 306,
+    "✗": 537,
+    "—": 57
+  },
+  "apify": {
+    "status": "✓",
+    "detail": "perfil de usuario obtenido (200)"
+  },
+  "rapidapi": {
+    "status": "✗",
+    "detail": "no encontrada en vault bajo ningun nombre (confirmado en F1); sin intento de red"
+  }
+}
