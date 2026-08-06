@@ -49,6 +49,20 @@ class Settings(BaseSettings):
     # both names hold the identical chat id in practice.
     telegram_bot_token: str = Field(default="", validation_alias="TELEGRAM_BOT_TOKEN")
     telegram_chat_id: str = Field(default="", validation_alias="TELEGRAM_CHAT_ID")
+    # K7 (plan HERMES-KICKOFF, gap 2 continuation) -- shared secret between
+    # this repo and the `starhome-bridge` user plugin living in
+    # `~/.hermes/plugins/starhome-bridge/` (outside this repo, CERO changes
+    # to hermes-agent itself). The plugin signs every `POST
+    # /api/bridge/kanban-events` body with HMAC-SHA256 using the exact same
+    # value, read from `~/.hermes/.env`. Unprefixed (no `HERMES_` prefix),
+    # matching the `telegram_bot_token`/`telegram_chat_id` pattern above --
+    # both processes run on the same machine, so both read the identical
+    # value from their own untracked `.env` rather than sharing a filesystem
+    # path. Empty by default: `inbound.verify_signature` treats an unset
+    # secret as "reject everything" (fail closed), never "skip verification".
+    starhome_bridge_hmac_secret: str = Field(
+        default="", validation_alias="STARHOME_BRIDGE_HMAC_SECRET"
+    )
 
     def ensure_directories(self) -> None:
         for path in (

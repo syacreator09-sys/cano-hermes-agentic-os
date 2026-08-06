@@ -1,16 +1,19 @@
 from __future__ import annotations
 
+import json
+import logging
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from cano_hermes import __version__, monitoring
+from cano_hermes.bridge import inbound as kanban_inbound
 from cano_hermes.bridge import kanban_bridge
 from cano_hermes.bridge.kanban_bridge import KanbanBridgeError
 from cano_hermes.config import settings
@@ -26,11 +29,15 @@ from .dependencies import (
     approvals,
     budget,
     engine,
+    execution_service,
     forge_pipeline,
+    notification_service,
     queue_service,
     registry,
     store,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class ApprovalResolution(BaseModel):
@@ -209,6 +216,46 @@ def dispatch_order(order_id: str):
         )
     )
     return {**order.model_dump(mode="json"), "bridge_link": bridge_link}
+
+
+@app.post("/api/bridge/kanban-events")
+async def kanban_events(request: Request, x_starhome_signature: str | None = Header(default=None)):
+    """K7 -- inbound half of the Kanban<->StarHome bridge. Target of the
+    `starhome-bridge` user plugin (`~/.hermes/plugins/starhome-bridge/`,
+    outside this repo -- see `bridge/inbound.py`'s module docstring for the
+    full wire contract and the reasoning behind what this endpoint does and
+    does not resolve).
+
+    Signature verified over the RAW request body (not a re-serialized
+    version of the parsed JSON, which could byte-differ from what the
+    plugin actually signed) -- `await request.body()` before any parsing.
+    An invalid or missing `X-StarHome-Signature` is the one failure mode
+    that gets a non-200: every other "nothing to do" outcome (unknown
+    kanban_task_id, already-terminal order/task, malformed-but-signed
+    payload) is a normal 200 with a `status: "ignored"` body, per
+    `handle_kanban_event`'s own docstring -- a signed request from hermes
+    describing real board state is never itself an error.
+    """
+    body = await request.body()
+    if not kanban_inbound.verify_signature(settings.starhome_bridge_hmac_secret, body, x_starhome_signature):
+        raise HTTPException(status_code=401, detail="invalid or missing X-StarHome-Signature")
+
+    try:
+        payload = json.loads(body)
+    except json.JSONDecodeError as exc:
+        raise HTTPException(status_code=400, detail="invalid JSON body") from exc
+    if not isinstance(payload, dict):
+        raise HTTPException(status_code=400, detail="payload must be a JSON object")
+
+    return await kanban_inbound.handle_kanban_event(
+        engine=engine(),
+        store=store(),
+        execution_service=execution_service(),
+        notifier=notification_service(),
+        budget=budget(),
+        artifacts_root=settings.artifact_path,
+        payload=payload,
+    )
 
 
 @app.get("/api/agents")

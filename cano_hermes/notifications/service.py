@@ -26,7 +26,7 @@ down with it either.
 from __future__ import annotations
 
 from cano_hermes.domain.enums import TaskStatus
-from cano_hermes.domain.models import ApprovalRequest, TaskRecord
+from cano_hermes.domain.models import ApprovalRequest, OrderRecord, TaskRecord
 from cano_hermes.storage.sqlite import SQLiteStore
 
 from .telegram import send_telegram_message
@@ -83,6 +83,29 @@ class NotificationService:
             f"task_id: {task.id}",
             f"motivo: {reason}",
         ]
+        send_telegram_message("\n".join(lines))
+
+    # -- aggregator.close_order_with_synthesis hook (K7) -----------------
+    def notify_order_done(self, order: OrderRecord, artifacts: list[str]) -> None:
+        """`OrderRecord` transitions do NOT flow through
+        `TaskEngine.transition` (only `TaskRecord` does) -- `save_order` is
+        called directly wherever an order changes state (K5/K6/K7's
+        `aggregator.py`) -- so unlike `on_transition` above, this is not an
+        observer wired into a generic hook; `aggregator.close_order_with_
+        synthesis` calls it explicitly, once, right after the order lands
+        on DONE. Kept in this module (not inlined in aggregator.py) so
+        every Telegram message StarHome ever sends has one owner and one
+        format convention."""
+        lines = [
+            f"✅ ORDEN DONE — {order.objective.strip().splitlines()[0][:120]}",
+            f"order_id: {order.id}",
+        ]
+        if artifacts:
+            lines.append(f"artifacts ({len(artifacts)}):")
+            lines.extend(f"  - {path}" for path in artifacts[:_ARTIFACTS_PREVIEW_LIMIT])
+            remaining = len(artifacts) - _ARTIFACTS_PREVIEW_LIMIT
+            if remaining > 0:
+                lines.append(f"  ... y {remaining} más")
         send_telegram_message("\n".join(lines))
 
     # -- ApprovalService.request hook ----------------------------------
