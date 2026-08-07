@@ -42,6 +42,7 @@ from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
+from cano_hermes import monitoring
 from cano_hermes.domain.enums import ApprovalStatus, RiskLevel
 from cano_hermes.domain.models import ApprovalRequest
 from cano_hermes.finance import accounting
@@ -475,6 +476,75 @@ class FinanceCloseRouteTests(unittest.TestCase):
         report_path = Path(data["report_path"])
         self.assertTrue(report_path.is_file())
         self.addCleanup(report_path.unlink, missing_ok=True)
+
+
+class FetchExpenseRowsTests(unittest.TestCase):
+    """C4 -- `monitoring.fetch_expense_rows()`, the read side of K14's
+    write-only `write_expense_row`/`gastos` table. Mirrors
+    `accounting.fetch_rows`'s own contract exactly (see that module's
+    docstring), so these tests mirror the same 4 cases urlopen-mocked,
+    never real network: sin-token / HTTP error / pagination / ok."""
+
+    def test_sin_token_returns_without_any_network_call(self):
+        with patch.object(monitoring, "_baserow_token", return_value=None), \
+             patch("cano_hermes.monitoring.urllib.request.urlopen") as mock_urlopen:
+            result = monitoring.fetch_expense_rows()
+        self.assertEqual(result["status"], "sin_token")
+        mock_urlopen.assert_not_called()
+
+    def test_http_error_is_reported_not_raised(self):
+        import urllib.error
+
+        with patch.object(monitoring, "_baserow_token", return_value="fake-token"), \
+             patch("cano_hermes.monitoring.urllib.request.urlopen") as mock_urlopen:
+            mock_urlopen.side_effect = urllib.error.HTTPError(
+                url="http://x", code=500, msg="boom", hdrs=None, fp=None,
+            )
+            result = monitoring.fetch_expense_rows()
+        self.assertEqual(result["status"], "error")
+        self.assertEqual(result["http_status"], 500)
+
+    def test_paginates_via_next_until_exhausted(self):
+        import json as _json
+
+        page1 = {"results": [{"id": 1, "oficina": "publish"}], "next": "http://fake/page2"}
+        page2 = {"results": [{"id": 2, "oficina": "content"}], "next": None}
+        responses = [page1, page2]
+
+        class _FakeResponse:
+            def __init__(self, payload):
+                self._payload = payload
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *exc):
+                return False
+
+            def read(self):
+                return _json.dumps(self._payload).encode()
+
+        with patch.object(monitoring, "_baserow_token", return_value="fake-token"), \
+             patch("cano_hermes.monitoring.urllib.request.urlopen", side_effect=[_FakeResponse(p) for p in responses]) as mock_urlopen:
+            result = monitoring.fetch_expense_rows()
+
+        self.assertEqual(result["status"], "ok")
+        self.assertEqual(len(result["rows"]), 2)
+        self.assertEqual(mock_urlopen.call_count, 2)
+        self.assertEqual([r["id"] for r in result["rows"]], [1, 2])
+
+    def test_ok_returns_all_rows_from_single_page(self):
+        import json as _json
+
+        payload = {"results": [{"id": 1, "oficina": "publish", "monto_usd": "12.50"}], "next": None}
+
+        with patch.object(monitoring, "_baserow_token", return_value="fake-token"), \
+             patch("cano_hermes.monitoring.urllib.request.urlopen") as mock_urlopen:
+            mock_urlopen.return_value.__enter__.return_value.read.return_value = _json.dumps(payload).encode()
+            result = monitoring.fetch_expense_rows()
+
+        self.assertEqual(result["status"], "ok")
+        self.assertEqual(result["rows"], payload["results"])
 
 
 if __name__ == "__main__":

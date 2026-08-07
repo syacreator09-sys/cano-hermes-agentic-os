@@ -23,6 +23,7 @@ Structure:
 """
 from __future__ import annotations
 
+import datetime as dt
 import tempfile
 import unittest
 from pathlib import Path
@@ -261,6 +262,83 @@ class FinanceAndOrdersAggregationTests(unittest.TestCase):
         self.assertNotEqual(seeded["cost_by_executor"], [])
 
 
+class CostFromGastosAggregationTests(unittest.TestCase):
+    """C4 -- `finance_dashboard`'s new `cost_from_gastos` section, the
+    read side of K14's write-only `gastos` Baserow table. No real
+    network: `monitoring.fetch_expense_rows` is mocked directly (same
+    convention `ConnectionsAggregationTests` below uses for
+    `latest_connection_matrix_summary`), never `urllib.request.urlopen`
+    at this layer since `finance_dashboard` doesn't touch it directly."""
+
+    def setUp(self):
+        self._tmpdir = tempfile.TemporaryDirectory()
+        self.store = SQLiteStore(f"sqlite:///{self._tmpdir.name}/gastos.db")
+        from cano_hermes.governance.budget import BudgetService
+
+        self.budget = BudgetService(self.store, daily_limit_usd=10.0)
+
+    def tearDown(self):
+        self._tmpdir.cleanup()
+
+    def test_aggregates_by_oficina_and_concepto_and_totals(self):
+        today = dt.datetime.now(dt.UTC).date()
+        fixture_rows = [
+            {"fecha": today.isoformat(), "oficina": "publish", "concepto": "elevenlabs", "monto_usd": "10.5"},
+            {"fecha": today.isoformat(), "oficina": "publish", "concepto": "gemini", "monto_usd": "4.5"},
+            {"fecha": (today - dt.timedelta(days=1)).isoformat(), "oficina": "content", "concepto": "elevenlabs", "monto_usd": "2.0"},
+        ]
+        with patch.object(monitoring, "fetch_expense_rows", return_value={"status": "ok", "rows": fixture_rows}):
+            data = dashboards.finance_dashboard(self.store, self.budget)
+
+        gastos = data["cost_from_gastos"]
+        self.assertEqual(gastos["status"], "ok")
+        self.assertEqual(gastos["rows_total"], 3)
+        self.assertAlmostEqual(gastos["total_usd"], 17.0)
+
+        by_oficina = {row["oficina"]: row["monto_usd"] for row in gastos["by_oficina"]}
+        self.assertAlmostEqual(by_oficina["publish"], 15.0)
+        self.assertAlmostEqual(by_oficina["content"], 2.0)
+
+        by_concepto = {row["concepto"]: row["monto_usd"] for row in gastos["by_concepto"]}
+        self.assertAlmostEqual(by_concepto["elevenlabs"], 12.5)
+        self.assertAlmostEqual(by_concepto["gemini"], 4.5)
+
+        # Trend covers both distinct days seen in the fixture.
+        trend_dates = {row["date"] for row in gastos["trend_daily"]}
+        self.assertEqual(trend_dates, {today.isoformat(), (today - dt.timedelta(days=1)).isoformat()})
+
+    def test_degrades_to_sin_token_without_raising(self):
+        with patch.object(monitoring, "fetch_expense_rows", return_value={"status": "sin_token", "detail": "no vault"}):
+            data = dashboards.finance_dashboard(self.store, self.budget)
+
+        gastos = data["cost_from_gastos"]
+        self.assertEqual(gastos["status"], "sin_token")
+        self.assertEqual(gastos["by_oficina"], [])
+        self.assertEqual(gastos["by_concepto"], [])
+        self.assertEqual(gastos["trend_daily"], [])
+        self.assertEqual(gastos["rows_total"], 0)
+        # The rest of finance_dashboard must still be a real, non-empty shape.
+        self.assertIn("cost_by_executor", data)
+        self.assertIn("totals", data)
+
+    def test_degrades_to_error_without_raising(self):
+        with patch.object(monitoring, "fetch_expense_rows", return_value={"status": "error", "detail": "HTTP 500"}):
+            data = dashboards.finance_dashboard(self.store, self.budget)
+
+        self.assertEqual(data["cost_from_gastos"]["status"], "error")
+        self.assertEqual(data["cost_from_gastos"]["detail"], "HTTP 500")
+
+    def test_executor_granularity_note_reflects_real_distinct_executors(self):
+        """The plan's honesty requirement: `executions` today distinguishes
+        only by `executor`, never fabricate a provider from it."""
+        with patch.object(monitoring, "fetch_expense_rows", return_value={"status": "sin_token", "detail": None}):
+            data = dashboards.finance_dashboard(self.store, self.budget)
+
+        note = data["cost_by_executor_note"]
+        self.assertIn("executor", note)
+        self.assertIn("proveedor", note)
+
+
 class ConnectionsAggregationTests(unittest.TestCase):
     """C3 -- seeds a tmp_path `key_registry.yaml` (never the real vault
     mirror) and mocks `monitoring.latest_connection_matrix_summary()`
@@ -306,6 +384,114 @@ class ConnectionsAggregationTests(unittest.TestCase):
             encoding="utf-8",
         )
         return registry_path
+
+    def _write_idle_registry(self) -> Path:
+        """Separate fixture from `_write_registry` above -- distinct
+        `proveedor` per claimed key so the substring match in
+        `idle_provider_keys` can tell them apart deterministically."""
+        registry_path = self.tmp_path / "idle_registry.yaml"
+        registry_path.write_text(
+            yaml.safe_dump({
+                "_meta": {"nota": "fixture de test, nunca el vault real"},
+                "llaves": [
+                    {
+                        "nombre": "ACTIVE_KEY", "proveedor": "ActiveProv", "dominio": "starhome",
+                        "uso": "fixture", "consumidores": ["repo/a.py:1"],
+                        "validacion": "live-free", "riesgo": "bajo",
+                        "rotacion_pendiente": False, "rotacion_motivo": "",
+                    },
+                    {
+                        "nombre": "IDLE_KEY", "proveedor": "IdleProv", "dominio": "starhome",
+                        "uso": "fixture", "consumidores": ["repo/b.py:1"],
+                        "validacion": "live-free", "riesgo": "medio",
+                        "rotacion_pendiente": False, "rotacion_motivo": "",
+                    },
+                    {
+                        "nombre": "UNCLAIMED_NEVER_IDLE", "proveedor": "NoSignalProv", "dominio": "starhome",
+                        "uso": "fixture", "consumidores": [],
+                        "validacion": "presence-only", "riesgo": "bajo",
+                        "rotacion_pendiente": False, "rotacion_motivo": "",
+                    },
+                ],
+            }),
+            encoding="utf-8",
+        )
+        return registry_path
+
+    def test_idle_provider_keys_flags_claimed_key_with_no_recent_signal(self):
+        """C4 -- a key with a code consumer but zero recent gastos/
+        executions signal must appear; a key WITH a recent gastos signal
+        must not; a key with no consumer at all (C3's own unclaimed_keys
+        territory) must never appear here regardless of signal."""
+        registry_path = self._write_idle_registry()
+        today = dt.datetime.now(dt.UTC).date()
+        gastos_rows = [
+            {"fecha": today.isoformat(), "oficina": "publish", "concepto": "gasto activeprov mensual", "monto_usd": "5.0"},
+        ]
+
+        with patch.object(monitoring, "fetch_expense_rows", return_value={"status": "ok", "rows": gastos_rows}):
+            idle = dashboards.idle_provider_keys(None, registry_path=registry_path)
+
+        names = {row["nombre"] for row in idle}
+        self.assertIn("IDLE_KEY", names)
+        self.assertNotIn("ACTIVE_KEY", names)
+        self.assertNotIn("UNCLAIMED_NEVER_IDLE", names)
+
+    def test_idle_provider_keys_recent_execution_counts_as_signal(self):
+        """The `executions.executor` cross-check (pata b of the plan) --
+        seeded directly through `SQLiteStore`, no HTTP."""
+        registry_path = self._write_idle_registry()
+        store = SQLiteStore(f"sqlite:///{self.tmp_path}/idle.db")
+
+        order = OrderRecord(objective="fixture order", source="api")
+        store.save_order(order)
+        task = TaskRecord(
+            **TaskCreate(
+                title="fixture task", objective="fixture", domain="research",
+                risk=RiskLevel.LOW, parent_task_id=order.id,
+            ).model_dump(),
+        )
+        store.save_task(task)
+        execution = ExecutionResult(
+            task_id=task.id, executor="activeprov-agent", status="completed", summary="ok", exit_code=0,
+        )
+        store.save_execution(execution, usage={})
+
+        with patch.object(monitoring, "fetch_expense_rows", return_value={"status": "sin_token", "detail": None}):
+            idle = dashboards.idle_provider_keys(store, registry_path=registry_path)
+
+        names = {row["nombre"] for row in idle}
+        self.assertIn("IDLE_KEY", names)
+        # "ActiveProv" is a substring (case-insensitive) of the seeded
+        # executor "activeprov-agent" -> must be cleared by signal (b).
+        self.assertNotIn("ACTIVE_KEY", names)
+
+    def test_idle_provider_keys_store_none_skips_execution_signal_without_raising(self):
+        registry_path = self._write_idle_registry()
+        with patch.object(monitoring, "fetch_expense_rows", return_value={"status": "sin_token", "detail": None}):
+            idle = dashboards.idle_provider_keys(None, registry_path=registry_path)
+        names = {row["nombre"] for row in idle}
+        # No gastos signal (sin_token) and no store -> both claimed keys idle.
+        self.assertIn("IDLE_KEY", names)
+        self.assertIn("ACTIVE_KEY", names)
+
+    def test_connections_dashboard_includes_idle_keys_section(self):
+        registry_path = self._write_idle_registry()
+        with patch(
+            "cano_hermes.orchestration.dashboards.monitoring.latest_connection_matrix_summary",
+            return_value=None,
+        ), patch.object(monitoring, "fetch_expense_rows", return_value={"status": "sin_token", "detail": None}):
+            data = dashboards.connections_dashboard(None, registry_path=registry_path)
+
+        self.assertIn("idle_keys", data)
+        self.assertIn("idle_keys_count", data)
+        self.assertIn("idle_keys_window_days", data)
+        self.assertIn("idle_keys_gastos_status", data)
+        self.assertEqual(data["idle_keys_gastos_status"], "sin_token")
+        names = {row["nombre"] for row in data["idle_keys"]}
+        self.assertEqual(data["idle_keys_count"], len(data["idle_keys"]))
+        self.assertIn("IDLE_KEY", names)
+        self.assertIn("ACTIVE_KEY", names)  # no gastos signal AND store=None -> both idle here.
 
     def test_connections_dashboard_aggregates_registry_and_matrix(self):
         registry_path = self._write_registry()

@@ -634,8 +634,10 @@ def dashboard_connections() -> dict[str, Any]:
     dominio, llaves sin consumidor, rotación pendiente) cruzado con la
     corrida más reciente de connection_matrix.py (estado por proveedor,
     latencia, cuota). Sin llamadas de red desde esta ruta -- lee el JSON
-    ya escrito. See `orchestration.dashboards.connections_dashboard`."""
-    return dashboards.connections_dashboard()
+    ya escrito. C4 añade `idle_keys` (llaves con consumidor pero sin señal
+    de uso real en 30 días), que sí necesita `store` para cruzar contra
+    `executions`. See `orchestration.dashboards.connections_dashboard`."""
+    return dashboards.connections_dashboard(store())
 
 
 @app.post("/api/finance/close")
@@ -689,6 +691,36 @@ def _finance_html(data: dict[str, Any]) -> str:
         for row in data["cost_by_order"][:20]
     ) or "<tr><td colspan=3 class='muted'>Sin gasto agregado por orden todavía.</td></tr>"
 
+    # C4 -- `gastos` (Baserow, business/office spend) is a DIFFERENT
+    # ledger from `cost_by_executor`/`cost_by_office` above (agent/engine
+    # spend from `executions.usage_json`). Degrades to the status text
+    # `fetch_expense_rows` returned instead of an empty table with no
+    # explanation when Baserow/the token aren't available.
+    gastos = data.get("cost_from_gastos") or {}
+    if gastos.get("status") == "ok":
+        gastos_oficina_rows = "".join(
+            f"<span class='pill'>{esc(row['oficina'])}: ${esc(_money(row['monto_usd']))}</span>"
+            for row in gastos.get("by_oficina", [])
+        ) or "<p class='muted'>Sin filas en gastos todavía.</p>"
+        gastos_concepto_rows = "".join(
+            f"<span class='pill'>{esc(row['concepto'])}: ${esc(_money(row['monto_usd']))}</span>"
+            for row in gastos.get("by_concepto", [])
+        ) or "<p class='muted'>Sin filas en gastos todavía.</p>"
+        gastos_trend_rows = "".join(
+            f"<tr><td>{esc(row['date'])}</td><td>${esc(_money(row['monto_usd']))}</td></tr>"
+            for row in gastos.get("trend_daily", [])
+        ) or f"<tr><td colspan=2 class='muted'>Sin movimientos en los últimos {esc(gastos.get('trend_days'))} días.</td></tr>"
+        gastos_block = f"""
+<div class="card" style="margin-top:16px"><h3>Gasto real (tabla gastos, Baserow) — ${esc(_money(gastos.get('total_usd', 0.0)))} en {esc(gastos.get('rows_total', 0))} fila(s)</h3>
+<p class="muted">Por oficina</p>{gastos_oficina_rows}
+<p class="muted" style="margin-top:8px">Por concepto</p>{gastos_concepto_rows}
+<p class="muted" style="margin-top:8px">Tendencia diaria (últimos {esc(gastos.get('trend_days'))} días)</p>
+<table style="width:100%;border-collapse:collapse"><tr><th>Día</th><th>Monto</th></tr>{gastos_trend_rows}</table></div>"""
+    else:
+        gastos_block = f"""
+<div class="card" style="margin-top:16px"><h3>Gasto real (tabla gastos, Baserow)</h3>
+<p class="muted">No disponible ahora mismo: {esc(gastos.get('status', 'sin_datos'))} — {esc(gastos.get('detail') or 'sin detalle')}</p></div>"""
+
     today_limit = esc(_money(today["daily_limit_usd"]))
     return f"""<!doctype html><html lang="es"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -709,8 +741,10 @@ def _finance_html(data: dict[str, Any]) -> str:
 <div class="metric">${esc(_money(data['totals']['all_time_recorded_cost_usd']))}</div>
 <p class="muted">{esc(data['totals']['executions_priced'])} / {esc(data['totals']['executions_total'])} ejecuciones con costo real</p></div>
 </div>
-<div class="card" style="margin-top:16px"><h3>Costo por motor/executor</h3>{executor_rows}</div>
+<div class="card" style="margin-top:16px"><h3>Costo por motor/executor</h3>{executor_rows}
+<p class="muted" style="margin-top:8px">{esc(data.get('cost_by_executor_note', ''))}</p></div>
 <div class="card" style="margin-top:16px"><h3>Costo por oficina</h3>{office_rows}</div>
+{gastos_block}
 <div class="card" style="margin-top:16px"><h3>Ledger diario</h3>
 <table style="width:100%;border-collapse:collapse"><tr><th>Día</th><th>Gastado</th><th>Límite</th><th>%</th></tr>{ledger_rows}</table></div>
 <div class="card" style="margin-top:16px"><h3>Gasto por orden (top 20)</h3>
@@ -1035,6 +1069,17 @@ def _connections_html(data: dict[str, Any]) -> str:
     validators_ok = validators_totals.get("✓", 0)
     validators_total = sum(validators_totals.values()) if validators_totals else 0
 
+    # C4 -- idle keys: consumidor detectado en código PERO sin señal de
+    # uso real en `idle_keys_window_days` días (distinto de "sin
+    # consumidor" arriba, que ya lo cubre C3's unclaimed_pills).
+    idle_rows = "".join(
+        f"<tr><td>{esc(row['nombre'])}</td><td>{esc(row['proveedor'] or '—')}</td>"
+        f"<td>{esc(row['dominio'] or '—')}</td><td>{esc(row['consumidores_count'])}</td></tr>"
+        for row in data.get("idle_keys", [])
+    ) or "<tr><td colspan=4 class='muted'>Ninguna llave con consumidor detectado quedó sin señal de uso reciente.</td></tr>"
+    idle_window = esc(data.get("idle_keys_window_days"))
+    idle_gastos_status = esc(data.get("idle_keys_gastos_status", "sin_datos"))
+
     return f"""<!doctype html><html lang="es"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>StarHome OS — Conexiones</title><link rel="stylesheet" href="/static/style.css"></head>
@@ -1056,10 +1101,16 @@ def _connections_html(data: dict[str, Any]) -> str:
 <div class="card"><div class="muted">Validadores ✓</div>
 <div class="metric">{esc(validators_ok)}/{esc(validators_total)}</div>
 <p class="muted">de la última corrida de connection_matrix.py</p></div>
+<div class="card"><div class="muted">Ociosas ({idle_window} días)</div>
+<div class="metric">{esc(data.get('idle_keys_count', 0))}</div>
+<p class="muted">con consumidor en código pero sin uso real detectado</p></div>
 </div>
 <div class="card" style="margin-top:16px"><h3>Rotación pendiente (accionable)</h3>
 <table style="width:100%;border-collapse:collapse"><tr><th>Llave</th><th>Proveedor</th><th>Dominio</th><th>Riesgo</th><th>Motivo</th></tr>{rotation_rows}</table></div>
 <div class="card" style="margin-top:16px"><h3>Llaves sin consumidor (accionable)</h3>{unclaimed_pills}</div>
+<div class="card" style="margin-top:16px"><h3>Llaves ociosas — tienen consumidor pero sin uso en {idle_window} días (accionable)</h3>
+<p class="muted">Señal de `gastos` (Baserow): {idle_gastos_status}. Cruce por substring case-insensitive del proveedor contra oficina/concepto de gastos y contra executor de executions, ambos de los últimos {idle_window} días.</p>
+<table style="width:100%;border-collapse:collapse"><tr><th>Llave</th><th>Proveedor</th><th>Dominio</th><th>Consumidores</th></tr>{idle_rows}</table></div>
 <div class="card" style="margin-top:16px"><h3>Llaves por dominio</h3>{domain_pills}</div>
 <div class="card" style="margin-top:16px"><h3>Estado por proveedor</h3>
 <table style="width:100%;border-collapse:collapse"><tr><th>Proveedor</th><th>Estado</th><th>Latencia (ms)</th><th>Cuota</th><th>Detalle</th></tr>{validator_rows}</table></div>
@@ -1068,4 +1119,4 @@ def _connections_html(data: dict[str, Any]) -> str:
 
 @app.get("/dashboard/connections", response_class=HTMLResponse)
 def dashboard_connections_view():
-    return _connections_html(dashboards.connections_dashboard())
+    return _connections_html(dashboards.connections_dashboard(store()))

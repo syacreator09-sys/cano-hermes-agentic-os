@@ -52,6 +52,13 @@ _ACTIVE_ORDER_STATUSES = frozenset({
     OrderStatus.AGGREGATING, OrderStatus.BLOCKED,
 })
 
+# C4 -- how many trailing days `cost_from_gastos`'s daily trend covers and
+# `idle_provider_keys` looks back for "recent use" signal. 30 is the same
+# window the plan's own "últimos 30 días" phrasing uses throughout; kept
+# as one named constant instead of a magic number repeated at both call
+# sites.
+GASTOS_TREND_DAYS = 30
+
 
 def _execution_cost(execution: dict) -> float:
     """Same field-precedence BudgetService.ingest_usage_file already uses
@@ -66,6 +73,91 @@ def _execution_cost(execution: dict) -> float:
         if isinstance(value, (int, float)):
             return float(value)
     return 0.0
+
+
+def _parse_gastos_date(row: dict[str, Any]) -> dt.date | None:
+    """`gastos`'s `fecha` field round-trips as an ISO date/datetime string
+    (`write_expense_row` posts `f"{fecha}T00:00:00Z"`; Baserow's own date
+    field then returns either the bare date or that same datetime on
+    read, confirmed live -- both share a `YYYY-MM-DD` prefix). Returns
+    `None` on anything else (missing, blank, unparsable) instead of
+    raising -- callers treat `None` as "skip this row for the trend",
+    same "never raise on bad data" discipline as
+    `accounting.numeric_value`."""
+    fecha = row.get("fecha")
+    if not isinstance(fecha, str) or len(fecha) < 10:
+        return None
+    try:
+        return dt.date.fromisoformat(fecha[:10])
+    except ValueError:
+        return None
+
+
+def _cost_from_gastos(generated_at: dt.datetime, *, days: int = GASTOS_TREND_DAYS) -> dict[str, Any]:
+    """C4 -- reads the `gastos` Baserow table (K14's `write_expense_row`
+    target, write-only until now) via `monitoring.fetch_expense_rows()`
+    and aggregates by `oficina`/`concepto` plus a `days`-day daily trend.
+    This is REAL business/office spend mirrored into Baserow -- a
+    different ledger from `cost_by_executor` above (that one reads
+    `executions.usage_json` in sqlite, K1's agent/engine spend ledger).
+    Degrades to the same `sin_token`/`error` status `fetch_expense_rows`
+    itself returns, with every aggregate list empty, rather than raising
+    or silently reporting zero as if it were real -- a caller must see
+    *why* `by_oficina` is empty (no token / Baserow down) instead of
+    reading "empty" as "no expenses ever happened"."""
+    fetched = monitoring.fetch_expense_rows()
+    if fetched["status"] != "ok":
+        return {
+            "status": fetched["status"],
+            "detail": fetched.get("detail"),
+            "rows_total": 0,
+            "total_usd": 0.0,
+            "by_oficina": [],
+            "by_concepto": [],
+            "trend_daily": [],
+            "trend_days": days,
+        }
+
+    rows = fetched["rows"]
+    by_oficina: dict[str, float] = {}
+    by_concepto: dict[str, float] = {}
+    by_day: dict[str, float] = {}
+    total = 0.0
+    cutoff = generated_at.date() - dt.timedelta(days=days - 1)
+
+    for row in rows:
+        monto = accounting.numeric_value(row.get("monto_usd"))
+        if monto is None:
+            continue
+        total += monto
+        oficina = row.get("oficina") or "(sin oficina)"
+        concepto = row.get("concepto") or "(sin concepto)"
+        by_oficina[oficina] = by_oficina.get(oficina, 0.0) + monto
+        by_concepto[concepto] = by_concepto.get(concepto, 0.0) + monto
+
+        fecha = _parse_gastos_date(row)
+        if fecha is not None and fecha >= cutoff:
+            key = fecha.isoformat()
+            by_day[key] = by_day.get(key, 0.0) + monto
+
+    return {
+        "status": "ok",
+        "detail": None,
+        "rows_total": len(rows),
+        "total_usd": round(total, 4),
+        "by_oficina": sorted(
+            ({"oficina": k, "monto_usd": round(v, 4)} for k, v in by_oficina.items()),
+            key=lambda r: r["monto_usd"], reverse=True,
+        ),
+        "by_concepto": sorted(
+            ({"concepto": k, "monto_usd": round(v, 4)} for k, v in by_concepto.items()),
+            key=lambda r: r["monto_usd"], reverse=True,
+        ),
+        "trend_daily": [
+            {"date": day, "monto_usd": round(by_day[day], 4)} for day in sorted(by_day)
+        ],
+        "trend_days": days,
+    }
 
 
 def finance_dashboard(
@@ -162,12 +254,35 @@ def finance_dashboard(
         ({"executor": executor, "cost_usd": round(cost, 4)} for executor, cost in cost_by_executor.items()),
         key=lambda row: row["cost_usd"], reverse=True,
     )
+    # C4 -- honest granularity note. `executions.usage_json` (K1) is
+    # keyed by `executor`, not by upstream LLM provider -- confirmed live
+    # against this host's own sqlite (51 rows, a single distinct
+    # `executor` value: "hermes-agent") before writing this. `cost_by_
+    # executor` above is real and stays wired to `usage_json` so it is
+    # ready the moment `executor`/`usage_json` carry finer granularity,
+    # but nothing here infers or interpolates a provider from the
+    # `executor` name, a profile name, or `config/key_registry.yaml` --
+    # that would fabricate a distinction the data doesn't make. A true
+    # per-provider breakdown needs `usage_json` (or a new column) to
+    # actually record the provider; until then this field says so
+    # explicitly instead of a dashboard silently implying more
+    # granularity than the source data has.
+    distinct_executors = sorted({e["executor"] for e in executions})
+    cost_by_executor_note = (
+        "Desglose real por 'executor' (columna de executions.usage_json), no por proveedor/motor "
+        f"de LLM -- hoy {len(distinct_executors)} valor(es) distinto(s) de executor "
+        f"({', '.join(distinct_executors) if distinct_executors else 'ninguno'}). El cruce fino "
+        "por proveedor requiere que usage_json incluya esa granularidad en el futuro; no se "
+        "infiere desde el nombre del profile ni desde config/key_registry.yaml."
+    )
 
     office_costs = monitoring.office_usage_costs(workspace_root)
     cost_by_office_rows = sorted(
         ({"office": name, "cost_usd": cost} for name, cost in office_costs.items()),
         key=lambda row: row["cost_usd"], reverse=True,
     )
+
+    cost_from_gastos = _cost_from_gastos(generated_at)
 
     return {
         "generated_at": generated_at.isoformat(),
@@ -183,9 +298,11 @@ def finance_dashboard(
             "projected_percent_used": round(projected_percent, 4),
         },
         "cost_by_executor": cost_by_executor_rows,
+        "cost_by_executor_note": cost_by_executor_note,
         "cost_by_office": cost_by_office_rows,
         "cost_by_order": cost_by_order_rows,
         "cost_by_task_top": cost_by_task_rows,
+        "cost_from_gastos": cost_from_gastos,
         "totals": {
             "all_time_recorded_cost_usd": round(total_recorded, 4),
             "executions_priced": priced_count,
@@ -774,7 +891,90 @@ def _load_key_registry(path: Path | None = None) -> dict[str, Any]:
     return {"status": "ok", "detail": None, "llaves": llaves}
 
 
-def connections_dashboard(*, registry_path: Path | None = None) -> dict[str, Any]:
+def idle_provider_keys(
+    store: SQLiteStore | None, *, days: int = GASTOS_TREND_DAYS, registry_path: Path | None = None,
+) -> list[dict[str, Any]]:
+    """C4 -- llaves con consumidor detectado en código (`consumidores` no
+    vacío en el registry) pero SIN ninguna señal de uso real en los
+    últimos `days` días. Distinto de `connections_dashboard`'s propio
+    `unclaimed_keys` (C3, "sin consumidor" -- nadie en el código la usa
+    en absoluto): esta lista es "tiene código que la usa, pero nadie la
+    ha ejercitado en `days` días" -- una señal más fuerte de candidata a
+    revisar/revocar, no un duplicado de C3.
+
+    Cruza dos señales de uso real, ninguna inventada ni interpolada:
+      (a) filas de `gastos` (Baserow, vía `monitoring.fetch_expense_rows`)
+          de los últimos `days` días -- match por substring
+          case-insensitive del `proveedor` del registry contra
+          `oficina`+" "+`concepto` de cada fila. Criterio exacto: se
+          arma un texto `"{oficina} {concepto}".lower()` por fila y se
+          busca `proveedor.lower() in texto`.
+      (b) el/los `executor` de `executions` (sqlite, vía
+          `store.list_executions()`) de los últimos `days` días -- mismo
+          substring match, `proveedor.lower() in executor.lower()`. Hoy
+          `executions.executor` tiene un único valor real en este host
+          ("hermes-agent"), así que esta pata probablemente no distingue
+          nada que (a) no distinga ya -- documentado aquí como el hecho
+          honesto que es, no un bug de esta función (ver
+          `finance_dashboard`'s `cost_by_executor_note` para el mismo
+          límite de granularidad).
+
+    `store=None` (test/degradation convenience, mirrors
+    `connections_dashboard`'s own optional store) skips signal (b)
+    entirely instead of raising -- equivalent to "sin dato de
+    executions", not "definitivamente ociosa"; signal (a) still runs.
+    A `gastos` fetch that returns `sin_token`/`error` similarly just
+    skips signal (a) rather than raising -- this function never crashes
+    the dashboard it feeds.
+    """
+    registry = _load_key_registry(registry_path)
+    claimed = [llave for llave in registry["llaves"] if llave.get("consumidores")]
+    if not claimed:
+        return []
+
+    now = dt.datetime.now(dt.UTC)
+    cutoff_date = now.date() - dt.timedelta(days=days)
+
+    recent_gastos_text: list[str] = []
+    fetched = monitoring.fetch_expense_rows()
+    if fetched["status"] == "ok":
+        for row in fetched["rows"]:
+            fecha = _parse_gastos_date(row)
+            if fecha is None or fecha < cutoff_date:
+                continue
+            recent_gastos_text.append(f"{row.get('oficina') or ''} {row.get('concepto') or ''}".lower())
+
+    recent_executors: set[str] = set()
+    if store is not None:
+        cutoff_iso = (now - dt.timedelta(days=days)).isoformat()
+        for execution in store.list_executions():
+            started_at = execution.get("started_at") or ""
+            if started_at >= cutoff_iso:
+                recent_executors.add((execution.get("executor") or "").lower())
+
+    idle: list[dict[str, Any]] = []
+    for llave in claimed:
+        proveedor = (llave.get("proveedor") or "").strip()
+        if not proveedor:
+            continue
+        needle = proveedor.lower()
+        seen_in_gastos = any(needle in text for text in recent_gastos_text)
+        seen_in_executions = any(needle in executor for executor in recent_executors)
+        if seen_in_gastos or seen_in_executions:
+            continue
+        idle.append({
+            "nombre": llave.get("nombre"),
+            "proveedor": llave.get("proveedor"),
+            "dominio": llave.get("dominio"),
+            "consumidores_count": len(llave.get("consumidores") or []),
+        })
+
+    return sorted(idle, key=lambda row: row["nombre"] or "")
+
+
+def connections_dashboard(
+    store: SQLiteStore | None = None, *, registry_path: Path | None = None,
+) -> dict[str, Any]:
     """`GET /api/dashboard/connections`'s data: the registry-of-keys
     summary (count by `dominio`, keys with no detected `consumidores`,
     keys flagged `rotacion_pendiente`) crossed with the latest
@@ -860,6 +1060,15 @@ def connections_dashboard(*, registry_path: Path | None = None) -> dict[str, Any
             "rapidapi": None,
         }
 
+    # C4 -- own status probe for the `gastos` signal `idle_provider_keys`
+    # uses internally, purely so this dict can say honestly whether that
+    # signal was even available (never re-uses idle_provider_keys' own
+    # internal fetch -- keeping the two calls independent means a
+    # `gastos` outage still surfaces here even if `idle_provider_keys`
+    # itself were ever changed to short-circuit).
+    gastos_status_for_idle = monitoring.fetch_expense_rows()["status"]
+    idle_keys = idle_provider_keys(store, registry_path=registry_path)
+
     return {
         "generated_at": generated_at.isoformat(),
         "registry": {
@@ -873,4 +1082,8 @@ def connections_dashboard(*, registry_path: Path | None = None) -> dict[str, Any
         "rotation_pending": rotation_pending,
         "rotation_pending_count": len(rotation_pending),
         "matrix": matrix_summary,
+        "idle_keys": idle_keys,
+        "idle_keys_count": len(idle_keys),
+        "idle_keys_window_days": GASTOS_TREND_DAYS,
+        "idle_keys_gastos_status": gastos_status_for_idle,
     }

@@ -57,6 +57,12 @@ BASEROW_METRICAS_TABLE_ID = 141
 # mirrors exactly that schema, same "confirm before writing" discipline as
 # BASEROW_METRICAS_TABLE_ID/write_metric_row.
 BASEROW_GASTOS_TABLE_ID = 136
+# Same pagination cap `finance/accounting.py`'s `fetch_rows` uses for the
+# `contabilidad` table (`_MAX_PAGES = 20`, 20 * 100 rows/page) -- copied
+# rather than imported to avoid a cycle: `finance/accounting.py` already
+# imports from this module (`BASEROW_BASE_URL`, `VAULT_ENV_PATH`,
+# `baserow_headers`), so the reverse import would be circular.
+_GASTOS_MAX_PAGES = 20
 
 # K9 added a 5th office (market-intel) but never updated this list -- and
 # separately, `docker compose` (no `container_name:` override anywhere in
@@ -545,3 +551,48 @@ def write_expense_row(
         return {"status": "error", "http_status": exc.code, "detail": exc.read().decode(errors="replace")[:300]}
     except (urllib.error.URLError, OSError, TimeoutError) as exc:
         return {"status": "error", "detail": f"{exc.__class__.__name__}: {exc}"}
+
+
+def fetch_expense_rows(*, timeout: float = 10.0) -> dict[str, Any]:
+    """GETs every row of the `gastos` Baserow table (paginated), never
+    raises -- `write_expense_row` above has posted to this table since
+    K14, but until C4 nothing ever read it back. Mirrors
+    `finance.accounting.fetch_rows`'s exact contract/shape (same
+    paginate-via-`payload.get("next")` loop, same page cap, same
+    `{"status": "sin_token"|"error"|"ok", ...}` return, same
+    never-raise-on-infra-flakiness discipline) so callers already familiar
+    with that module recognize this immediately. Confirmed live via `GET
+    /api/database/fields/table/136/` before writing this: `gastos` has no
+    `single_select` field, so unlike `accounting.fetch_rows`'s
+    `negocio`/`tipo`/`origen`, no row here ever needs
+    `accounting.select_value` -- every field is plain text/number/date.
+    Returns one of:
+      {"status": "sin_token", "detail": ...}
+      {"status": "error", "detail": ...}
+      {"status": "ok", "rows": [ {...}, ... ]}
+    """
+    token = _baserow_token()
+    if not token:
+        return {"status": "sin_token", "detail": "BASEROW_TOKEN no encontrado en el vault"}
+
+    rows: list[dict[str, Any]] = []
+    url = (
+        f"{BASEROW_BASE_URL}/api/database/rows/table/{BASEROW_GASTOS_TABLE_ID}/"
+        "?user_field_names=true&size=100"
+    )
+    for _ in range(_GASTOS_MAX_PAGES):
+        req = urllib.request.Request(url, headers=baserow_headers(token))
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                payload = json.loads(resp.read())
+        except urllib.error.HTTPError as exc:
+            return {"status": "error", "http_status": exc.code, "detail": exc.read().decode(errors="replace")[:300]}
+        except (urllib.error.URLError, OSError, TimeoutError) as exc:
+            return {"status": "error", "detail": f"{exc.__class__.__name__}: {exc}"}
+
+        rows.extend(payload.get("results", []))
+        url = payload.get("next")
+        if not url:
+            break
+
+    return {"status": "ok", "rows": rows}
