@@ -1,33 +1,40 @@
-"""F2 (plan Prometeo) — matriz de conexiones de credenciales.
+"""F2 (plan Prometeo) / C1 (plan de conexiones) — matriz de conexiones de credenciales.
 
-Lee los `.env` de los 5 sistemas conocidos (StarHome, factory-v5,
-command-center x2, hermes-agent), detecta variables con pinta de credencial
-(KEY/TOKEN/SECRET/PASS/PASSWORD/AUTH en el nombre) y reporta si están
-presentes, vacías/placeholder, o del todo ausentes — sin imprimir jamas
-un valor. Ademas hace dos validaciones de red gratuitas (Apify, RapidAPI)
-contra el vault de credenciales.
+Lee los `.env` de los 5 sistemas conocidos (StarHome, factory-v5, command-center x2,
+hermes-agent) + el vault de credenciales (fuente de verdad, 6º "sistema" desde C1),
+detecta variables con pinta de credencial (KEY/TOKEN/SECRET/PASS/PASSWORD/AUTH en el
+nombre) y reporta si están presentes, vacías/placeholder, o del todo ausentes — sin
+imprimir jamas un valor.
 
-No toca cano-ai-command-center (solo lectura). No hace red salvo los dos
-GET gratuitos descritos en el plan. No imprime valores de llaves.
+Además corre el registro de validadores en vivo de `scripts/validators/registry.py`
+(paquete nuevo de C1): ~35 proveedores, cada uno con endpoint documentado como gratis
+y sin cuota, con concurrencia limitada y timeout de 5s -- nunca un valor de llave sale
+de aquí, solo status/detalle/latencia/cuota.
 
-F13 (plan Prometeo) añadió `compute_and_render()` + `--json`: el resto del
-módulo (parseo, matriz, reporte markdown) es exactamente el de F2, sin
-tocar. `compute_and_render()` factoriza lo que `main()` ya hacía en una
-función que además escribe un espejo JSON del resumen junto al `.md`
-(`reports/connection-matrix-<fecha>.json`), para que `daily_cycle.py` y
-`GET /api/dashboard` puedan leer "la última matriz" sin reinvocar red ni
-reparsear el markdown.
+No toca cano-ai-command-center (solo lectura). No hace red salvo los GETs gratuitos
+descritos en `scripts/validators/registry.py`. No imprime valores de llaves.
+
+F13 (plan Prometeo) añadió `compute_and_render()` + `--json`: el resto del módulo
+(parseo, matriz, reporte markdown) es exactamente el de F2, sin tocar. C1 (plan de
+conexiones) refactorizó los validadores hardcodeados (`check_apify`/`check_rapidapi`,
+firmas heterogéneas) a `scripts/validators/registry.py`'s `VALIDATORS` dict con firma
+común -- ver ese módulo para el detalle de cada endpoint.
 """
-from pathlib import Path
-from urllib import request, error
 import argparse
+import datetime
 import json
 import re
-import socket
-import datetime
+import sys
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
 
 HOME = Path.home()
 REPO_ROOT = Path(__file__).resolve().parents[1]  # cano-hermes-agentic-os
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from scripts.validators import is_placeholder, strip_quotes
+from scripts.validators.registry import VALIDATORS
 
 # Los 5 .env que exige F2, en el orden en que se listan en el plan.
 SYSTEMS = [
@@ -41,23 +48,21 @@ SYSTEMS = [
 
 VAULT_PATH = HOME / ".secrets/credenciales/credenciales/.env"
 
+# C1: el vault se suma como 6º "sistema" -- es la fuente de verdad de credenciales,
+# no se "audita" contra nada (no hay ningún otro sistema con más autoridad), pero
+# debe aparecer en el reporte para que se vea, por comparación con los otros 5, qué
+# le falta propagar a cada repo (eso es tarea de C2). `ALL_SYSTEMS` es lo que usan
+# `build_matrix()`/`render_report()`; `SYSTEMS` se deja intacto porque es lo que
+# describe el docstring original de F2 (los 5 `.env` de repos).
+VAULT_SYSTEM = ("Vault (fuente de verdad)", VAULT_PATH)
+ALL_SYSTEMS = SYSTEMS + [VAULT_SYSTEM]
+
+MAX_VALIDATOR_WORKERS = 8
+VALIDATOR_TIMEOUT_S = 5  # aplicado dentro de cada validador (scripts/validators.http_get)
+
 CRED_RE = re.compile(r"(KEY|TOKEN|SECRET|PASSWORD|PASS|AUTH)", re.IGNORECASE)
 NAME_LINE_RE = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$")
 COMMENTED_NAME_RE = re.compile(r"^#+\s*([A-Za-z_][A-Za-z0-9_]*)\s*=")
-
-PLACEHOLDER_VALUES = {
-    "xxx", "xxxx", "xxxxx", "xxxxxxxx", "todo", "change_me", "changeme",
-    "your_key_here", "your_api_key_here", "replace_me", "replaceme",
-    "placeholder", "fixme", "example", "dummy", "n/a", "na", "none", "null",
-}
-ALL_X_RE = re.compile(r"^x+$", re.IGNORECASE)
-
-
-def strip_quotes(value: str) -> str:
-    value = value.strip()
-    if len(value) >= 2 and value[0] == value[-1] and value[0] in ("'", '"'):
-        return value[1:-1]
-    return value
 
 
 def parse_env(path: Path):
@@ -94,21 +99,6 @@ def is_credential_name(name: str) -> bool:
     return bool(CRED_RE.search(name))
 
 
-def is_placeholder(value: str) -> bool:
-    v = value.strip().strip("'\"").lower()
-    if not v:
-        return False  # vacio se maneja aparte
-    if v in PLACEHOLDER_VALUES:
-        return True
-    if ALL_X_RE.match(v):
-        return True
-    if "your_" in v and "_here" in v:
-        return True
-    if "changeme" in v or "change_me" in v:
-        return True
-    return False
-
-
 def classify(var: str, exists: bool, active: dict, commented: set) -> tuple[str, str]:
     if not exists:
         return "✗", "archivo .env no encontrado"
@@ -136,7 +126,7 @@ def annotate_expected(var: str, status: str, detail: str) -> str:
 
 
 def build_matrix():
-    parsed = {name: parse_env(path) for name, path in SYSTEMS}
+    parsed = {name: parse_env(path) for name, path in ALL_SYSTEMS}
     universe = set()
     for _, (exists, active, commented) in parsed.items():
         for k in active:
@@ -149,7 +139,7 @@ def build_matrix():
     rows = []
     for var in sorted(universe):
         provider = var.split("_")[0]
-        for sysname, _ in SYSTEMS:
+        for sysname, _ in ALL_SYSTEMS:
             exists, active, commented = parsed[sysname]
             status, detail = classify(var, exists, active, commented)
             detail = annotate_expected(var, status, detail)
@@ -157,67 +147,51 @@ def build_matrix():
     return rows, parsed
 
 
-def apify_candidates(vault_active: dict):
-    names = ["APIFY_API_KEY"] + [f"APIFY_KEY_{i}" for i in range(1, 8)]
-    out = []
-    for n in names:
-        v = vault_active.get(n, "")
-        if v.strip() and not is_placeholder(v):
-            out.append(n)
-    return out, names
+def run_validators(vault_active: dict) -> dict[str, dict]:
+    """Corre `VALIDATORS` (scripts/validators/registry.py) con concurrencia limitada
+    (`ThreadPoolExecutor`, max 8) -- cada validador ya trae su propio timeout de 5s y
+    nunca levanta (contrato del paquete), pero esta función igual envuelve el `.result()`
+    en un `try` para que un bug real en un validador de terceros no tumbe la corrida
+    completa de la matriz."""
+    results: dict[str, dict] = {}
+    with ThreadPoolExecutor(max_workers=MAX_VALIDATOR_WORKERS) as pool:
+        futures = {pool.submit(fn, vault_active): name for name, fn in VALIDATORS.items()}
+        for fut in as_completed(futures):
+            name = futures[fut]
+            try:
+                results[name] = fut.result()
+            except Exception as exc:  # noqa: BLE001 -- último cinturón de seguridad
+                results[name] = {
+                    "status": "—",
+                    "detail": f"validador levantó excepción inesperada: {exc.__class__.__name__}",
+                    "latency_ms": None,
+                    "quota": None,
+                }
+    return results
 
 
-def check_apify(vault_active: dict):
-    """Devuelve (estado, detalle, key_usada|None). Nunca imprime el valor."""
-    usable, all_names = apify_candidates(vault_active)
-    presence = {n: ("✓" if n in vault_active and vault_active[n].strip()
-                     and not is_placeholder(vault_active[n])
-                     else ("—" if n in vault_active else "✗"))
-                for n in all_names}
-    if not usable:
-        return "—", "sin llave utilizable en el vault (todas vacias/ausentes/placeholder)", None, presence
-
-    key_name = usable[0]
-    key_value = vault_active[key_name]
-    url = f"https://api.apify.com/v2/users/me?token={key_value}"
-    req = request.Request(url, method="GET")
-    try:
-        with request.urlopen(req, timeout=5) as resp:
-            code = resp.getcode()
-            if code == 200:
-                return "✓", "perfil de usuario obtenido (200)", key_name, presence
-            return "—", f"respuesta inesperada HTTP {code}", key_name, presence
-    except error.HTTPError as e:
-        if e.code in (401, 403):
-            return "✗", f"llave invalida (HTTP {e.code})", key_name, presence
-        return "—", f"error HTTP {e.code} (no es de autenticacion)", key_name, presence
-    except (error.URLError, socket.timeout, TimeoutError, OSError) as e:
-        return "—", f"error de red: {e.__class__.__name__}", key_name, presence
-
-
-def check_rapidapi(vault_active: dict, vault_exists: bool):
-    if not vault_exists:
-        return "✗", "vault no encontrado"
-    if "RAPIDAPI_KEY" in vault_active and vault_active["RAPIDAPI_KEY"].strip():
-        return "—", "presente en vault pero F2 no la valido con red (fuera de alcance)"
-    return "✗", "no encontrada en vault bajo ningun nombre (confirmado en F1); sin intento de red"
-
-
-def render_report(rows, parsed, apify_result, rapidapi_result, apify_presence, out_path: Path):
+def render_report(rows, parsed, validator_results: dict[str, dict], out_path: Path):
     today = datetime.date.today().isoformat()
     lines = []
     lines.append(f"# Matriz de conexiones — {today}")
     lines.append("")
-    lines.append("Generado por `scripts/connection_matrix.py` (plan Prometeo, fase F2).")
-    lines.append("Nunca contiene valores de llaves — solo presencia/ausencia y, para "
-                 "Apify, el resultado de un GET gratuito de perfil.")
+    lines.append("Generado por `scripts/connection_matrix.py` (plan de conexiones, fase C1, "
+                 "sobre la base de F2/F13 del plan Prometeo).")
+    lines.append("Nunca contiene valores de llaves — solo presencia/ausencia y, para los "
+                 "proveedores en `live-free`, el resultado de un GET gratuito de "
+                 "perfil/cuota/whoami.")
     lines.append("")
 
     lines.append("## Notas de contexto (✗ esperables, no son bugs)")
     lines.append("")
     lines.append("- `NVIDIA_*`: llave conocida como invalida, rechaza inferencia con "
-                 "403 (ver memoria del operador).")
-    lines.append("- `HIGGSFIELD_*`: cuenta suspendida.")
+                 "403 (ver memoria del operador) — el validador en vivo lo confirma.")
+    lines.append("- `HIGGSFIELD_*`: cuenta suspendida — validador en `policy-skip`.")
+    lines.append("- `KIE_*`/`MODAL_*`: `policy-skip` explícito — ver motivo en la tabla "
+                 "de validadores.")
+    lines.append("- **Vault**: es la fuente de verdad de credenciales, no se \"audita\" "
+                 "contra nada — aparece para mostrar qué variables existen ahí y, por "
+                 "comparación con cada repo, cuáles faltan propagar (tarea de C2).")
     lines.append("- OAuth manuales de canales (Nous/Codex/xAI/Qwen): no viven en estos "
                  "`.env` como credenciales de archivo — se ven con `hermes status`, "
                  "actualmente deslogueados; no aplica a esta matriz.")
@@ -227,18 +201,18 @@ def render_report(rows, parsed, apify_result, rapidapi_result, apify_presence, o
     lines.append("")
     lines.append("| sistema | archivo | encontrado |")
     lines.append("|---|---|---|")
-    for sysname, path in SYSTEMS:
+    for sysname, path in ALL_SYSTEMS:
         exists = parsed[sysname][0]
         mark = "si" if exists else "NO — archivo no encontrado"
         lines.append(f"| {sysname} | `{path}` | {mark} |")
     lines.append("")
 
-    lines.append("## Matriz por proveedor")
+    lines.append("## Matriz por proveedor (presencia, sin red)")
     lines.append("")
     lines.append("proveedor|sistema|variable|estado|detalle")
     lines.append("---|---|---|---|---")
 
-    totals_by_system = {sysname: {"✓": 0, "✗": 0, "—": 0} for sysname, _ in SYSTEMS}
+    totals_by_system = {sysname: {"✓": 0, "✗": 0, "—": 0} for sysname, _ in ALL_SYSTEMS}
     totals_overall = {"✓": 0, "✗": 0, "—": 0}
 
     providers = sorted(set(r[0] for r in rows))
@@ -250,66 +224,81 @@ def render_report(rows, parsed, apify_result, rapidapi_result, apify_presence, o
             totals_overall[status] += 1
     lines.append("")
 
-    lines.append("## Validacion de red — Apify")
+    lines.append("## Validadores en vivo (scripts/validators/registry.py, fase C1)")
     lines.append("")
-    a_status, a_detail, a_key, presence = apify_result
-    lines.append(f"- Vault usado: `{VAULT_PATH}`")
-    lines.append(f"- Llave probada: `{a_key or '(ninguna utilizable)'}` "
-                 "(valor nunca impreso)")
-    lines.append(f"- Endpoint: `GET https://api.apify.com/v2/users/me?token=<key>` "
-                 "(gratuito, no consume creditos)")
-    lines.append(f"- Resultado: **{a_status}** — {a_detail}")
+    lines.append("Cada fila corre contra el vault (`~/.secrets/credenciales/credenciales/.env`), "
+                 "nunca contra los `.env` de repo. Ver el docstring de cada `validate_*` en "
+                 "`scripts/validators/registry.py` para la URL exacta y por qué es gratis. "
+                 "`policy-skip` no es un fallo: es una decisión explícita de no arriesgar "
+                 "gasto (ver detalle).")
     lines.append("")
-    lines.append("Presencia de candidatas en el vault (sin valores):")
+    lines.append("proveedor|estado|detalle|latencia_ms|cuota")
+    lines.append("---|---|---|---|---")
+
+    live_totals = {"✓": 0, "✗": 0, "—": 0, "policy-skip": 0}
+    for provider in sorted(validator_results):
+        r = validator_results[provider]
+        live_totals[r["status"]] = live_totals.get(r["status"], 0) + 1
+        latency_str = str(r["latency_ms"]) if r.get("latency_ms") is not None else ""
+        quota_str = json.dumps(r["quota"], ensure_ascii=False) if r.get("quota") else ""
+        detail = str(r["detail"]).replace("|", "/").replace("\n", " ")
+        lines.append(f"{provider}|{r['status']}|{detail}|{latency_str}|{quota_str}")
     lines.append("")
-    lines.append("variable|estado")
-    lines.append("---|---")
-    for n, st in presence.items():
-        lines.append(f"{n}|{st}")
+    lines.append(
+        f"**Total validadores**: ✓ {live_totals['✓']}  ✗ {live_totals['✗']}  "
+        f"— {live_totals['—']}  policy-skip {live_totals['policy-skip']}"
+    )
     lines.append("")
 
-    lines.append("## Validacion de red — RapidAPI")
-    lines.append("")
-    r_status, r_detail = rapidapi_result
-    lines.append(f"- Variable: `RAPIDAPI_KEY`")
-    lines.append(f"- Resultado: **{r_status}** — {r_detail}")
-    lines.append("")
-
-    lines.append("## Resumen — totales por sistema")
+    lines.append("## Resumen — totales por sistema (presencia)")
     lines.append("")
     lines.append("sistema|✓|✗|—")
     lines.append("---|---|---|---")
-    for sysname, _ in SYSTEMS:
+    for sysname, _ in ALL_SYSTEMS:
         t = totals_by_system[sysname]
         lines.append(f"{sysname}|{t['✓']}|{t['✗']}|{t['—']}")
     lines.append("")
-    lines.append(f"**Total general**: ✓ {totals_overall['✓']}  "
+    lines.append(f"**Total general (presencia)**: ✓ {totals_overall['✓']}  "
                  f"✗ {totals_overall['✗']}  "
                  f"— {totals_overall['—']}")
     lines.append("")
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
-    return totals_by_system, totals_overall
+    return totals_by_system, totals_overall, live_totals
 
 
 def compute_and_render() -> dict:
-    """Runs the full F2 audit, writes the markdown report (unchanged shape)
-    plus a JSON mirror next to it, and returns the same summary dict as a
-    Python object -- the shared entry point for the CLI, `daily_cycle.py`,
-    and `GET /api/dashboard`."""
+    """Runs the full audit (presencia F2 + validadores en vivo C1), writes the
+    markdown report (unchanged shape for the presence section) plus a JSON mirror
+    next to it, and returns the same summary dict as a Python object -- the shared
+    entry point for the CLI, `daily_cycle.py`, and `GET /api/dashboard`."""
     rows, parsed = build_matrix()
 
     vault_exists, vault_active, _ = parse_env(VAULT_PATH)
-    apify_result = check_apify(vault_active) if vault_exists else \
-        ("✗", "vault no encontrado", None, {})
-    rapidapi_result = check_rapidapi(vault_active, vault_exists)
+    if vault_exists:
+        validator_results = run_validators(vault_active)
+    else:
+        validator_results = {
+            name: {"status": "✗", "detail": "vault no encontrado", "latency_ms": None, "quota": None}
+            for name in VALIDATORS
+        }
 
     today = datetime.date.today().isoformat()
     out_path = REPO_ROOT / "reports" / f"connection-matrix-{today}.md"
-    totals_by_system, totals_overall = render_report(
-        rows, parsed, apify_result, rapidapi_result, apify_result[3], out_path
+    totals_by_system, totals_overall, live_totals = render_report(
+        rows, parsed, validator_results, out_path
     )
+
+    # Compatibilidad retro: `daily_cycle.py:192-193` y `cano_hermes/api/app.py:520-525`
+    # leen `summary["apify"]`/`summary["rapidapi"]` con la forma exacta
+    # `{"status": .., "detail": ..}` desde F13 -- se preserva sin cambios aunque el
+    # detalle ahora venga del registry unificado.
+    def _legacy(name: str) -> dict:
+        r = validator_results.get(name)
+        if r is None:
+            return {"status": "✗", "detail": "validador no registrado"}
+        return {"status": r["status"], "detail": r["detail"]}
 
     summary = {
         "date": today,
@@ -319,11 +308,13 @@ def compute_and_render() -> dict:
                 "found": parsed[sysname][0],
                 "counts": totals_by_system[sysname],
             }
-            for sysname, _ in SYSTEMS
+            for sysname, _ in ALL_SYSTEMS
         },
         "totals": totals_overall,
-        "apify": {"status": apify_result[0], "detail": apify_result[1]},
-        "rapidapi": {"status": rapidapi_result[0], "detail": rapidapi_result[1]},
+        "validators": validator_results,
+        "validators_totals": live_totals,
+        "apify": _legacy("apify"),
+        "rapidapi": _legacy("rapidapi"),
     }
 
     json_path = out_path.with_suffix(".json")
@@ -347,8 +338,10 @@ def main():
         return
 
     print(f"reporte: {summary['report_path']}")
-    print(f"totales: ✓{summary['totals']['✓']} "
+    print(f"totales (presencia): ✓{summary['totals']['✓']} "
           f"✗{summary['totals']['✗']} —{summary['totals']['—']}")
+    vt = summary["validators_totals"]
+    print(f"validadores en vivo: ✓{vt['✓']} ✗{vt['✗']} —{vt['—']} policy-skip{vt['policy-skip']}")
     print(f"apify: {summary['apify']['status']} — {summary['apify']['detail']}")
     print(f"rapidapi: {summary['rapidapi']['status']} — {summary['rapidapi']['detail']}")
 

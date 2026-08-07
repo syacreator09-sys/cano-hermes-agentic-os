@@ -89,7 +89,7 @@ llaves:
   uso: clave de API de Apify -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
     con Cano
   consumidores: []
-  validacion: presence-only
+  validacion: live-free
   riesgo: medio
   rotacion_pendiente: false
   rotacion_motivo: ''
@@ -98,7 +98,7 @@ llaves:
   dominio: otro-proyecto
   uso: clave de Apify -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar con Cano
   consumidores: []
-  validacion: presence-only
+  validacion: live-free
   riesgo: medio
   rotacion_pendiente: false
   rotacion_motivo: ''
@@ -107,7 +107,7 @@ llaves:
   dominio: otro-proyecto
   uso: clave de Apify -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar con Cano
   consumidores: []
-  validacion: presence-only
+  validacion: live-free
   riesgo: medio
   rotacion_pendiente: false
   rotacion_motivo: ''
@@ -116,7 +116,7 @@ llaves:
   dominio: otro-proyecto
   uso: clave de Apify -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar con Cano
   consumidores: []
-  validacion: presence-only
+  validacion: live-free
   riesgo: medio
   rotacion_pendiente: false
   rotacion_motivo: ''
@@ -125,7 +125,7 @@ llaves:
   dominio: otro-proyecto
   uso: clave de Apify -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar con Cano
   consumidores: []
-  validacion: presence-only
+  validacion: live-free
   riesgo: medio
   rotacion_pendiente: false
   rotacion_motivo: ''
@@ -134,7 +134,7 @@ llaves:
   dominio: otro-proyecto
   uso: clave de Apify -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar con Cano
   consumidores: []
-  validacion: presence-only
+  validacion: live-free
   riesgo: medio
   rotacion_pendiente: false
   rotacion_motivo: ''
@@ -143,7 +143,7 @@ llaves:
   dominio: otro-proyecto
   uso: clave de Apify -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar con Cano
   consumidores: []
-  validacion: presence-only
+  validacion: live-free
   riesgo: medio
   rotacion_pendiente: false
   rotacion_motivo: ''
@@ -152,7 +152,7 @@ llaves:
   dominio: otro-proyecto
   uso: clave de Apify -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar con Cano
   consumidores: []
-  validacion: presence-only
+  validacion: live-free
   riesgo: medio
   rotacion_pendiente: false
   rotacion_motivo: ''
@@ -182,7 +182,7 @@ llaves:
   uso: token de Baserow Accounting; consumida en cano-hermes-agentic-os/cano_hermes/finance/accounting.py:92
   consumidores:
   - cano-hermes-agentic-os/cano_hermes/finance/accounting.py:92
-  validacion: presence-only
+  validacion: live-free
   riesgo: medio
   rotacion_pendiente: false
   rotacion_motivo: ''
@@ -192,7 +192,7 @@ llaves:
   uso: token de API de Baserow -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
     con Cano
   consumidores: []
-  validacion: presence-only
+  validacion: live-free
   riesgo: medio
   rotacion_pendiente: false
   rotacion_motivo: ''
@@ -212,7 +212,7 @@ llaves:
   uso: token de Baserow Content; consumida en cano-hermes-agentic-os/cano_hermes/content/dedup.py:96
   consumidores:
   - cano-hermes-agentic-os/cano_hermes/content/dedup.py:96
-  validacion: presence-only
+  validacion: live-free
   riesgo: medio
   rotacion_pendiente: false
   rotacion_motivo: ''
@@ -252,7 +252,7 @@ llaves:
   uso: token de Baserow -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar con
     Cano
   consumidores: []
-  validacion: presence-only
+  validacion: live-free
   riesgo: medio
   rotacion_pendiente: false
   rotacion_motivo: ''
@@ -521,7 +521,7 @@ llaves:
   uso: token de Cloudflare AUTH -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
     con Cano
   consumidores: []
-  validacion: presence-only
+  validacion: live-free
   riesgo: medio
   rotacion_pendiente: false
   rotacion_motivo: ''
@@ -541,7 +541,7 @@ llaves:
   uso: variable de configuración de Cloudflare Token Billing -- sin consumidor detectado ni patrón reconocido,
     sin clasificar, revisar con Cano
   consumidores: []
-  validacion: presence-only
+  validacion: live-free
   riesgo: medio
   rotacion_pendiente: false
   rotacion_motivo: ''
@@ -551,7 +551,7 @@ llaves:
   uso: variable de configuración de Cloudflare Token DNS -- sin consumidor detectado ni patrón reconocido,
     sin clasificar, revisar con Cano
   consumidores: []
-  validacion: presence-only
+  validacion: live-free
   riesgo: medio
   rotacion_pendiente: false
   rotacion_motivo: ''
@@ -561,7 +561,7 @@ llaves:
   uso: variable de configuración de Cloudflare Token GTAV -- sin consumidor detectado ni patrón reconocido,
     sin clasificar, revisar con Cano
   consumidores: []
-  validacion: presence-only
+  validacion: live-free
   riesgo: medio
   rotacion_pendiente: false
   rotacion_motivo: ''
@@ -571,7 +571,7 @@ llaves:
   uso: variable de configuración de Cloudflare Token Wordpress -- sin consumidor detectado ni patrón reconocido,
     sin clasificar, revisar con Cano
   consumidores: []
-  validacion: presence-only
+  validacion: live-free
   riesgo: medio
   rotacion_pendiente: false
   rotacion_motivo: ''
@@ -581,7 +581,7 @@ llaves:
   uso: variable de configuración de Cloudflare Token Workers -- sin consumidor detectado ni patrón reconocido,
     sin clasificar, revisar con Cano
   consumidores: []
-  validacion: presence-only
+  validacion: live-free
   riesgo: medio
   rotacion_pendiente: false
   rotacion_motivo: ''
@@ -591,7 +591,7 @@ llaves:
   uso: clave de API de Cloudinary -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
     con Cano
   consumidores: []
-  validacion: presence-only
+  validacion: live-free
   riesgo: medio
   rotacion_pendiente: false
   rotacion_motivo: ''
@@ -601,7 +601,7 @@ llaves:
   uso: secreto de API de Cloudinary -- sin consumidor detectado ni patrón reconocido, sin clasificar,
     revisar con Cano
   consumidores: []
-  validacion: presence-only
+  validacion: live-free
   riesgo: alto
   rotacion_pendiente: false
   rotacion_motivo: ''
@@ -621,7 +621,7 @@ llaves:
   uso: clave de API de Cohere -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
     con Cano
   consumidores: []
-  validacion: presence-only
+  validacion: live-free
   riesgo: medio
   rotacion_pendiente: false
   rotacion_motivo: ''
@@ -730,7 +730,7 @@ llaves:
   uso: clave de API de Deepl -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
     con Cano
   consumidores: []
-  validacion: presence-only
+  validacion: live-free
   riesgo: medio
   rotacion_pendiente: false
   rotacion_motivo: ''
@@ -789,7 +789,7 @@ llaves:
   - hermes-agent/scripts/discord-voice-doctor.py:222
   - hermes-agent/tests/tools/test_tts_streaming_e2e.py:27
   - hermes-agent/tests/tools/test_tts_streaming_e2e.py:56
-  validacion: presence-only
+  validacion: live-free
   riesgo: medio
   rotacion_pendiente: false
   rotacion_motivo: ''
@@ -799,7 +799,7 @@ llaves:
   uso: clave de API de Elevenlabs -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
     con Cano
   consumidores: []
-  validacion: presence-only
+  validacion: live-free
   riesgo: medio
   rotacion_pendiente: false
   rotacion_motivo: ''
@@ -1037,7 +1037,7 @@ llaves:
   uso: clave de API de Firecrawl -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
     con Cano
   consumidores: []
-  validacion: presence-only
+  validacion: live-free
   riesgo: medio
   rotacion_pendiente: false
   rotacion_motivo: ''
@@ -1079,7 +1079,7 @@ llaves:
   - hermes-agent/.agents/skills/media-use/audio/scripts/lyria-recipe.py:50
   - hermes-agent/.agents/skills/motion-graphics/grounding/locate.mjs:191
   - hermes-agent/tests/tools/test_tts_streaming_e2e.py:57
-  validacion: presence-only
+  validacion: live-free
   riesgo: medio
   rotacion_pendiente: false
   rotacion_motivo: ''
@@ -1105,7 +1105,7 @@ llaves:
   - hermes-agent/scripts/ci/timings_report.py:1019
   - hermes-agent/tests/tools/test_code_execution_modes.py:313
   - hermes-agent/tests/tools/test_skills_guard.py:401
-  validacion: presence-only
+  validacion: live-free
   riesgo: medio
   rotacion_pendiente: false
   rotacion_motivo: ''
@@ -1178,7 +1178,7 @@ llaves:
   uso: clave de API de GROQ; consumida en hermes-agent/scripts/discord-voice-doctor.py:221
   consumidores:
   - hermes-agent/scripts/discord-voice-doctor.py:221
-  validacion: presence-only
+  validacion: live-free
   riesgo: medio
   rotacion_pendiente: false
   rotacion_motivo: ''
@@ -1195,7 +1195,7 @@ llaves:
   - hermes-agent/.agents/skills/media-use/audio/scripts/lib/heygen.test.mjs:29
   - hermes-agent/.agents/skills/media-use/audio/scripts/lib/heygen.test.mjs:67
   - hermes-agent/.agents/skills/media-use/audio/scripts/lib/heygen.test.mjs:9
-  validacion: presence-only
+  validacion: live-free
   riesgo: medio
   rotacion_pendiente: false
   rotacion_motivo: ''
@@ -1214,7 +1214,7 @@ llaves:
   dominio: otro-proyecto
   uso: token de HF -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar con Cano
   consumidores: []
-  validacion: presence-only
+  validacion: live-free
   riesgo: medio
   rotacion_pendiente: false
   rotacion_motivo: ''
@@ -1224,7 +1224,7 @@ llaves:
   uso: variable de configuración de HF Token Finegrained -- sin consumidor detectado ni patrón reconocido,
     sin clasificar, revisar con Cano
   consumidores: []
-  validacion: presence-only
+  validacion: live-free
   riesgo: medio
   rotacion_pendiente: false
   rotacion_motivo: ''
@@ -1291,7 +1291,7 @@ llaves:
   uso: clave de API de KIE -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar con
     Cano
   consumidores: []
-  validacion: presence-only
+  validacion: policy-skip
   riesgo: medio
   rotacion_pendiente: false
   rotacion_motivo: ''
@@ -1301,7 +1301,7 @@ llaves:
   uso: clave de API de KIE -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar con
     Cano
   consumidores: []
-  validacion: presence-only
+  validacion: policy-skip
   riesgo: medio
   rotacion_pendiente: false
   rotacion_motivo: ''
@@ -1311,7 +1311,7 @@ llaves:
   uso: clave de API de KIMI -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
     con Cano
   consumidores: []
-  validacion: presence-only
+  validacion: live-free
   riesgo: medio
   rotacion_pendiente: true
   rotacion_motivo: expuesta en transcript de sesión (F11, K9, K16 del plan Prometeo/HERMES-KICKOFF)
@@ -1470,7 +1470,7 @@ llaves:
   consumidores:
   - hermes-agent/scripts/discord-voice-doctor.py:255
   - hermes-agent/scripts/discord-voice-doctor.py:259
-  validacion: presence-only
+  validacion: live-free
   riesgo: medio
   rotacion_pendiente: false
   rotacion_motivo: ''
@@ -1530,7 +1530,7 @@ llaves:
   uso: identificador de Modal Token -- sin consumidor detectado ni patrón reconocido, sin clasificar,
     revisar con Cano
   consumidores: []
-  validacion: presence-only
+  validacion: policy-skip
   riesgo: medio
   rotacion_pendiente: false
   rotacion_motivo: ''
@@ -1540,7 +1540,7 @@ llaves:
   uso: secreto de Modal Token -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
     con Cano
   consumidores: []
-  validacion: presence-only
+  validacion: policy-skip
   riesgo: alto
   rotacion_pendiente: false
   rotacion_motivo: ''
@@ -1570,7 +1570,7 @@ llaves:
   uso: clave de API de Moonshot; consumida en cano-investment-intelligence/.upstreams/ai_hedge_fund/hedge_fund/llm/client.py:181
   consumidores:
   - cano-investment-intelligence/.upstreams/ai_hedge_fund/hedge_fund/llm/client.py:181
-  validacion: presence-only
+  validacion: live-free
   riesgo: medio
   rotacion_pendiente: false
   rotacion_motivo: ''
@@ -1590,7 +1590,7 @@ llaves:
   uso: clave de API de N8N -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar con
     Cano
   consumidores: []
-  validacion: presence-only
+  validacion: live-free
   riesgo: medio
   rotacion_pendiente: false
   rotacion_motivo: ''
@@ -1689,7 +1689,7 @@ llaves:
   dominio: otro-proyecto
   uso: token de Notion -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar con Cano
   consumidores: []
-  validacion: presence-only
+  validacion: live-free
   riesgo: medio
   rotacion_pendiente: false
   rotacion_motivo: ''
@@ -1709,7 +1709,7 @@ llaves:
   uso: clave de API de Nvidia NIM -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
     con Cano
   consumidores: []
-  validacion: presence-only
+  validacion: live-free
   riesgo: medio
   rotacion_pendiente: true
   rotacion_motivo: expuesta en transcript de sesión (F11, K9, K16 del plan Prometeo/HERMES-KICKOFF)
@@ -1735,7 +1735,7 @@ llaves:
   - hermes-agent/tests/tools/test_code_execution_modes.py:311
   - hermes-agent/tests/tools/test_tts_streaming_e2e.py:59
   - hermes-agent/tools/skills_guard.py:158
-  validacion: presence-only
+  validacion: live-free
   riesgo: medio
   rotacion_pendiente: false
   rotacion_motivo: ''
@@ -1770,7 +1770,7 @@ llaves:
   - hermes-agent/tests/run_agent/test_sequential_chats_live.py:47
   - hermes-agent/tests/test_trajectory_compressor.py:30
   - hermes-agent/tools/openrouter_client.py:47
-  validacion: presence-only
+  validacion: live-free
   riesgo: medio
   rotacion_pendiente: false
   rotacion_motivo: ''
@@ -1830,7 +1830,7 @@ llaves:
   uso: clave de API de Pexels -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
     con Cano
   consumidores: []
-  validacion: presence-only
+  validacion: live-free
   riesgo: medio
   rotacion_pendiente: false
   rotacion_motivo: ''
@@ -1860,7 +1860,7 @@ llaves:
   uso: clave de API de Pixabay -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
     con Cano
   consumidores: []
-  validacion: presence-only
+  validacion: live-free
   riesgo: medio
   rotacion_pendiente: false
   rotacion_motivo: ''
@@ -1967,7 +1967,7 @@ llaves:
   uso: token de API de Replicate -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
     con Cano
   consumidores: []
-  validacion: presence-only
+  validacion: live-free
   riesgo: medio
   rotacion_pendiente: false
   rotacion_motivo: ''
@@ -2128,7 +2128,7 @@ llaves:
   dominio: otro-proyecto
   uso: clave secreta de Stripe -- sin consumidor detectado, revisar con Cano
   consumidores: []
-  validacion: presence-only
+  validacion: live-free
   riesgo: alto
   rotacion_pendiente: false
   rotacion_motivo: ''
@@ -2137,7 +2137,7 @@ llaves:
   dominio: otro-proyecto
   uso: variable de configuración de Stripe Secret KEY LIVE -- sin consumidor detectado, revisar con Cano
   consumidores: []
-  validacion: presence-only
+  validacion: live-free
   riesgo: alto
   rotacion_pendiente: false
   rotacion_motivo: ''
@@ -2176,7 +2176,7 @@ llaves:
   uso: clave de Supabase Nissan -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
     con Cano
   consumidores: []
-  validacion: presence-only
+  validacion: live-free
   riesgo: medio
   rotacion_pendiente: false
   rotacion_motivo: ''
@@ -2196,7 +2196,7 @@ llaves:
   uso: clave de Supabase Orion ANON -- sin consumidor detectado ni patrón reconocido, sin clasificar,
     revisar con Cano
   consumidores: []
-  validacion: presence-only
+  validacion: live-free
   riesgo: medio
   rotacion_pendiente: false
   rotacion_motivo: ''
@@ -2246,7 +2246,7 @@ llaves:
   uso: clave de Supabase Worldvibe Service -- sin consumidor detectado ni patrón reconocido, sin clasificar,
     revisar con Cano
   consumidores: []
-  validacion: presence-only
+  validacion: live-free
   riesgo: medio
   rotacion_pendiente: false
   rotacion_motivo: ''
@@ -2266,7 +2266,7 @@ llaves:
   uso: token de Telegram BOT; consumida en hermes-agent/tests/hermes_cli/test_env_loader.py:311
   consumidores:
   - hermes-agent/tests/hermes_cli/test_env_loader.py:311
-  validacion: presence-only
+  validacion: live-free
   riesgo: medio
   rotacion_pendiente: false
   rotacion_motivo: ''
@@ -2276,7 +2276,7 @@ llaves:
   uso: variable de configuración de Telegram BOT Token Photoreel -- sin consumidor detectado ni patrón
     reconocido, sin clasificar, revisar con Cano
   consumidores: []
-  validacion: presence-only
+  validacion: live-free
   riesgo: medio
   rotacion_pendiente: false
   rotacion_motivo: ''
@@ -2438,7 +2438,7 @@ llaves:
   uso: clave de API de Uploadpost -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
     con Cano
   consumidores: []
-  validacion: presence-only
+  validacion: live-free
   riesgo: medio
   rotacion_pendiente: false
   rotacion_motivo: ''
@@ -2468,7 +2468,7 @@ llaves:
   uso: token de Upstash Redis REST -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
     con Cano
   consumidores: []
-  validacion: presence-only
+  validacion: live-free
   riesgo: medio
   rotacion_pendiente: false
   rotacion_motivo: ''
@@ -2640,7 +2640,7 @@ llaves:
   - hermes-agent/tests/tools/test_transcription_dotenv_fallback.py:210
   - hermes-agent/tests/tools/test_tts_streaming_e2e.py:20
   - hermes-agent/tools/xai_http.py:42
-  validacion: presence-only
+  validacion: live-free
   riesgo: medio
   rotacion_pendiente: false
   rotacion_motivo: ''

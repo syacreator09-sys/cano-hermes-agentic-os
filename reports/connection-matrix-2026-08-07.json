@@ -1,0 +1,300 @@
+{
+  "date": "2026-08-07",
+  "report_path": "/home/cano/repos/cano-hermes-agentic-os/reports/connection-matrix-2026-08-07.md",
+  "systems": {
+    "StarHome": {
+      "found": true,
+      "counts": {
+        "✓": 120,
+        "✗": 83,
+        "—": 3
+      }
+    },
+    "factory-v5": {
+      "found": true,
+      "counts": {
+        "✓": 12,
+        "✗": 192,
+        "—": 2
+      }
+    },
+    "command-center (root)": {
+      "found": true,
+      "counts": {
+        "✓": 34,
+        "✗": 152,
+        "—": 20
+      }
+    },
+    "command-center (content-studio)": {
+      "found": true,
+      "counts": {
+        "✓": 22,
+        "✗": 181,
+        "—": 3
+      }
+    },
+    "hermes-agent": {
+      "found": true,
+      "counts": {
+        "✓": 120,
+        "✗": 58,
+        "—": 28
+      }
+    },
+    "Vault (fuente de verdad)": {
+      "found": true,
+      "counts": {
+        "✓": 140,
+        "✗": 57,
+        "—": 9
+      }
+    }
+  },
+  "totals": {
+    "✓": 448,
+    "✗": 723,
+    "—": 65
+  },
+  "validators": {
+    "rapidapi": {
+      "status": "✓",
+      "detail": "presente en vault (`RAPIDAPI_KEY`), sin verificar en vivo -- sin endpoint gratuito y documentado de whoami/perfil confirmado tras revisar docs.rapidapi.com -- la Subscriptions API real vive bajo el Platform API (GraphQL) con credenciales de partner distintas a la llave de consumidor X-RapidAPI-Key; implementarlo a ciegas arriesgaría pegarle a un endpoint de terceros facturable en vez de uno propio de RapidAPI",
+      "latency_ms": null,
+      "quota": null
+    },
+    "anthropic": {
+      "status": "—",
+      "detail": "sin llave utilizable en el vault (ANTHROPIC_API_KEY)",
+      "latency_ms": null,
+      "quota": null
+    },
+    "groq": {
+      "status": "—",
+      "detail": "sin llave utilizable en el vault (GROQ_API_KEY)",
+      "latency_ms": null,
+      "quota": null
+    },
+    "cohere": {
+      "status": "✓",
+      "detail": "200 -- lista de modelos obtenida",
+      "latency_ms": 317,
+      "quota": null
+    },
+    "mistral": {
+      "status": "✗",
+      "detail": "llave invalida o sin permiso (HTTP 401)",
+      "latency_ms": 387,
+      "quota": null
+    },
+    "perplexity": {
+      "status": "✓",
+      "detail": "presente en vault (`PERPLEXITY_API_KEY`), sin verificar en vivo -- no existe endpoint documentado de validación sin costo -- verificado en docs.perplexity.ai: todos los endpoints públicos (Gateway/Agent/Search/chat) son facturables, no hay whoami/models gratuito",
+      "latency_ms": null,
+      "quota": null
+    },
+    "nvidia_nim": {
+      "status": "✓",
+      "detail": "200 -- lista de modelos obtenida",
+      "latency_ms": 409,
+      "quota": null
+    },
+    "gemini": {
+      "status": "—",
+      "detail": "respuesta inesperada HTTP 400",
+      "latency_ms": 439,
+      "quota": null
+    },
+    "xai": {
+      "status": "✗",
+      "detail": "llave invalida o sin permiso (HTTP 403)",
+      "latency_ms": 135,
+      "quota": null
+    },
+    "apify": {
+      "status": "✓",
+      "detail": "200 -- perfil de usuario obtenido (`APIFY_API_KEY`)",
+      "latency_ms": 512,
+      "quota": null
+    },
+    "replicate": {
+      "status": "✗",
+      "detail": "llave invalida o sin permiso (HTTP 403)",
+      "latency_ms": 160,
+      "quota": null
+    },
+    "elevenlabs": {
+      "status": "—",
+      "detail": "respuesta inesperada HTTP 400",
+      "latency_ms": 205,
+      "quota": null
+    },
+    "openai": {
+      "status": "✓",
+      "detail": "200 -- lista de modelos obtenida",
+      "latency_ms": 804,
+      "quota": null
+    },
+    "github": {
+      "status": "✗",
+      "detail": "llave invalida o sin permiso (HTTP 401)",
+      "latency_ms": 289,
+      "quota": null
+    },
+    "openrouter": {
+      "status": "✓",
+      "detail": "200 -- estado de la llave obtenido",
+      "latency_ms": 862,
+      "quota": {
+        "limit_remaining": null,
+        "is_free_tier": true
+      }
+    },
+    "notion": {
+      "status": "✓",
+      "detail": "200 -- bot user obtenido",
+      "latency_ms": 352,
+      "quota": null
+    },
+    "heygen": {
+      "status": "✗",
+      "detail": "llave invalida (HTTP 401)",
+      "latency_ms": 512,
+      "quota": null
+    },
+    "supabase": {
+      "status": "—",
+      "detail": "proyecto orion: error de red: URLError",
+      "latency_ms": 110,
+      "quota": null
+    },
+    "cloudflare": {
+      "status": "✓",
+      "detail": "200 -- token `CLOUDFLARE_AUTH_TOKEN` activo",
+      "latency_ms": 218,
+      "quota": null
+    },
+    "exa": {
+      "status": "✓",
+      "detail": "presente en vault (`EXA_API_KEY`), sin verificar en vivo -- el único endpoint de cuenta documentado (\"Get API Key Usage\", docs.exa.ai/reference/team-management/get-api-key-usage) exige el ID de la llave -- no solo el secreto -- y vive bajo team-management (scope de owner); sin un whoami simple confirmado, no se implementa como live-free",
+      "latency_ms": null,
+      "quota": null
+    },
+    "deepl": {
+      "status": "✓",
+      "detail": "200 -- uso consultado",
+      "latency_ms": 708,
+      "quota": {
+        "character_count": 0,
+        "character_limit": 500000
+      }
+    },
+    "baserow": {
+      "status": "—",
+      "detail": "error de red/host no disponible: URLError",
+      "latency_ms": 234,
+      "quota": null
+    },
+    "pexels": {
+      "status": "✗",
+      "detail": "llave invalida o sin permiso (HTTP 403)",
+      "latency_ms": 88,
+      "quota": null
+    },
+    "kimi_moonshot": {
+      "status": "✓",
+      "detail": "200 -- lista de modelos obtenida (`KIMI_API_KEY`)",
+      "latency_ms": 1138,
+      "quota": null
+    },
+    "n8n": {
+      "status": "—",
+      "detail": "error de red/host no disponible: URLError",
+      "latency_ms": 199,
+      "quota": null
+    },
+    "telegram": {
+      "status": "✓",
+      "detail": "200 -- getMe ok (`TELEGRAM_BOT_TOKEN`)",
+      "latency_ms": 587,
+      "quota": null
+    },
+    "kie": {
+      "status": "policy-skip",
+      "detail": "factory/kie_readiness.py (factory-ia-channel-v5) SÍ tiene un chequeo local sin red (local_readiness()), pero exige un objeto Settings completo, toca ffmpeg y el CLI de Remotion, y su propio check 'provider_balance' queda BLOCKED sin un balance_lookup no facturable explícito -- ese es el mismo criterio de política que aplica aquí. Invocarlo por subprocess desde este repo acoplaría connection_matrix a las dependencias internas de factory-v5 (settings, node, ffmpeg) para un beneficio marginal (solo confirmaría presencia de KIE_API_KEY, que ya reporta la matriz base). Se documenta como policy-skip en vez de duplicar o acoplar esa lógica.",
+      "latency_ms": null,
+      "quota": null
+    },
+    "higgsfield": {
+      "status": "policy-skip",
+      "detail": "cuenta suspendida (ver memoria del operador) y cualquier endpoint de balance/consulta es potencialmente facturable -- fuera de alcance por política, igual que en el gate de Factory V5 (factory/kie_readiness.py marca 'higgsfield' PASS solo verificando que los flags de habilitación estén en false, sin red).",
+      "latency_ms": null,
+      "quota": null
+    },
+    "modal": {
+      "status": "policy-skip",
+      "detail": "Modal se administra por CLI (`modal token`/`modal app`), no expone un endpoint HTTP público de whoami -- verificar el token exigiría invocar el CLI de Modal, fuera del alcance HTTP-only de este validador.",
+      "latency_ms": null,
+      "quota": null
+    },
+    "stripe": {
+      "status": "✓",
+      "detail": "200 -- balance obtenido (`STRIPE_SECRET_KEY`)",
+      "latency_ms": 458,
+      "quota": null
+    },
+    "huggingface": {
+      "status": "✓",
+      "detail": "200 -- whoami ok (`HF_TOKEN`)",
+      "latency_ms": 197,
+      "quota": null
+    },
+    "firecrawl": {
+      "status": "✓",
+      "detail": "200 -- créditos consultados",
+      "latency_ms": 371,
+      "quota": {
+        "remaining_credits": 1294,
+        "plan_credits": 1000
+      }
+    },
+    "upstash": {
+      "status": "—",
+      "detail": "error de red: URLError",
+      "latency_ms": 243,
+      "quota": null
+    },
+    "pixabay": {
+      "status": "✓",
+      "detail": "200 -- búsqueda de prueba ok",
+      "latency_ms": 321,
+      "quota": null
+    },
+    "cloudinary": {
+      "status": "✗",
+      "detail": "credenciales inválidas (HTTP 401)",
+      "latency_ms": 366,
+      "quota": null
+    },
+    "uploadpost": {
+      "status": "✓",
+      "detail": "200 -- perfiles listados",
+      "latency_ms": 602,
+      "quota": null
+    }
+  },
+  "validators_totals": {
+    "✓": 18,
+    "✗": 7,
+    "—": 8,
+    "policy-skip": 3
+  },
+  "apify": {
+    "status": "✓",
+    "detail": "200 -- perfil de usuario obtenido (`APIFY_API_KEY`)"
+  },
+  "rapidapi": {
+    "status": "✓",
+    "detail": "presente en vault (`RAPIDAPI_KEY`), sin verificar en vivo -- sin endpoint gratuito y documentado de whoami/perfil confirmado tras revisar docs.rapidapi.com -- la Subscriptions API real vive bajo el Platform API (GraphQL) con credenciales de partner distintas a la llave de consumidor X-RapidAPI-Key; implementarlo a ciegas arriesgaría pegarle a un endpoint de terceros facturable en vez de uno propio de RapidAPI"
+  }
+}
