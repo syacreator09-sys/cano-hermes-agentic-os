@@ -283,6 +283,66 @@ class SQLiteStore:
                 (candidate_id, namespace, json.dumps(payload), "candidate", datetime.now(timezone.utc).isoformat()),
             )
 
+    @staticmethod
+    def _memory_candidate_row_to_dict(row: sqlite3.Row) -> dict:
+        return {
+            "id": row["id"],
+            "namespace": row["namespace"],
+            "payload": json.loads(row["payload"]),
+            "status": row["status"],
+            "created_at": row["created_at"],
+        }
+
+    def list_memory_candidates(self, status: str | None = None) -> list[dict]:
+        """K11 (plan HERMES-KICKOFF) -- reader for Prometeo F3's
+        `add_memory_candidate`, which had zero callers of a lister anywhere
+        in the codebase until now (write-only table). `status` filters on
+        the same value `add_memory_candidate` writes at insert time
+        (`"candidate"`) plus whatever `resolve_memory_candidate` below
+        transitions it to (`"approved"`/`"rejected"`) -- newest first,
+        matching every other `list_*` method in this store."""
+        query = "SELECT * FROM memory_candidates"
+        params: tuple = ()
+        if status is not None:
+            query += " WHERE status=?"
+            params = (status,)
+        query += " ORDER BY created_at DESC"
+        with self.connect() as db:
+            rows = db.execute(query, params).fetchall()
+        return [self._memory_candidate_row_to_dict(row) for row in rows]
+
+    def get_memory_candidate(self, candidate_id: str) -> dict | None:
+        with self.connect() as db:
+            row = db.execute("SELECT * FROM memory_candidates WHERE id=?", (candidate_id,)).fetchone()
+        return self._memory_candidate_row_to_dict(row) if row is not None else None
+
+    def resolve_memory_candidate(self, candidate_id: str, status: str, resolved_by: str) -> dict:
+        """K11 -- transitions a candidate's status in place. Unlike
+        `ApprovalRequest`/`save_approval`, this table has no dedicated
+        `resolved_by`/`resolved_at` column (F3 never added them) -- rather
+        than a schema migration for two columns on a table whose `payload`
+        already carries arbitrary caller-defined JSON, both are folded into
+        `payload` on resolution, the same "payload is the extensible source
+        of truth" pattern `save_order`'s docstring already established.
+        Raises `KeyError` if `candidate_id` doesn't exist -- callers (the
+        governance service, the HTTP endpoint) turn that into a 404."""
+        from datetime import datetime, timezone
+
+        existing = self.get_memory_candidate(candidate_id)
+        if existing is None:
+            raise KeyError(candidate_id)
+        payload = dict(existing["payload"])
+        payload["resolved_by"] = resolved_by
+        payload["resolved_at"] = datetime.now(timezone.utc).isoformat()
+        with self.connect() as db:
+            db.execute(
+                "UPDATE memory_candidates SET status=?, payload=? WHERE id=?",
+                (status, json.dumps(payload), candidate_id),
+            )
+        updated = self.get_memory_candidate(candidate_id)
+        assert updated is not None
+        return updated
+
     def save_bridge_link(self, starhome_id: str, kanban_task_id: str, board: str) -> dict:
         """K6 -- one row per StarHome id (order or task) that has been
         dispatched to Kanban, resolvable in both directions:

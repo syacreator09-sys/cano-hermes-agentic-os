@@ -31,6 +31,11 @@ secrets/
 *.pem
 *.key
 
+# K11 -- graphify's code-structure graph export (derived/regeneratable, like
+# build/ or *.egg-info above). Regenerate with `graphify update cano_hermes`
+# (AST-only, no LLM/API key needed) -- see cano_hermes/nexus/context.py.
+graphify-out/
+
 # F10 media output — binaries stay local, only reports/ .md + ffprobe text are tracked
 reports/media/
 

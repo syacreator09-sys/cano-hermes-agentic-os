@@ -6,6 +6,7 @@ import sys
 from cano_hermes.config import settings
 from cano_hermes.nexus.context import ContextBuilder
 from cano_hermes.nexus.graph import KnowledgeGraph
+from cano_hermes.nexus.graphify_adapter import GraphifyAdapter
 from cano_hermes.nexus.markdown import MarkdownVault
 
 
@@ -27,7 +28,10 @@ def handle(request: dict) -> dict:
         if name == "nexus_search":
             return {"content": [note.__dict__ for note in vault.search(arguments.get("query", ""))]}
         if name == "nexus_context":
-            packet = ContextBuilder(vault, graph).build(arguments.get("query", ""))
+            # K11 -- same graphify wiring as GET /api/nexus/context; see
+            # ContextBuilder's docstring.
+            builder = ContextBuilder(vault, graph, GraphifyAdapter(), settings.graphify_graph_path)
+            packet = builder.build(arguments.get("query", ""))
             return {"content": packet.__dict__}
         raise ValueError(f"Unknown tool: {name}")
     raise ValueError(f"Unknown method: {method}")

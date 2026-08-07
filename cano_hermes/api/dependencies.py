@@ -4,6 +4,7 @@ from cano_hermes.config import settings
 from cano_hermes.forge.pipeline import ForgePipeline
 from cano_hermes.governance.approvals import ApprovalService
 from cano_hermes.governance.budget import BudgetService
+from cano_hermes.governance.memory_candidates import MemoryCandidateService
 from cano_hermes.intelligence.router import ModelRouter
 from cano_hermes.notifications.service import NotificationService
 from cano_hermes.orchestration.conductor import Conductor
@@ -80,6 +81,14 @@ def queue_service() -> QueueService:
         engine(),
         max_concurrent_workers=settings.max_concurrent_workers,
     )
+
+
+@lru_cache
+def memory_candidates() -> MemoryCandidateService:
+    """K11 -- reads/resolves `memory_candidates` rows and, on approval,
+    promotes into `settings.vault_path` (the real Obsidian vault on this
+    host, `~/StarHomeVault`) -- see `governance/memory_candidates.py`."""
+    return MemoryCandidateService(store(), settings.vault_path)
 
 
 @lru_cache

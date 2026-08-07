@@ -19,7 +19,11 @@ class Note:
 
 class MarkdownVault:
     def __init__(self, root: Path | str = "vault") -> None:
-        self.root = Path(root)
+        # K11 -- `.expanduser()` so a `~/...` path from `HERMES_VAULT_PATH`
+        # (a plain string env var, not auto-expanded by pydantic/pathlib)
+        # resolves to the real home directory instead of a literal `~`
+        # subfolder relative to cwd that silently never exists.
+        self.root = Path(root).expanduser()
 
     def index(self) -> dict[str, Note]:
         notes: dict[str, Note] = {}

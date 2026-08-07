@@ -13,6 +13,13 @@ class Settings(BaseSettings):
     execution_mode: str = "dry_run"
     database_url: str = "sqlite:///storage/hermes.db"
     vault_path: Path = Path("vault")
+    # K11 (plan HERMES-KICKOFF) -- default location of a graphify graph.json
+    # export (`graphify update cano_hermes`, no LLM/API key needed for a
+    # code-only corpus). Relative to cwd, matching `vault_path`'s own
+    # convention. `ContextBuilder`/`nexus_context()` treat a missing file
+    # here as "graphify was never run" and degrade to vault-only context --
+    # this setting does not need to point at something that exists.
+    graphify_graph_path: Path = Path("graphify-out/graph.json")
     agent_path: Path = Path("agents")
     skill_path: Path = Path("skills")
     artifact_path: Path = Path("storage/artifacts")

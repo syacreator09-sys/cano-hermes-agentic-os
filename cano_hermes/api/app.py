@@ -23,6 +23,7 @@ from cano_hermes.forge.duplication import DuplicateCandidateError
 from cano_hermes.governance.budget import BudgetService
 from cano_hermes.nexus.context import ContextBuilder
 from cano_hermes.nexus.graph import KnowledgeGraph
+from cano_hermes.nexus.graphify_adapter import GraphifyAdapter
 from cano_hermes.nexus.markdown import MarkdownVault
 
 from .dependencies import (
@@ -31,6 +32,7 @@ from .dependencies import (
     engine,
     execution_service,
     forge_pipeline,
+    memory_candidates,
     notification_service,
     queue_service,
     registry,
@@ -48,6 +50,11 @@ class ApprovalResolution(BaseModel):
 class TaskCompletion(BaseModel):
     actor: str = "cano"
     reason: str = "manual-completion"
+
+
+class MemoryCandidateResolution(BaseModel):
+    decision: str
+    actor: str
 
 
 class ForgeCandidateRequest(BaseModel):
@@ -400,8 +407,47 @@ def nexus_search(q: str):
 
 @app.get("/api/nexus/context")
 def nexus_context(q: str):
+    """K11 -- mixes the real Obsidian vault (`settings.vault_path`,
+    `~/StarHomeVault` on this host) with a best-effort graphify lookup
+    (`settings.graphify_graph_path`); see `ContextBuilder`'s docstring for
+    how the two sources combine and where a future gbrain adapter plugs
+    in."""
     vault = MarkdownVault(settings.vault_path)
-    return ContextBuilder(vault, KnowledgeGraph(vault)).build(q)
+    builder = ContextBuilder(vault, KnowledgeGraph(vault), GraphifyAdapter(), settings.graphify_graph_path)
+    return builder.build(q)
+
+
+@app.get("/api/memory/candidates")
+def list_memory_candidates(status: str | None = None):
+    """K11 -- reader for Prometeo F3's `add_memory_candidate` (write-only
+    until now). `status` filters on `candidate` (pending) / `approved` /
+    `rejected`; omitted, returns all of them newest first."""
+    return memory_candidates().list(status)
+
+
+@app.get("/api/memory/candidates/{candidate_id}")
+def get_memory_candidate(candidate_id: str):
+    try:
+        return memory_candidates().get(candidate_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Memory candidate not found") from exc
+
+
+@app.post("/api/memory/candidates/{candidate_id}/resolve")
+def resolve_memory_candidate(candidate_id: str, request: MemoryCandidateResolution):
+    """K11 -- the only path that promotes a memory candidate to the vault
+    (see `MemoryCandidateService`/root `CLAUDE.md` rule 9). `decision` must
+    be `"approved"` or `"rejected"`; an actor cannot approve its own
+    candidate when the payload carries a `proposed_by` field, mirroring
+    `ApprovalService`'s anti-self-approval rule."""
+    try:
+        return memory_candidates().resolve(candidate_id, request.decision, request.actor)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Memory candidate not found") from exc
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @app.get("/api/dashboard")
