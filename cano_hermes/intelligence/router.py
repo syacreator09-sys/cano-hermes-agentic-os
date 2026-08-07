@@ -43,6 +43,13 @@ class ModelRouter:
             reasons=[]
             if request.prefer_subscription and profile.subscription: score+=3; reasons.append("subscription-first")
             if request.domain=="engineering" and profile.id in {"claude-subscription","codex-subscription"}: score+=3.5; reasons.append("engineering-runtime")
+            # P1 (plan POTENCIA, 2026-08-07): governance is the domain the
+            # master/orchestration agents run under (task-governor,
+            # security-guardian, evaluator -- see agents/governance/*.yaml
+            # and DOMAIN_TEAMS). Same bonus as engineering so the master
+            # always prefers the subscription runtime over a tier-0 worker
+            # profile for its own oversight/decision work.
+            if request.domain=="governance" and profile.id in {"claude-subscription","codex-subscription"}: score+=3.5; reasons.append("master-runtime")
             if request.domain=="research" and profile.id=="kimi-research": score+=3; reasons.append("long-research")
             if request.domain in {"trends","content"} and profile.id=="grok-trends": score+=2; reasons.append("trend-specialist")
             if request.risk in {RiskLevel.HIGH,RiskLevel.CRITICAL} and profile.quality>=5: score+=2.5; reasons.append("high-risk-quality")

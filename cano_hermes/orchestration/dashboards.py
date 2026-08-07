@@ -1068,6 +1068,7 @@ def connections_dashboard(
     # itself were ever changed to short-circuit).
     gastos_status_for_idle = monitoring.fetch_expense_rows()["status"]
     idle_keys = idle_provider_keys(store, registry_path=registry_path)
+    master_runtime = _master_runtime_summary(store)
 
     return {
         "generated_at": generated_at.isoformat(),
@@ -1086,4 +1087,42 @@ def connections_dashboard(
         "idle_keys_count": len(idle_keys),
         "idle_keys_window_days": GASTOS_TREND_DAYS,
         "idle_keys_gastos_status": gastos_status_for_idle,
+        "master_runtime": master_runtime,
+    }
+
+
+def _master_runtime_summary(store: SQLiteStore | None, *, recent_limit: int = 10) -> dict[str, Any]:
+    """P1 (plan POTENCIA, 2026-08-07): which motor Hermes Master's own
+    executions actually used, and how often the usage-limit degradation in
+    `ExecutionService.run` (claude-code/codex -> hermes-agent) fired --
+    `execution.metrics.degraded_from` is the marker it writes. `store=None`
+    (no SQLiteStore wired, e.g. a bare call in a script) degrades to an
+    explicit `sin_datos` shape instead of raising, same contract as every
+    other signal in this dict."""
+    if store is None:
+        return {"status": "sin_datos", "by_executor": {}, "degradations_count": 0, "recent": []}
+
+    executions = store.list_executions()
+    by_executor: dict[str, int] = {}
+    degradations = 0
+    for execution in executions:
+        by_executor[execution["executor"]] = by_executor.get(execution["executor"], 0) + 1
+        if (execution.get("metrics") or {}).get("degraded_from"):
+            degradations += 1
+
+    recent = sorted(executions, key=lambda e: e.get("finished_at") or "", reverse=True)[:recent_limit]
+    return {
+        "status": "ok",
+        "by_executor": dict(sorted(by_executor.items())),
+        "degradations_count": degradations,
+        "recent": [
+            {
+                "task_id": e.get("task_id"),
+                "executor": e.get("executor"),
+                "status": e.get("status"),
+                "degraded_from": (e.get("metrics") or {}).get("degraded_from"),
+                "finished_at": e.get("finished_at"),
+            }
+            for e in recent
+        ],
     }

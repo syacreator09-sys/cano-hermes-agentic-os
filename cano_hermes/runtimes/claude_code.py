@@ -30,11 +30,19 @@ def _parse_stream_json(output: str) -> list[dict[str, Any]]:
 
 
 class ClaudeCodeExecutor(CommandExecutor):
+    # P1 (plan POTENCIA, 2026-08-07): risk -> model, all on the same
+    # subscription (no extra credential, no extra cost tier -- Claude Code
+    # Max/Pro already covers every alias). LOW is deliberately the only
+    # tier that downgrades to haiku; MEDIUM (the TaskRecord default) keeps
+    # today's implicit behavior of just calling `claude` with no
+    # --model, i.e. its own configured default.
+    RISK_TO_MODEL = {"high": "opus", "critical": "opus", "low": "haiku"}
+
     def __init__(self, command: str = "claude", mode: str = "dry_run") -> None:
         super().__init__("claude-code", command, mode)
 
     def build_args(self, packet: ExecutionPacket) -> Sequence[str]:
-        return [
+        args = [
             self.command,
             "-p",
             packet.objective,
@@ -45,6 +53,10 @@ class ClaudeCodeExecutor(CommandExecutor):
             "--permission-mode",
             "plan" if self.mode == "dry_run" else "default",
         ]
+        model = self.RISK_TO_MODEL.get(str(packet.metadata.get("risk", "")))
+        if model:
+            args += ["--model", model]
+        return args
 
     def parse_result(
         self,

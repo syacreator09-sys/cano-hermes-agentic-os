@@ -99,6 +99,22 @@ class ExecutionService:
     def _is_render_task(self, task) -> bool:
         return task.metadata.get("kind") == "render"
 
+    # P1 (plan POTENCIA, 2026-08-07): the real strings both CLIs are
+    # observed to emit when a subscription window is exhausted (Claude
+    # Code: "usage limit"/"5-hour limit" style messaging surfaced via
+    # claude_daemon events in this session's own transcripts; Codex: rate/
+    # usage errors from the ChatGPT plan). Matched case-insensitively
+    # against summary + stderr-ish text CommandExecutor already captures in
+    # ExecutionResult.summary on a non-zero exit -- never against stdout
+    # content that might contain user data.
+    _USAGE_LIMIT_SIGNATURES = ("usage limit", "usage_limit", "rate limit", "quota exceeded")
+
+    def _is_usage_limit_error(self, result: ExecutionResult) -> bool:
+        if result.status not in ("failed", "unavailable"):
+            return False
+        text = (result.summary or "").lower()
+        return any(signature in text for signature in self._USAGE_LIMIT_SIGNATURES)
+
     async def _run_locked(self, lock_target: Path, owner: str, action):
         """Hold `self.lock_manager`'s lock on `lock_target` for the duration
         of `action()`. `WriteLockManager.acquire` itself is fail-fast (it
@@ -159,6 +175,9 @@ class ExecutionService:
         hermes_agent.py/container_sandbox.py (which read packet.metadata)
         actually activate instead of being unreachable."""
         metadata: dict = {}
+        # P1 (plan POTENCIA, 2026-08-07): carried so ClaudeCodeExecutor can
+        # pick --model by risk (build_args reads packet.metadata["risk"]).
+        metadata["risk"] = task.risk.value
         if task.assigned_agent:
             metadata["agent_id"] = task.assigned_agent
         if task.route_profile:
@@ -274,6 +293,27 @@ class ExecutionService:
         result = await self._run_locked(
             lock_target, f"{executor_id}:{task.id}", lambda: executor.execute(packet)
         )
+        # P1 (plan POTENCIA, 2026-08-07): a subscription hitting its usage
+        # window is not a task failure, it's a capacity problem -- retry
+        # ONCE with hermes-agent (tier-0 Kimi/OpenRouter, EXECUTOR_SECRET_
+        # ALLOWLIST already scopes it to those cheap tiers only) instead of
+        # surfacing FAILED. Never escalates to a paid tier-5 profile on its
+        # own -- that still requires the normal approval path above.
+        if executor_id in ("claude-code", "codex") and self._is_usage_limit_error(result):
+            fallback_executor = self.executors.get("hermes-agent")
+            if fallback_executor is not None:
+                fallback_workspace = self.workspace_root / task.id / "hermes-agent"
+                fallback_packet = ExecutionPacket(
+                    task_id=task.id, objective=task.objective, workspace=fallback_workspace,
+                    allowed_write_paths=(fallback_workspace,), timeout_seconds=task.budget.timeout_seconds,
+                    max_turns=task.budget.max_turns, metadata=self._build_metadata(task),
+                )
+                fallback_result = await self._run_locked(
+                    fallback_workspace, f"hermes-agent:{task.id}", lambda: fallback_executor.execute(fallback_packet)
+                )
+                fallback_result.metrics["degraded_from"] = executor_id
+                fallback_result.metrics["degradation_reason"] = "usage_limit"
+                result = fallback_result
         if execution_id is not None:
             result.execution_id = execution_id
         # Reconcile whatever this specific run actually cost against today's
