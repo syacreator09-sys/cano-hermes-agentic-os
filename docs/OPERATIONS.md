@@ -289,6 +289,184 @@ confirmada (no mockeada), `agent-browser doctor` en verde tras el run,
 `estimated_cost_usd: 0.0`. Sin restricciones violadas: el único dominio real
 tocado fue `example.com` (GET público, sin sesión).
 
+## Voz (STT local, TTS, wake word) — K13
+
+`hermes-agent` trae voz completa ya construida (6 proveedores STT, TTS con
+`edge-tts` — ya usado en Prometeo F10 —, wake word "Hey Hermes" con
+openWakeWord, `voice_mode` push-to-talk/VAD) pero las deps de STT/wake no
+estaban instaladas. El gateway **ya auto-transcribe** notas de voz entrantes
+de Telegram/Discord/etc. una vez esas deps están presentes — es
+comportamiento existente (`gateway/run.py::_enrich_message_with_transcription`),
+no código nuevo.
+
+### Instalación de deps (hecha, K13)
+
+```bash
+cd ~/repos/hermes-agent
+UV_PROJECT_ENVIRONMENT="$(pwd)/venv" uv sync --extra voice --extra wake --locked
+```
+
+**Nota importante para quien repita esto**: el entorno real de `hermes-agent`
+en esta máquina vive en `venv/` (no `.venv/`), fijado vía
+`UV_PROJECT_ENVIRONMENT` — así lo hace `setup-hermes.sh`/`scripts/install.sh`
+internamente. Correr `uv sync --extra voice` **sin** ese env var apunta a un
+`.venv` nuevo y, peor, si se corre apuntando al `venv/` real pero **sin**
+repetir todos los extras que ya estaban instalados, `uv sync` es un *sync*
+(no un *add*): desinstala todo lo que no esté en los extras pedidos. Pasó en
+esta sesión — un primer intento con solo `--extra voice --extra wake` se
+comió `messaging`, `google`, `mcp`, `edge-tts`, `wecom`, `fal`, `bedrock`
+(59 paquetes desinstalados, gateway habría fallado en el próximo restart).
+Se restauró con:
+
+```bash
+UV_PROJECT_ENVIRONMENT="$(pwd)/venv" uv sync --extra all --extra messaging \
+  --extra edge-tts --extra wecom --extra fal --extra bedrock \
+  --extra voice --extra wake --locked
+```
+
+Confirmado tras la reinstalación: imports directos en el venv real
+(`venv/bin/python -c "import sounddevice, numpy, faster_whisper,
+openwakeword, edge_tts, telegram, mcp, google.auth, fastapi, discord,
+slack_bolt, boto3, fal_client, defusedxml, onnxruntime"`) — todos OK. Antes
+de la instalación, `sounddevice`, `numpy`, `faster_whisper`, `openwakeword`
+fallaban con `ModuleNotFoundError`.
+
+### STT — modelo `small` en `int8`
+
+`~/.hermes/config.yaml` tenía la sección `stt` vacía (default implícito:
+`provider: local`, `model: base`, `language: en` global). Se fijó
+explícito:
+
+```yaml
+stt:
+  enabled: true
+  provider: local
+  language: es       # ver nota abajo
+  local:
+    model: small
+    compute_type: int8
+```
+
+- `hermes-agent` sí permite elegir tamaño/cuantización por config
+  (`stt.local.model`: tiny|base|small|medium|large-v3|turbo;
+  `stt.local.compute_type`, leído en
+  `tools/transcription_tools.py::_transcribe_local` vía
+  `local_cfg.get("compute_type", "auto")`) — no hubo que tocar código.
+  `small`/`int8` es el balance razonable para 4 núcleos sin GPU pedido por
+  K13; `auto` en CPU típicamente ya resuelve a `int8` vía ctranslate2, pero
+  se fijó explícito para que quede documentado y no dependa de heurística.
+- **Bug de config encontrado y corregido**: el default upstream de
+  `stt.language` es `"en"` (hardening anti-mis-detección para clips
+  cortos/con acento — ver comentario en `config_defaults.py:1511-1516`).
+  Cano opera en español; con el default sin tocar, cualquier nota de voz
+  real en español se habría forzado a transcribir como si fuera inglés. Se
+  fijó `language: es` explícito en vez de dejar el default o usar
+  auto-detect puro (menos fiable en audios cortos, según el mismo
+  comentario upstream).
+- Modelo `small` confirmado descargado y cacheado localmente (gratis, sin
+  llamada a API): `~/.cache/huggingface/hub/models--Systran--faster-whisper-small`.
+
+### Wake word "Hey Hermes" — mecanismo confirmado, mic bloqueado por lib de sistema
+
+Modelo bundled real (no un nombre stock de openWakeWord):
+`hermes-agent/tools/wakewords/hey_hermes.{onnx,tflite}`, resuelto por
+`tools/wake_word.py::_bundled_wakeword_path` /
+`_BUNDLED_MODEL_ALIASES = {"", "hey_hermes", "hey hermes", "hermes"}`.
+Se activa con el slash command `/wake [on|off|status]` (interactivo, REPL de
+`hermes`) — no hay RPC `wake.start` expuesto, es una función Python interna
+(`tools.wake_word.start_listening`).
+
+Diagnóstico real corrido (`tools.wake_word.check_wake_word_requirements()`,
+la misma función detrás de `/wake status`):
+
+```json
+{
+  "available": false,
+  "provider": "openwakeword",
+  "deps_available": true,
+  "audio_available": false,
+  "access_key_set": true,
+  "stt_available": true,
+  "tts_available": true,
+  "phrase": "hey hermes",
+  "hint": "Microphone capture needs sounddevice + numpy and a working audio device."
+}
+```
+
+`deps_available: true` — el modelo ONNX, `openwakeword`, `onnxruntime` y
+`sherpa-onnx` cargan bien. Lo único que falta es `libportaudio2` (paquete de
+sistema, no de pip) — `sounddevice` no encuentra la lib nativa
+(`OSError: PortAudio library not found`). Mismo patrón que el bloqueo de
+`agent-browser install --with-deps` en K10: `sudo apt-get install -y
+libportaudio2` falla en esta sesión por falta de contraseña sudo no
+interactiva. **Es un paquete trivial y sin riesgo** (librería de audio, no
+toca red ni credenciales) — queda pendiente para cuando Cano corra ese único
+comando manualmente. Confirmado que **no** hay forma limpia de rodearlo sin
+root: se probó extraer el `.deb` sin sudo (`apt-get download` +
+`dpkg-deb -x`) y apuntar `LD_LIBRARY_PATH` a la lib extraída, pero
+`ctypes.util.find_library` en Linux lee el cache de `ldconfig`, no
+`LD_LIBRARY_PATH` — la única vía real es la instalación de sistema.
+
+**Importante — esto solo bloquea captura de micrófono en vivo** (wake word
+continuo, `voice_mode` push-to-talk/VAD). **No bloquea STT de archivo**:
+`faster-whisper` decodifica archivos vía el paquete `av` (ffmpeg embebido),
+sin pasar por `sounddevice` en ningún punto — confirmado por grep sin
+resultados de `sounddevice` en `tools/transcription_tools.py`. Es decir: la
+transcripción automática de notas de voz de Telegram (que llegan como
+archivo `.ogg`, no como stream de mic) funciona igual sin `libportaudio2`.
+
+Por la restricción de K13 de no dejar wake-word continuo corriendo de fondo
+(consume CPU en escucha permanente), **no se activó** `/wake on` ni
+`wake_word.enabled: true` en `config.yaml` (default `false`, sin tocar) —
+queda confirmado que el mecanismo funciona (salvo el mic físico, bloqueado
+por el paquete de sistema pendiente) pero opt-in, no corriendo.
+
+### Verificación E2E real (STT de archivo)
+
+Audio de prueba generado con `edge-tts` (gratis, local, ya usado en
+Prometeo F10):
+
+```bash
+venv/bin/python -m edge_tts --voice es-MX-DaliaNeural \
+  --text "hola hermes, dime la hora" --write-media test_voice.mp3
+```
+
+Transcripción corrida con el **mismo entrypoint de producción** que usa el
+gateway para notas de voz reales (`gateway/run.py:21375` llama
+`transcribe_audio()` vía `asyncio.to_thread`) — no un script aislado:
+
+```python
+from tools.transcription_tools import transcribe_audio
+transcribe_audio("test_voice.mp3")
+# → {'success': True, 'transcript': 'Hola Hermes, dime la hora.', 'provider': 'local'}
+```
+
+Resultado real: `Hola Hermes, dime la hora.` — coincide (salvo
+capitalización/puntuación, esperable) con el texto pedido en el audio de
+prueba. Usó el modelo `small`/`int8` recién configurado (confirmado por el
+cache de HuggingFace poblado con `faster-whisper-small`), `stt.language: es`
+tomado de `~/.hermes/config.yaml`, ~4s de transcripción en CPU de 4 núcleos.
+
+**Gateway reiniciado** (`systemctl --user restart hermes-gateway.service`)
+tras instalar deps y fijar config, para que el proceso levante con el venv
+actualizado y la config de `stt` — el proceso del gateway no tiene
+auto-reload de deps ni de `config.yaml` (mismo patrón que Telegram/MCP,
+documentado arriba). Verificado activo y estable post-restart
+(`systemctl --user status hermes-gateway.service` → `active (running)`,
+sin platform nuevo caído más allá del SMS ya conocido/deshabilitado).
+
+**Estado de la verificación con Telegram real**: **no probado con audio
+entrante real** — no hay forma limpia de simular una nota de voz real
+llegando al bot (`@CANO_DIGITAL_OPENCLAW_BOT`) sin control del cliente
+Telegram de otro lado. Confirmado **por código**, no por corrida real: el
+flujo `plugins/platforms/telegram/adapter.py` (línea ~9134) descarga la nota
+de voz (`msg.voice.get_file()` → `download_as_bytearray()`) a un archivo
+`.ogg` local, y `gateway/run.py::_enrich_message_with_transcription` llama
+exactamente el mismo `transcribe_audio()` ya verificado arriba. Dado que el
+entrypoint es idéntico y el archivo de prueba (mp3, no ogg) transcribió
+bien, la expectativa razonable es que una nota `.ogg` real de Telegram
+funcione igual — pero es una inferencia, no una observación directa.
+
 ## Troubleshooting básico
 
 - **`curl localhost:8787/api/health` no responde** → la API StarHome no está
