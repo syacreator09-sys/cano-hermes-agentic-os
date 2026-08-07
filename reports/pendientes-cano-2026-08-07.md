@@ -61,3 +61,14 @@ anidados de factory-v5 (symlinks desde `~/repos/`, `.gitignore` actualizado).
 - ✅ 2 jobs `PENDING_NATIVE_TOOL` de CASS (Shopify: 0 órdenes, 10+ productos ASPIDPRO reales; Meta: página confirmada, sin métricas orgánicas por límite del MCP conectado).
 - ✅ 11 repos anidados de factory-v5 montados en sus rutas reales vía symlink (`engines/ugc/`, `.vendor/cano-tutorials/*`, `.vendor/santmun-quarantine/*`, `tools/external/video-docs-builder`) + `.gitignore` actualizado. `moneyprinter-turbo` ya estaba vendored directo, sin acción.
 - ✅ Ofrecido `libportaudio2` — Cano decide si lo corre él mismo vía `!`.
+
+## Actualización 2026-08-07 (misma sesión, Cano presente)
+
+- ✅ **`wrangler login` conectado** (`syacreator09@gmail.com`).
+- ✅ **Codex OAuth conectado** (ChatGPT) — pero **sin cuota disponible ahora**:
+  `codex exec` responde "You've hit your usage limit... try again at 9:35 PM"
+  o comprar créditos en chatgpt.com/codex/settings/usage. Reintentar después
+  de esa hora, o revisar el plan.
+- Ítems #2 y #3 de la tabla "Rápidos" arriba: resueltos en cuanto a conexión;
+  #3 (wrangler) 100% operativo, #2 (codex) conectado pero bloqueado por cuota
+  hasta 9:35 PM.
