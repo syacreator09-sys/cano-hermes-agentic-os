@@ -160,6 +160,14 @@ class OrderCreate(BaseModel):
     objective: str = Field(min_length=3, max_length=10_000)
     source: Literal["telegram", "cli", "api"]
     budget: Budget = Field(default_factory=Budget)
+    # T10 (plan POTENCIA, 2026-08-07): optional hint so the K6 kanban
+    # bridge can route straight to a K9 office instead of always landing
+    # in unassigned triage (see kanban_bridge.submit_order_to_kanban).
+    # Same domain strings Conductor.assign already accepts
+    # (cano_hermes/orchestration/conductor.py:DOMAIN_TEAMS) -- an unknown
+    # or omitted domain is not an error, it just keeps the old triage
+    # behavior.
+    domain: str | None = None
 
 
 class OrderRecord(OrderCreate):

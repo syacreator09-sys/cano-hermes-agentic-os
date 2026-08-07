@@ -60,16 +60,29 @@ Design decisions worth recording:
   The default `Budget.max_cost_usd == 0.0` maps to priority 0, kanban's own
   default — an order that sets no budget doesn't jump ahead of anything.
 
-- **No `--skill`/`--model`/`--provider` on the parent triage task.** The
-  triage task itself never runs a worker (it sits in the triage column
-  until the decomposer either fans it out or promotes it) — those flags
-  only make sense on the tasks the decomposer creates, which it routes to
-  specialist profiles "by description" on its own. `OrderRecord` also has
-  no domain/team the way `TaskRecord` does (it hasn't been through
-  `Conductor.assign()`), so there is nothing here to translate into a
-  `kanban_profile` yet — an order becomes routable work only once the
-  decomposer (or, later, an office worker per K9) breaks it into
-  domain-scoped subtasks.
+- **No `--skill`/`--model`/`--provider` on the parent task.** The task
+  itself never runs a worker beyond whatever profile claims it (it sits in
+  triage, or in ready-for-<profile>, until a human/decomposer/office
+  worker acts on it) — those flags only make sense on the tasks a future
+  decomposer creates, routed to specialist profiles "by description" on
+  its own.
+
+- **T10 (plan POTENCIA, 2026-08-07): `order.domain` -> `--assignee`.**
+  `OrderRecord` still has no *team* the way `TaskRecord` does (it hasn't
+  been through `Conductor.assign()`), but callers can now pass an explicit
+  `domain` hint (`OrderCreate.domain`) resolved through the exact same
+  `domain -> team -> kanban_profile` table `Conductor.assign()` uses
+  (`conductor.kanban_profile_for_domain`, fixed in P0 so every value is a
+  real `offices/<profile>/office.yaml`, not a `team-*` placeholder). When
+  it resolves to a real K9 office profile, the task is created with
+  `--assignee <profile>` and WITHOUT `--triage` -- `kanban_db.py`'s
+  `create_task` puts a non-triage task straight into `status=ready`
+  (confirmed reading its source), which is exactly what
+  `infrastructure/offices/common/entrypoint.sh`'s worker loop polls for
+  (`kanban list --assignee "$OFFICE_PROFILE" --status ready`). No domain,
+  an unknown domain, or a domain that resolves to no office (engineering,
+  governance, ...) all fall back to the original behavior: `--triage`, no
+  assignee, a human/future-decomposer routes it.
 
 Error handling: every failure mode below (hermes CLI missing, non-zero
 exit, timeout, unparseable `--json` output, missing `id` in the response)
@@ -224,6 +237,15 @@ def submit_order_to_kanban(
     hermes = command or _hermes_command()
     ensure_board(board, command=hermes, timeout=timeout)
 
+    # T10: resolve a real K9 office profile from the order's optional
+    # domain hint. `kanban_profile_for_domain` returns None for no domain,
+    # an unknown domain, or a domain whose team deliberately has no office
+    # (engineering, governance, ...) -- every one of those keeps the
+    # original triage-only behavior.
+    from cano_hermes.orchestration.conductor import kanban_profile_for_domain
+
+    profile = kanban_profile_for_domain(order.domain) if order.domain else None
+
     args = [
         hermes,
         "kanban",
@@ -233,7 +255,6 @@ def submit_order_to_kanban(
         _order_title(order),
         "--body",
         order.objective,
-        "--triage",
         "--idempotency-key",
         order.id,
         "--priority",
@@ -242,6 +263,10 @@ def submit_order_to_kanban(
         "starhome-kanban-bridge",
         "--json",
     ]
+    if profile:
+        args += ["--assignee", profile]
+    else:
+        args += ["--triage"]
     result = _run_hermes(args, timeout=timeout)
 
     if result.returncode != 0:

@@ -135,7 +135,9 @@ def create_order(request: OrderCreate):
     those in). Decomposing it into tasks and dispatching them to Kanban is
     K6's job, not this endpoint's.
     """
-    order = OrderRecord(objective=request.objective, source=request.source, budget=request.budget)
+    order = OrderRecord(
+        objective=request.objective, source=request.source, budget=request.budget, domain=request.domain,
+    )
     return store().save_order(order)
 
 

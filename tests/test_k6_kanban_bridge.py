@@ -149,6 +149,60 @@ class SubmitOrderToKanbanTests(unittest.TestCase):
             kanban_bridge.submit_order_to_kanban(self.order, command="hermes")
 
 
+class DomainToAssigneeTests(unittest.TestCase):
+    """T10 (plan POTENCIA): OrderCreate.domain -> --assignee <profile>,
+    resolved via the same conductor.kanban_profile_for_domain table P0
+    fixed. Without a domain (or one with no office), behavior is
+    byte-identical to before -- SubmitOrderToKanbanTests above."""
+
+    def _patched_run(self, *results):
+        return patch("cano_hermes.bridge.kanban_bridge.subprocess.run", side_effect=list(results))
+
+    def test_known_office_domain_uses_assignee_not_triage(self):
+        order = OrderRecord(objective="produce contenido para el canal", source="cli", domain="content")
+        board_ok = _completed(returncode=0, stdout="ok")
+        create_ok = _completed(returncode=0, stdout=json.dumps({"id": "t_x"}))
+        with self._patched_run(board_ok, create_ok) as fake_run:
+            kanban_bridge.submit_order_to_kanban(order, command="hermes")
+
+        create_args = fake_run.call_args_list[1][0][0]
+        self.assertIn("--assignee", create_args)
+        self.assertEqual(create_args[create_args.index("--assignee") + 1], "hermes-produccion")
+        self.assertNotIn("--triage", create_args)
+
+    def test_domain_with_no_office_falls_back_to_triage(self):
+        order = OrderRecord(objective="revisar codigo", source="cli", domain="engineering")
+        board_ok = _completed(returncode=0, stdout="ok")
+        create_ok = _completed(returncode=0, stdout=json.dumps({"id": "t_x"}))
+        with self._patched_run(board_ok, create_ok) as fake_run:
+            kanban_bridge.submit_order_to_kanban(order, command="hermes")
+
+        create_args = fake_run.call_args_list[1][0][0]
+        self.assertIn("--triage", create_args)
+        self.assertNotIn("--assignee", create_args)
+
+    def test_unknown_domain_falls_back_to_triage(self):
+        order = OrderRecord(objective="algo raro", source="cli", domain="no-existe-este-dominio")
+        board_ok = _completed(returncode=0, stdout="ok")
+        create_ok = _completed(returncode=0, stdout=json.dumps({"id": "t_x"}))
+        with self._patched_run(board_ok, create_ok) as fake_run:
+            kanban_bridge.submit_order_to_kanban(order, command="hermes")
+
+        create_args = fake_run.call_args_list[1][0][0]
+        self.assertIn("--triage", create_args)
+
+    def test_no_domain_is_unchanged_from_before(self):
+        order = OrderRecord(objective="sin dominio explicito", source="cli")
+        board_ok = _completed(returncode=0, stdout="ok")
+        create_ok = _completed(returncode=0, stdout=json.dumps({"id": "t_x"}))
+        with self._patched_run(board_ok, create_ok) as fake_run:
+            kanban_bridge.submit_order_to_kanban(order, command="hermes")
+
+        create_args = fake_run.call_args_list[1][0][0]
+        self.assertIn("--triage", create_args)
+        self.assertNotIn("--assignee", create_args)
+
+
 class BridgeLinksStorageTests(unittest.TestCase):
     def test_save_and_resolve_both_directions(self):
         with tempfile.TemporaryDirectory() as d:

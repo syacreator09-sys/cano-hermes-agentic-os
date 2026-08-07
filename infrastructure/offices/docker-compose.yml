@@ -178,6 +178,17 @@ services:
     read_only: true
     tmpfs:
       - /tmp:rw,size=64m
+      # T10 (plan POTENCIA, 2026-08-07): found live -- `hermes --oneshot`
+      # writes state under $HERMES_HOME (cron/ at minimum, confirmed by a
+      # real failed run: "Read-only file system: '/office/hermes-home/
+      # cron'") beyond the one persistent kanban/boards/starhome bind
+      # mounted below. Everything else under hermes-home is disposable
+      # per-container-lifetime state (not the kanban board itself, which
+      # keeps its own persistent bind mount and overlays this tmpfs at its
+      # deeper path exactly like /tmp already does for the rest of the
+      # rootfs) -- a plain tmpfs is the correct fix, not a new persistent
+      # bind mount.
+      - /office/hermes-home:rw,size=32m,mode=1777
 
   office-ugc:
     build:
@@ -231,6 +242,17 @@ services:
     read_only: true
     tmpfs:
       - /tmp:rw,size=64m
+      # T10 (plan POTENCIA, 2026-08-07): found live -- `hermes --oneshot`
+      # writes state under $HERMES_HOME (cron/ at minimum, confirmed by a
+      # real failed run: "Read-only file system: '/office/hermes-home/
+      # cron'") beyond the one persistent kanban/boards/starhome bind
+      # mounted below. Everything else under hermes-home is disposable
+      # per-container-lifetime state (not the kanban board itself, which
+      # keeps its own persistent bind mount and overlays this tmpfs at its
+      # deeper path exactly like /tmp already does for the rest of the
+      # rootfs) -- a plain tmpfs is the correct fix, not a new persistent
+      # bind mount.
+      - /office/hermes-home:rw,size=32m,mode=1777
 
   office-content:
     build:
@@ -291,6 +313,17 @@ services:
     read_only: true
     tmpfs:
       - /tmp:rw,size=64m
+      # T10 (plan POTENCIA, 2026-08-07): found live -- `hermes --oneshot`
+      # writes state under $HERMES_HOME (cron/ at minimum, confirmed by a
+      # real failed run: "Read-only file system: '/office/hermes-home/
+      # cron'") beyond the one persistent kanban/boards/starhome bind
+      # mounted below. Everything else under hermes-home is disposable
+      # per-container-lifetime state (not the kanban board itself, which
+      # keeps its own persistent bind mount and overlays this tmpfs at its
+      # deeper path exactly like /tmp already does for the rest of the
+      # rootfs) -- a plain tmpfs is the correct fix, not a new persistent
+      # bind mount.
+      - /office/hermes-home:rw,size=32m,mode=1777
 
   office-publish:
     build:
@@ -372,6 +405,17 @@ services:
     read_only: true
     tmpfs:
       - /tmp:rw,size=64m
+      # T10 (plan POTENCIA, 2026-08-07): found live -- `hermes --oneshot`
+      # writes state under $HERMES_HOME (cron/ at minimum, confirmed by a
+      # real failed run: "Read-only file system: '/office/hermes-home/
+      # cron'") beyond the one persistent kanban/boards/starhome bind
+      # mounted below. Everything else under hermes-home is disposable
+      # per-container-lifetime state (not the kanban board itself, which
+      # keeps its own persistent bind mount and overlays this tmpfs at its
+      # deeper path exactly like /tmp already does for the rest of the
+      # rootfs) -- a plain tmpfs is the correct fix, not a new persistent
+      # bind mount.
+      - /office/hermes-home:rw,size=32m,mode=1777
 
   office-market-intel:
     build:
@@ -425,3 +469,14 @@ services:
     read_only: true
     tmpfs:
       - /tmp:rw,size=64m
+      # T10 (plan POTENCIA, 2026-08-07): found live -- `hermes --oneshot`
+      # writes state under $HERMES_HOME (cron/ at minimum, confirmed by a
+      # real failed run: "Read-only file system: '/office/hermes-home/
+      # cron'") beyond the one persistent kanban/boards/starhome bind
+      # mounted below. Everything else under hermes-home is disposable
+      # per-container-lifetime state (not the kanban board itself, which
+      # keeps its own persistent bind mount and overlays this tmpfs at its
+      # deeper path exactly like /tmp already does for the rest of the
+      # rootfs) -- a plain tmpfs is the correct fix, not a new persistent
+      # bind mount.
+      - /office/hermes-home:rw,size=32m,mode=1777
