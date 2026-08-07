@@ -612,3 +612,41 @@ def fetch_expense_rows(*, timeout: float = 10.0) -> dict[str, Any]:
             break
 
     return {"status": "ok", "rows": rows}
+
+
+def fetch_metric_rows(*, timeout: float = 10.0) -> dict[str, Any]:
+    """P4-D (plan POTENCIA, 2026-08-07) -- GETs every row of the
+    `metricas_diarias` Baserow table (paginated), never raises. Mirrors
+    `fetch_expense_rows`'s exact contract/shape (`write_metric_row` above
+    has posted here since F11; nothing ever read it back for content
+    classification until now -- `scripts/daily_cycle.py`'s own use of this
+    table is write-only too). Returns one of:
+      {"status": "sin_token", "detail": ...}
+      {"status": "error", "detail": ...}
+      {"status": "ok", "rows": [ {...}, ... ]}
+    """
+    token = _baserow_token()
+    if not token:
+        return {"status": "sin_token", "detail": "BASEROW_TOKEN no encontrado en el vault"}
+
+    rows: list[dict[str, Any]] = []
+    url = (
+        f"{BASEROW_BASE_URL}/api/database/rows/table/{BASEROW_METRICAS_TABLE_ID}/"
+        "?user_field_names=true&size=100"
+    )
+    for _ in range(_GASTOS_MAX_PAGES):
+        req = urllib.request.Request(url, headers=baserow_headers(token))
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                payload = json.loads(resp.read())
+        except urllib.error.HTTPError as exc:
+            return {"status": "error", "http_status": exc.code, "detail": exc.read().decode(errors="replace")[:300]}
+        except (urllib.error.URLError, OSError, TimeoutError) as exc:
+            return {"status": "error", "detail": f"{exc.__class__.__name__}: {exc}"}
+
+        rows.extend(payload.get("results", []))
+        url = payload.get("next")
+        if not url:
+            break
+
+    return {"status": "ok", "rows": rows}

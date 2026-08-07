@@ -886,6 +886,24 @@ def _content_html(data: dict[str, Any]) -> str:
         for c in data["factory_v5"]["campaigns"]
     ) or "<p class='muted'>Sin campañas factory-v5.</p>"
 
+    classification = data.get("channel_classification", {})
+    if classification.get("status") == "ok" and classification.get("channels"):
+        classification_rows = "".join(
+            f"<tr><td>{esc(canal)}</td><td><span class='pill {'status' if info['classification'] == 'ESCALAR' else ''}'>{esc(info['classification'])}</span></td>"
+            f"<td>{esc(info.get('distinct_days'))}</td>"
+            f"<td>{esc(info.get('change_fraction', '—'))}</td>"
+            f"<td>{esc(info.get('detail', ''))}</td></tr>"
+            for canal, info in sorted(classification["channels"].items())
+        )
+        classification_section = (
+            f"<p class='muted'>P4-D — ESCALAR/MANTENER/MATAR por watch time de 28 días (señal de monetización YPP), "
+            f"mínimo {esc(classification.get('min_days_required'))} días de historia antes de opinar.</p>"
+            f"<table style='width:100%;border-collapse:collapse'><tr><th>Canal</th><th>Clasificación</th>"
+            f"<th>Días de historia</th><th>Cambio</th><th>Detalle</th></tr>{classification_rows}</table>"
+        )
+    else:
+        classification_section = f"<p class='muted'>{esc(classification.get('status', 'sin_datos'))}: {esc(classification.get('detail', ''))}</p>"
+
     return f"""<!doctype html><html lang="es"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>StarHome OS — Contenido</title><link rel="stylesheet" href="/static/style.css"></head>
@@ -894,6 +912,7 @@ def _content_html(data: dict[str, Any]) -> str:
 <header style="border-bottom:1px solid #1d273a;padding-bottom:18px">
 <h2 style="margin:0">Matriz de control de contenido (K17)</h2>
 <small class="muted">Generado {esc(data['generated_at'])} — punto único de verdad; office-publish la consulta antes de cada draft.</small></header>
+<div class="card" style="margin-top:16px"><h3>Qué repetir — clasificación por canal</h3>{classification_section}</div>
 <div class="card" style="margin-top:16px"><h3>Tabla Baserow `contenido` ({esc(data['baserow_contenido']['status'])})</h3>
 <table style="width:100%;border-collapse:collapse"><tr><th>Canal</th><th>Oficina</th><th>Estado</th><th>video_id</th><th>dedup_key</th></tr>{matrix_rows}</table></div>
 <div class="card" style="margin-top:16px"><h3>Campañas factory-v5 (factory.db)</h3>{campaigns}</div>

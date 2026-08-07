@@ -775,7 +775,85 @@ def content_dashboard(
         "upload_log_ugc": upload_log,
         "content_tasks": content_tasks,
         "sources_summary": sources_summary,
+        "channel_classification": channel_performance_classification(),
     }
+
+
+# --------------------------------------------------------------------------
+# P4-D (plan POTENCIA, 2026-08-07) -- ESCALAR/MANTENER/MATAR real por canal,
+# orientado a monetizacion (YPP: 1000 subs + 4000 horas de watch time en 12
+# meses, o el equivalente de Shorts -- por eso el watch time de 28 dias es
+# la senal primaria, no las vistas crudas). Fuente: `metricas_diarias`
+# (Baserow), que P4-A empezo a poblar de verdad (yt_watch_min_28d,
+# yt_views_28d, yt_subs por canal). Antes de esto, `ugc_performance_summary`
+# (F9, arriba en este archivo) era la unica clasificacion del sistema y
+# honestamente decia "sin_datos_suficientes" -- sigue siendolo para UGC-
+# afiliado (F9 nunca tuvo datos reales), pero para canales de contenido
+# ahora SI hay una fuente real que puede tener suficiente historia.
+# --------------------------------------------------------------------------
+MIN_DAYS_FOR_CLASSIFICATION = 7  # una semana de historia antes de opinar
+ESCALAR_THRESHOLD = 0.10   # +10% de tendencia en watch time -> escalar
+MATAR_THRESHOLD = -0.10    # -10% -> matar
+
+
+def _watch_time_trend_by_channel(rows: list[dict[str, Any]]) -> dict[str, list[tuple[str, float]]]:
+    """{canal: [(fecha, yt_watch_min_28d), ...]} ordenado por fecha,
+    a partir de las filas crudas de `metricas_diarias`
+    (oficina=canal, metrica='yt_watch_min_28d')."""
+    by_channel: dict[str, list[tuple[str, float]]] = {}
+    for row in rows:
+        if row.get("metrica") != "yt_watch_min_28d":
+            continue
+        canal = row.get("oficina")
+        fecha = row.get("fecha")
+        valor = accounting.numeric_value(row.get("valor"))
+        if not canal or not fecha or valor is None:
+            continue
+        by_channel.setdefault(canal, []).append((str(fecha)[:10], valor))
+    for canal in by_channel:
+        by_channel[canal].sort(key=lambda pair: pair[0])
+    return by_channel
+
+
+def channel_performance_classification(*, min_days: int = MIN_DAYS_FOR_CLASSIFICATION) -> dict[str, Any]:
+    """ESCALAR/MANTENER/MATAR por canal, comparando el `yt_watch_min_28d`
+    más viejo contra el más nuevo disponible en `metricas_diarias`. Nunca
+    clasifica con menos de `min_days` fechas distintas de historia -- sigue
+    diciendo "sin_datos_suficientes" honesto para esos canales, igual que
+    `ugc_performance_summary` ya hacía para UGC-afiliado."""
+    fetch_result = monitoring.fetch_metric_rows()
+    if fetch_result["status"] != "ok":
+        return {"status": fetch_result["status"], "detail": fetch_result.get("detail"), "channels": {}}
+
+    trends = _watch_time_trend_by_channel(fetch_result["rows"])
+    channels: dict[str, Any] = {}
+    for canal, points in trends.items():
+        distinct_days = len({p[0] for p in points})
+        if distinct_days < min_days:
+            channels[canal] = {
+                "classification": "sin_datos_suficientes",
+                "distinct_days": distinct_days,
+                "min_days_required": min_days,
+                "detail": f"solo {distinct_days} día(s) de historia de yt_watch_min_28d, se necesitan {min_days}",
+            }
+            continue
+        oldest, newest = points[0][1], points[-1][1]
+        change = ((newest - oldest) / oldest) if oldest > 0 else (1.0 if newest > 0 else 0.0)
+        if change >= ESCALAR_THRESHOLD:
+            classification = "ESCALAR"
+        elif change <= MATAR_THRESHOLD:
+            classification = "MATAR"
+        else:
+            classification = "MANTENER"
+        channels[canal] = {
+            "classification": classification,
+            "distinct_days": distinct_days,
+            "watch_min_28d_oldest": oldest,
+            "watch_min_28d_newest": newest,
+            "change_fraction": round(change, 4),
+        }
+
+    return {"status": "ok", "min_days_required": min_days, "channels": channels}
 
 
 # --------------------------------------------------------------------------
