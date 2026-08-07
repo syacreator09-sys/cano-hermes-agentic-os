@@ -83,11 +83,13 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import subprocess
 from dataclasses import dataclass
 
 from cano_hermes.config import settings
 from cano_hermes.domain.models import OrderRecord
+from cano_hermes.runtimes.subprocess_executor import SECRET_NAME_PATTERN
 
 logger = logging.getLogger(__name__)
 
@@ -141,6 +143,30 @@ def _hermes_command() -> str:
     return settings.agent_command
 
 
+def _kanban_subprocess_env() -> dict[str, str]:
+    """K12 (plan HERMES-KICKOFF, Seguridad v2) -- "aislamiento por tier
+    extendido a spawns kanban". Before this, `_run_hermes` called
+    `subprocess.run(args, ...)` with no `env=` at all, so every `hermes
+    kanban ...` CLI call StarHome shells out to (board create / task
+    create -- see the two call sites below) silently inherited this
+    process's *entire* environment, including every provider credential
+    StarHome itself holds across every tier (`ANTHROPIC_API_KEY`,
+    `OPENAI_API_KEY`, `KIMI_API_KEY`, Telegram/HMAC secrets, ...) --
+    unlike `runtimes/subprocess_executor.py`'s executors, which strip
+    every secret-shaped variable by default and restore only a per-
+    executor allowlist (`EXECUTOR_SECRET_ALLOWLIST`).
+
+    `hermes kanban boards create`/`hermes kanban --board ... create` are
+    pure board-state writes (hermes-agent's sqlite kanban.db) -- they
+    never call an LLM provider, so they need exactly zero of those
+    credentials, the same "zero secrets, ever" tier
+    `EXECUTOR_SECRET_ALLOWLIST` already gives `container-sandbox`/
+    `openclaw`. Reusing `SECRET_NAME_PATTERN` here (not duplicating its
+    regex) keeps this in sync with any future change to what counts as
+    "secret-shaped" there."""
+    return {k: v for k, v in os.environ.items() if not SECRET_NAME_PATTERN.search(k)}
+
+
 def _run_hermes(args: list[str], *, timeout: float) -> subprocess.CompletedProcess[str]:
     try:
         return subprocess.run(
@@ -149,6 +175,7 @@ def _run_hermes(args: list[str], *, timeout: float) -> subprocess.CompletedProce
             text=True,
             timeout=timeout,
             check=False,
+            env=_kanban_subprocess_env(),
         )
     except FileNotFoundError as exc:
         raise KanbanBridgeError(

@@ -89,3 +89,13 @@ class Conductor:
         )
         kanban_profile = TEAM_TO_KANBAN_PROFILE.get(team)
         return Assignment(agent.id, route.profile.id, route.reasons, kanban_profile)
+
+
+def kanban_profile_for_domain(domain: str) -> str | None:
+    """Same `domain -> team -> kanban_profile` lookup `Conductor.assign`
+    does internally, exposed standalone so callers that already have a
+    `task.domain` (K12's auto-approval wiring in `ExecutionService.run`)
+    can resolve the K9 office profile a task belongs to without
+    re-running the whole assignment/routing pipeline a second time."""
+    team = DOMAIN_TEAMS.get(domain, "governance")
+    return TEAM_TO_KANBAN_PROFILE.get(team)

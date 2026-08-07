@@ -1,0 +1,23 @@
+# K12 (plan HERMES-KICKOFF, Seguridad v2) -- first pre-commit hook in this
+# repo (checked before adding: no .pre-commit-config.yaml and no non-sample
+# hook under .git/hooks/ existed here). One local, dependency-free hook:
+# grep the staged diff for patterns that look like a real long-lived
+# credential (scripts/check_staged_secrets.py) and block the commit if it
+# finds one -- same manual check F16 (Plan Prometeo) ran by hand over that
+# plan's own diffs before closing out, now automated and run on every
+# commit instead of once at the end of a phase.
+#
+# Activate locally with (one-time, per clone):
+#   pre-commit install
+#
+# Run manually against the whole tree (not just staged changes) with:
+#   pre-commit run --all-files
+repos:
+  - repo: local
+    hooks:
+      - id: check-staged-secrets
+        name: check for staged secrets (K12)
+        entry: python3 scripts/check_staged_secrets.py
+        language: system
+        pass_filenames: false
+        always_run: true

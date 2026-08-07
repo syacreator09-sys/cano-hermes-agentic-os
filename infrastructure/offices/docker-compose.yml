@@ -150,6 +150,24 @@ services:
     security_opt:
       - no-new-privileges:true
     cap_drop: ["ALL"]
+    # K12 (plan HERMES-KICKOFF, Seguridad v2): read-only rootfs, on top of
+    # no-new-privileges + cap_drop:ALL (both already here since F11/K9).
+    # Verified live before rolling this out to all 5 services:
+    #   docker run --rm --read-only --tmpfs /tmp:rw,size=64m --network none \
+    #     --entrypoint /bin/sh starhome/office-analytics:latest -c '...'
+    # confirmed (a) /tmp is writable via the tmpfs below -- every write this
+    # entrypoint/task.sh combo does outside its bind-mounted output dirs is
+    # exactly the four `/tmp/kanban-*.err|out` scratch files in
+    # common/entrypoint.sh's `run_kanban_mode` -- and (b) writes anywhere
+    # else under the read-only rootfs (/office itself, unmounted subpaths)
+    # correctly fail instead of silently succeeding, matching every
+    # task.sh's own contract of "only /office/output (and, for
+    # office-analytics, its one overlaid reports/ dir) is writable".
+    # python3 (stdlib-only work in every task.sh) runs fine with no
+    # writable bytecode cache -- it just skips caching, doesn't error.
+    read_only: true
+    tmpfs:
+      - /tmp:rw,size=64m
 
   office-ugc:
     build:
@@ -182,6 +200,24 @@ services:
     security_opt:
       - no-new-privileges:true
     cap_drop: ["ALL"]
+    # K12 (plan HERMES-KICKOFF, Seguridad v2): read-only rootfs, on top of
+    # no-new-privileges + cap_drop:ALL (both already here since F11/K9).
+    # Verified live before rolling this out to all 5 services:
+    #   docker run --rm --read-only --tmpfs /tmp:rw,size=64m --network none \
+    #     --entrypoint /bin/sh starhome/office-analytics:latest -c '...'
+    # confirmed (a) /tmp is writable via the tmpfs below -- every write this
+    # entrypoint/task.sh combo does outside its bind-mounted output dirs is
+    # exactly the four `/tmp/kanban-*.err|out` scratch files in
+    # common/entrypoint.sh's `run_kanban_mode` -- and (b) writes anywhere
+    # else under the read-only rootfs (/office itself, unmounted subpaths)
+    # correctly fail instead of silently succeeding, matching every
+    # task.sh's own contract of "only /office/output (and, for
+    # office-analytics, its one overlaid reports/ dir) is writable".
+    # python3 (stdlib-only work in every task.sh) runs fine with no
+    # writable bytecode cache -- it just skips caching, doesn't error.
+    read_only: true
+    tmpfs:
+      - /tmp:rw,size=64m
 
   office-content:
     build:
@@ -220,6 +256,24 @@ services:
     security_opt:
       - no-new-privileges:true
     cap_drop: ["ALL"]
+    # K12 (plan HERMES-KICKOFF, Seguridad v2): read-only rootfs, on top of
+    # no-new-privileges + cap_drop:ALL (both already here since F11/K9).
+    # Verified live before rolling this out to all 5 services:
+    #   docker run --rm --read-only --tmpfs /tmp:rw,size=64m --network none \
+    #     --entrypoint /bin/sh starhome/office-analytics:latest -c '...'
+    # confirmed (a) /tmp is writable via the tmpfs below -- every write this
+    # entrypoint/task.sh combo does outside its bind-mounted output dirs is
+    # exactly the four `/tmp/kanban-*.err|out` scratch files in
+    # common/entrypoint.sh's `run_kanban_mode` -- and (b) writes anywhere
+    # else under the read-only rootfs (/office itself, unmounted subpaths)
+    # correctly fail instead of silently succeeding, matching every
+    # task.sh's own contract of "only /office/output (and, for
+    # office-analytics, its one overlaid reports/ dir) is writable".
+    # python3 (stdlib-only work in every task.sh) runs fine with no
+    # writable bytecode cache -- it just skips caching, doesn't error.
+    read_only: true
+    tmpfs:
+      - /tmp:rw,size=64m
 
   office-publish:
     build:
@@ -258,6 +312,24 @@ services:
     security_opt:
       - no-new-privileges:true
     cap_drop: ["ALL"]
+    # K12 (plan HERMES-KICKOFF, Seguridad v2): read-only rootfs, on top of
+    # no-new-privileges + cap_drop:ALL (both already here since F11/K9).
+    # Verified live before rolling this out to all 5 services:
+    #   docker run --rm --read-only --tmpfs /tmp:rw,size=64m --network none \
+    #     --entrypoint /bin/sh starhome/office-analytics:latest -c '...'
+    # confirmed (a) /tmp is writable via the tmpfs below -- every write this
+    # entrypoint/task.sh combo does outside its bind-mounted output dirs is
+    # exactly the four `/tmp/kanban-*.err|out` scratch files in
+    # common/entrypoint.sh's `run_kanban_mode` -- and (b) writes anywhere
+    # else under the read-only rootfs (/office itself, unmounted subpaths)
+    # correctly fail instead of silently succeeding, matching every
+    # task.sh's own contract of "only /office/output (and, for
+    # office-analytics, its one overlaid reports/ dir) is writable".
+    # python3 (stdlib-only work in every task.sh) runs fine with no
+    # writable bytecode cache -- it just skips caching, doesn't error.
+    read_only: true
+    tmpfs:
+      - /tmp:rw,size=64m
 
   office-market-intel:
     build:
@@ -289,3 +361,21 @@ services:
     security_opt:
       - no-new-privileges:true
     cap_drop: ["ALL"]
+    # K12 (plan HERMES-KICKOFF, Seguridad v2): read-only rootfs, on top of
+    # no-new-privileges + cap_drop:ALL (both already here since F11/K9).
+    # Verified live before rolling this out to all 5 services:
+    #   docker run --rm --read-only --tmpfs /tmp:rw,size=64m --network none \
+    #     --entrypoint /bin/sh starhome/office-analytics:latest -c '...'
+    # confirmed (a) /tmp is writable via the tmpfs below -- every write this
+    # entrypoint/task.sh combo does outside its bind-mounted output dirs is
+    # exactly the four `/tmp/kanban-*.err|out` scratch files in
+    # common/entrypoint.sh's `run_kanban_mode` -- and (b) writes anywhere
+    # else under the read-only rootfs (/office itself, unmounted subpaths)
+    # correctly fail instead of silently succeeding, matching every
+    # task.sh's own contract of "only /office/output (and, for
+    # office-analytics, its one overlaid reports/ dir) is writable".
+    # python3 (stdlib-only work in every task.sh) runs fine with no
+    # writable bytecode cache -- it just skips caching, doesn't error.
+    read_only: true
+    tmpfs:
+      - /tmp:rw,size=64m

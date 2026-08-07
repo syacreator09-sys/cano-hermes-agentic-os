@@ -44,6 +44,7 @@ from pydantic import ValidationError
 from cano_hermes.domain.enums import AgentStatus, ApprovalStatus, RiskLevel
 from cano_hermes.domain.models import AgentManifest, ApprovalRequest
 from cano_hermes.governance.approvals import ApprovalService
+from cano_hermes.governance.auto_approval import try_auto_approve
 from cano_hermes.governance.budget import BudgetService
 from cano_hermes.runtimes.base import ExecutionPacket
 from cano_hermes.runtimes.container_sandbox import ContainerSandboxExecutor
@@ -294,6 +295,16 @@ class ForgePipeline:
                 evidencia=str(evidence_path),
             )
         )
+        # K12: same auto-approval engine ExecutionService.run() uses --
+        # in practice this almost never fires here, since `risk` defaults
+        # to HIGH (production promotion of a new agent/skill) and no
+        # current caller overrides it to LOW; kept generic rather than
+        # special-cased so a genuinely LOW-risk, zero-cost candidate kind
+        # someday isn't silently excluded from the same governed-autonomy
+        # path every other approval gets. `promote()` re-reads the
+        # approval's own status independently, so nothing else needs to
+        # change here for an auto-approval to take effect.
+        try_auto_approve(self.approvals, approval, kanban_profile=None)
         candidate.approval_id = approval.id
         candidate.stage = ForgeStage.PENDING_APPROVAL
         candidate.updated_at = _utcnow()

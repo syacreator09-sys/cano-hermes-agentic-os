@@ -4,12 +4,14 @@ import asyncio
 import json
 from pathlib import Path
 
-from cano_hermes.domain.enums import TaskStatus
+from cano_hermes.domain.enums import ApprovalStatus, TaskStatus
 from cano_hermes.domain.models import ApprovalRequest, ExecutionResult
 from cano_hermes.governance.approvals import ApprovalService
+from cano_hermes.governance.auto_approval import try_auto_approve
 from cano_hermes.governance.budget import BudgetService
 from cano_hermes.governance.policy import PermissionEngine
 from cano_hermes.orchestration.completion import complete_execution
+from cano_hermes.orchestration.conductor import kanban_profile_for_domain
 from cano_hermes.runtimes.base import ExecutionPacket
 from cano_hermes.runtimes.claude_code import ClaudeCodeExecutor
 from cano_hermes.runtimes.codex import CodexExecutor
@@ -205,16 +207,41 @@ class ExecutionService:
                     evidencia=str(evidence_path),
                 )
             )
-            blocked_result = ExecutionResult(
-                task_id=task.id,
-                executor=executor_id,
-                status="approval_required",
-                summary=reason,
-                metrics={"approval_id": approval.id},
+            # K12: give the auto-approval engine a chance to resolve this
+            # request on its own (actor="policy-engine", never `task`'s own
+            # requester) BEFORE treating it as blocked -- see
+            # governance/auto_approval.py for the full, all-must-hold
+            # condition list. `write_target` mirrors the workspace path
+            # this same task would get below if it proceeds, so the
+            # engine's "writes stay inside allowed_write_paths" condition
+            # (K1/K2) checks the real path this run would actually use.
+            write_target = self.workspace_root / task.id / executor_id
+            resolved = try_auto_approve(
+                self.approvals,
+                approval,
+                kanban_profile=kanban_profile_for_domain(task.domain),
+                write_target=write_target,
+                allowed_write_paths=(write_target,),
             )
-            if execution_id is not None:
-                blocked_result.execution_id = execution_id
-            return blocked_result
+            if resolved is None or resolved.status != ApprovalStatus.APPROVED:
+                blocked_result = ExecutionResult(
+                    task_id=task.id,
+                    executor=executor_id,
+                    status="approval_required",
+                    summary=reason,
+                    metrics={"approval_id": approval.id},
+                )
+                if execution_id is not None:
+                    blocked_result.execution_id = execution_id
+                return blocked_result
+            # Auto-approved: fall through to normal execution below exactly
+            # as if Cano had already resolved this from the dashboard/
+            # Telegram -- no separate code path, no shortcut around any of
+            # the locking/workspace/budget-ingestion logic that follows.
+            self.engine.transition(
+                task.id, TaskStatus.READY, "policy-engine",
+                {"reason": "auto-approved", "approval_id": resolved.id},
+            )
 
         executor = self.executors[executor_id]
         # Engineering-domain tasks get an isolated git worktree instead of

@@ -10,7 +10,24 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_prefix="HERMES_", extra="ignore")
 
     env: str = "development"
-    execution_mode: str = "dry_run"
+    # K12 (plan HERMES-KICKOFF): default changed dry_run -> supervised to
+    # match the real systemd `starhome-os` unit, which has run with
+    # `HERMES_EXECUTION_MODE=supervised` in its own `.env` since before K7
+    # (see `tests/test_k7_kanban_events.py`'s
+    # `test_synthesis_needing_approval_blocks_order_not_fails_it`, a
+    # regression documented from a live 2026-08-06 demo run under that
+    # exact mode) -- the code default was simply stale, not a deliberate
+    # dry_run-by-default posture that changed here. `supervised` routes
+    # every task through `PermissionEngine` as a `SENSITIVE_ACTIONS`
+    # member (`ExecutionService.run` always evaluates the coarse label
+    # `"production_write"`), so *everything* would need Cano's manual
+    # approval without K12's other half: `governance/auto_approval.py`,
+    # which lets only LOW-risk/$0/non-sensitive/office-allowed requests
+    # resolve themselves. Tests that need `dry_run` specifically already
+    # set `HERMES_EXECUTION_MODE=dry_run` (or pass the literal string to
+    # `ExecutionService(...)` directly) rather than relying on this
+    # default, so this change does not require touching them.
+    execution_mode: str = "supervised"
     database_url: str = "sqlite:///storage/hermes.db"
     vault_path: Path = Path("vault")
     # K11 (plan HERMES-KICKOFF) -- default location of a graphify graph.json
