@@ -1,0 +1,7 @@
+{
+  "checked_at": "2026-08-07T16:26:38Z",
+  "credits": 12.58,
+  "subscription_plan_type": "plus",
+  "source": "MCP Higgsfield (sesión interactiva de Claude), balance() en vivo",
+  "note": "Snapshot manual -- no hay HIGGSFIELD_API_KEY en el vault, así que esto NO se autoactualiza. Requiere que alguien con acceso a una sesión de Claude con el MCP de Higgsfield conectado corra balance() de nuevo y sobrescriba este archivo, o que Cano genere una API key portable desde el dashboard de Higgsfield para automatizarlo de verdad."
+}

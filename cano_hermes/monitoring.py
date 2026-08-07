@@ -385,20 +385,36 @@ def office_last_run(office: str, offices_data_root: Path | None = None) -> dict[
     }
 
 
+HIGGSFIELD_SNAPSHOT_PATH = ROOT / "reports" / "higgsfield-credits-snapshot.json"
+
+
 def higgsfield_credits_summary() -> dict[str, Any]:
     """No versioned Higgsfield credit tracker exists in any contract repo
     audited (factory-ia-channel-v5, ugc-commerce-studio) -- both mention
     Higgsfield as the paid provider in their CLAUDE.md but neither ships a
-    script that reads/writes a credits ledger. Documented as absent, not
-    invented."""
+    script that reads/writes a credits ledger, and there is no
+    HIGGSFIELD_API_KEY in the vault for an unattended job to call. What
+    *does* exist is `reports/higgsfield-credits-snapshot.json`: a manual
+    point-in-time reading, taken from an interactive Claude session with
+    the Higgsfield MCP connected (`balance()`), committed to git so it
+    survives between sessions. This is honestly a snapshot, not a live
+    feed -- degrades to `sin_tracker` if the file is missing or unreadable,
+    never fabricates a number."""
+    if HIGGSFIELD_SNAPSHOT_PATH.exists():
+        try:
+            data = json.loads(HIGGSFIELD_SNAPSHOT_PATH.read_text(encoding="utf-8"))
+            return {"status": "snapshot_manual", **data}
+        except (OSError, json.JSONDecodeError) as exc:
+            return {"status": "error", "detail": f"{exc.__class__.__name__}: {exc}"}
     return {
         "status": "sin_tracker",
         "note": (
             "No se encontró ningún tracker de créditos Higgsfield versionado "
             "en los repos de contrato revisados (factory-ia-channel-v5, "
-            "ugc-commerce-studio). AUDIT_GAPS.md de ugc-affiliate (F9) ya "
-            "documentó por separado: plan FREE, 8 créditos, cuenta "
-            "insuficiente para producir."
+            "ugc-commerce-studio), ni un snapshot manual en "
+            "reports/higgsfield-credits-snapshot.json. AUDIT_GAPS.md de "
+            "ugc-affiliate (F9) ya documentó por separado: plan FREE, 8 "
+            "créditos, cuenta insuficiente para producir."
         ),
     }
 
