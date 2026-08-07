@@ -22,6 +22,7 @@ import json
 import shutil
 import subprocess
 import sys
+import time
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -39,8 +40,25 @@ BASEROW_BASE_URL = "http://localhost:8085"
 # confirmed live against the running instance, not guessed:
 #   solicitudes=130  gastos=136  productos_ugc=140  metricas_diarias=141
 BASEROW_METRICAS_TABLE_ID = 141
+# K14 -- confirmed live via `GET /api/database/fields/table/136/`: columns
+# are fecha (date), oficina (text), concepto (text), monto_usd (number),
+# aprobado_por (text), solicitud_id (text). `write_expense_row` below
+# mirrors exactly that schema, same "confirm before writing" discipline as
+# BASEROW_METRICAS_TABLE_ID/write_metric_row.
+BASEROW_GASTOS_TABLE_ID = 136
 
-OFFICE_CONTAINER_NAMES = ["office-analytics", "office-ugc", "office-content", "office-publish"]
+# K9 added a 5th office (market-intel) but never updated this list -- and
+# separately, `docker compose` (no `container_name:` override anywhere in
+# infrastructure/offices/docker-compose.yml) names containers
+# "<project>-office-<name>-1" where the project defaults to the compose
+# file's parent directory name ("offices", confirmed live via `docker
+# compose config` -> `name: offices`), not the bare "office-<name>" this
+# list used to check for. That mismatch meant `office_container_status()`
+# always reported every office "down" even while genuinely running --
+# confirmed live: `docker compose --profile analytics up -d` produces a
+# container named exactly `offices-office-analytics-1`. K14 fixes both:
+# short names here, substring match below.
+OFFICE_NAMES = ["analytics", "ugc", "content", "publish", "market-intel"]
 
 
 # --------------------------------------------------------------------------
@@ -133,21 +151,111 @@ def check_docker_stats() -> dict[str, Any]:
 
 
 def office_container_status() -> dict[str, str]:
-    """`docker ps` snapshot for the 4 F11 offices: 'up' | 'down' | 'unknown'.
-    'down' is the expected steady state (on-demand containers, F11)."""
+    """`docker ps` snapshot for the 5 K9 offices: 'up' | 'down' | 'unknown'.
+    'down' is the expected steady state (on-demand containers, F11/K9).
+
+    Matches by substring (`f"office-{name}"` inside the running container's
+    real name), not exact equality -- `docker compose` names containers
+    "<project>-office-<name>-<index>" (confirmed live: `offices-office-
+    analytics-1`), so an exact-match against the bare "office-<name>"
+    string this function used before K14 never matched anything, and every
+    office silently read 'down' even while running. Substring match is
+    still specific enough to not false-positive between offices: no office
+    short name is a substring of another (analytics/ugc/content/publish/
+    market-intel)."""
+    keys = [f"office-{name}" for name in OFFICE_NAMES]
     if shutil.which("docker") is None:
-        return {name: "unknown" for name in OFFICE_CONTAINER_NAMES}
+        return {key: "unknown" for key in keys}
     try:
         result = subprocess.run(
             ["docker", "ps", "--format", "{{.Names}}"],
             capture_output=True, text=True, timeout=10, check=False,
         )
     except (OSError, subprocess.SubprocessError):
-        return {name: "unknown" for name in OFFICE_CONTAINER_NAMES}
+        return {key: "unknown" for key in keys}
     if result.returncode != 0:
-        return {name: "unknown" for name in OFFICE_CONTAINER_NAMES}
-    running = set(result.stdout.split())
-    return {name: ("up" if name in running else "down") for name in OFFICE_CONTAINER_NAMES}
+        return {key: "unknown" for key in keys}
+    running = result.stdout.split()
+    return {
+        key: ("up" if any(key in container_name for container_name in running) else "down")
+        for key in keys
+    }
+
+
+# --------------------------------------------------------------------------
+# K14 -- short-TTL in-process cache for subprocess-backed checks that the
+# new offices dashboard (`GET /api/dashboard/offices`) would otherwise call
+# on every single GET. `docker stats` in particular is the one F13 already
+# flagged as "costly to call on every request" without building the cache
+# -- this is that cache. Deliberately a plain module-level dict (no extra
+# dependency, no cross-process sharing needed: the dashboard is read by one
+# uvicorn worker) keyed by the wrapped function's own name, so multiple
+# cached checks can share the same tiny helper.
+# --------------------------------------------------------------------------
+_CACHE: dict[str, tuple[float, Any]] = {}
+
+
+def _cached(key: str, ttl_seconds: float, compute) -> Any:
+    """Return `compute()`'s result, cached for `ttl_seconds`. `compute`
+    itself must never raise for this to be a safe cache -- every caller
+    below wraps its own subprocess call in try/except first (matching this
+    module's existing "never raises" convention for every check_*/office_*
+    function), so a Docker outage degrades to a stale-or-error cached dict,
+    never an exception bubbling into the dashboard endpoint."""
+    now = time.monotonic()
+    cached = _CACHE.get(key)
+    if cached is not None and (now - cached[0]) < ttl_seconds:
+        return cached[1]
+    value = compute()
+    _CACHE[key] = (now, value)
+    return value
+
+
+def docker_stats_cached(ttl_seconds: float = 30.0) -> dict[str, Any]:
+    """`check_docker_stats()` behind a short TTL cache. `docker stats
+    --no-stream` shells out and blocks for real wall-clock time (every
+    container gets sampled) -- fine once per admin sweep, too slow to pay
+    on every dashboard refresh. 30s default: long enough that a dashboard
+    left open and auto-refreshing doesn't hammer the Docker socket, short
+    enough that "office just started" shows up within one refresh cycle.
+    Never raises: `check_docker_stats()` already returns a
+    `{"status": "sin_binario"/"error", ...}` dict instead of raising when
+    Docker is missing/down, so a cache miss during an outage just caches
+    that error dict for `ttl_seconds` rather than retrying every call."""
+    return _cached("docker_stats", ttl_seconds, check_docker_stats)
+
+
+def check_kanban_board_stats(board: str = "starhome", timeout: int = 15) -> dict[str, Any]:
+    """`hermes kanban --board <board> stats --json` -- per-status and
+    per-assignee (kanban profile) task counts. Confirmed live to return in
+    well under a second against the real `starhome` board on this machine,
+    unlike hermes's own interactive REPL (which rejects subprocess
+    invocation per root CLAUDE.md) -- `kanban stats` is a plain one-shot
+    subcommand, the same category as `hermes status`/`hermes cron` this
+    module already shells out to."""
+    if shutil.which("hermes") is None:
+        return {"status": "sin_binario", "detail": "'hermes' no está en PATH"}
+    try:
+        result = subprocess.run(
+            ["hermes", "kanban", "--board", board, "stats", "--json"],
+            capture_output=True, text=True, timeout=timeout, check=False,
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        return {"status": "error", "detail": str(exc)}
+    if result.returncode != 0:
+        return {"status": "error", "detail": (result.stderr or "")[-1000:]}
+    try:
+        payload = json.loads(result.stdout)
+    except json.JSONDecodeError:
+        return {"status": "error", "detail": "salida no-JSON de 'hermes kanban stats'"}
+    return {"status": "ok", **payload}
+
+
+def kanban_board_stats_cached(board: str = "starhome", ttl_seconds: float = 30.0) -> dict[str, Any]:
+    """`check_kanban_board_stats()` behind the same short-TTL cache as
+    `docker_stats_cached` -- same rationale (a subprocess call the offices
+    dashboard would otherwise pay on every GET)."""
+    return _cached(f"kanban_stats:{board}", ttl_seconds, lambda: check_kanban_board_stats(board))
 
 
 # --------------------------------------------------------------------------
@@ -198,6 +306,65 @@ def usage_files_summary(workspace_root: Path | None = None) -> dict[str, Any]:
         "usage_files_found": len(files),
         "total_cost_usd": round(total_cost, 4),
         "entries": entries,
+    }
+
+
+def office_usage_costs(workspace_root: Path | None = None) -> dict[str, float]:
+    """K14 -- real spend per K9 office, read from `storage/workspaces/
+    office-<name>/usage-*.json` (the mirror `bridge/office_usage.sync_
+    office_usage_to_workspaces` writes there, same schema/cost fields as
+    `usage_files_summary` above). Offices run as kanban workers, not
+    through `ExecutionService`, so their cost never lands in the
+    `executions` table's `usage_json` -- this is the one place that data is
+    actually visible. Returns `{office_short_name: total_cost_usd}` for
+    every office in `OFFICE_NAMES`, 0.0 for one with no usage files yet
+    (never omitted -- the finance/offices dashboards always show all 5)."""
+    root = workspace_root or (ROOT / "storage" / "workspaces")
+    costs = {name: 0.0 for name in OFFICE_NAMES}
+    for name in OFFICE_NAMES:
+        office_dir = root / f"office-{name}"
+        if not office_dir.is_dir():
+            continue
+        total = 0.0
+        for f in sorted(office_dir.glob("usage-*.json")):
+            try:
+                data = json.loads(f.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                continue
+            for field in ("estimated_cost_usd", "cost_usd", "total_cost_usd"):
+                value = data.get(field)
+                if isinstance(value, (int, float)):
+                    total += float(value)
+                    break
+        costs[name] = round(total, 4)
+    return costs
+
+
+def office_last_run(office: str, offices_data_root: Path | None = None) -> dict[str, Any] | None:
+    """K14 -- most-recently-modified artifact under `infrastructure/
+    offices/data/<office>/output/` (each office's `/office/output:rw` bind
+    mount, per K9's docker-compose.yml), ignoring `.gitkeep`. That
+    directory is where every office's `task.sh` actually writes its report/
+    draft on a real run (confirmed live: `hermes-report-<office>-
+    <epoch>.md`, `draft-<epoch>.json`) -- there is no separate "last run"
+    ledger anywhere else to read instead. Returns None when the office has
+    never produced a real artifact yet (fresh checkout, or an office that's
+    never been started), not an error."""
+    root = offices_data_root or (ROOT / "infrastructure" / "offices" / "data")
+    output_dir = root / office / "output"
+    if not output_dir.is_dir():
+        return None
+    files = [f for f in output_dir.iterdir() if f.is_file() and f.name != ".gitkeep"]
+    if not files:
+        return {"last_run_file": None, "last_run_at": None, "artifacts_count": 0}
+    latest = max(files, key=lambda f: f.stat().st_mtime)
+    mtime = latest.stat().st_mtime
+    import datetime as _dt
+
+    return {
+        "last_run_file": latest.name,
+        "last_run_at": _dt.datetime.fromtimestamp(mtime, tz=_dt.UTC).isoformat(),
+        "artifacts_count": len(files),
     }
 
 
@@ -285,6 +452,46 @@ def write_metric_row(fecha: str, oficina: str, metrica: str, valor: float, nota:
     }).encode("utf-8")
     req = urllib.request.Request(
         f"{BASEROW_BASE_URL}/api/database/rows/table/{BASEROW_METRICAS_TABLE_ID}/?user_field_names=true",
+        data=body, method="POST",
+        headers={"Authorization": f"Token {token}", "Content-Type": "application/json"},
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            return {"status": "ok", "row_id": json.loads(resp.read()).get("id")}
+    except urllib.error.HTTPError as exc:
+        return {"status": "error", "http_status": exc.code, "detail": exc.read().decode(errors="replace")[:300]}
+    except (urllib.error.URLError, OSError, TimeoutError) as exc:
+        return {"status": "error", "detail": f"{exc.__class__.__name__}: {exc}"}
+
+
+def write_expense_row(
+    fecha: str, oficina: str, concepto: str, monto_usd: float,
+    aprobado_por: str = "", solicitud_id: str = "",
+) -> dict[str, Any]:
+    """K14 -- mirrors one aggregated spend line into the `gastos` Baserow
+    table (F11, `BASEROW_GASTOS_TABLE_ID`), same "never raises, caller logs
+    the result dict" contract as `write_metric_row`. Field names match the
+    table's real schema confirmed live via `GET /api/database/fields/
+    table/136/` (fecha date, oficina/concepto/aprobado_por/solicitud_id
+    text, monto_usd number) -- `daily_cycle.py`'s new finance snapshot step
+    calls this once per (day, executor-or-office) bucket with a non-zero
+    cost, it is not called from any GET endpoint (a dashboard read must
+    stay side-effect-free, matching every other `/api/dashboard*` route in
+    this module)."""
+    token = _baserow_token()
+    if not token:
+        return {"status": "sin_token", "detail": "BASEROW_TOKEN no encontrado en el vault"}
+
+    body = json.dumps({
+        "fecha": f"{fecha}T00:00:00Z",
+        "oficina": oficina,
+        "concepto": concepto,
+        "monto_usd": monto_usd,
+        "aprobado_por": aprobado_por,
+        "solicitud_id": solicitud_id,
+    }).encode("utf-8")
+    req = urllib.request.Request(
+        f"{BASEROW_BASE_URL}/api/database/rows/table/{BASEROW_GASTOS_TABLE_ID}/?user_field_names=true",
         data=body, method="POST",
         headers={"Authorization": f"Token {token}", "Content-Type": "application/json"},
     )

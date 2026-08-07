@@ -275,6 +275,51 @@ class SQLiteStore:
             row = db.execute("SELECT * FROM executions WHERE id=?", (execution_id,)).fetchone()
         return self._execution_row_to_dict(row) if row is not None else None
 
+    def list_executions(self, limit: int | None = None) -> list[dict]:
+        """K14 -- every execution row across every task, newest-started
+        first, for the finance/orders dashboards' cross-task aggregation
+        (cost by executor/order, current queue depth proxy). Unlike
+        `get_executions_for_task`, this is not scoped to one task -- the
+        dashboard needs to group by executor and by parent order, which
+        means seeing all of them in one query instead of N one-task
+        round-trips. `limit`, when given, bounds it for callers that only
+        need a recent slice (e.g. a "last N executions" widget)."""
+        query = "SELECT * FROM executions ORDER BY started_at DESC"
+        params: tuple = ()
+        if limit is not None:
+            query += " LIMIT ?"
+            params = (limit,)
+        with self.connect() as db:
+            rows = db.execute(query, params).fetchall()
+        return [self._execution_row_to_dict(row) for row in rows]
+
+    def list_budget_ledger(self, limit: int = 30) -> list[dict]:
+        """K14 -- recent `budget_ledger` rows (newest day first), for the
+        finance dashboard's daily ledger view. Plain column selects (no
+        payload blob on this table, unlike tasks/orders) -- returns the raw
+        stored fields, `remaining_usd`/`percent_used` are derived by the
+        caller the same way `GET /api/dashboard` already does."""
+        with self.connect() as db:
+            rows = db.execute(
+                "SELECT day, daily_limit_usd, spent_usd, updated_at FROM budget_ledger "
+                "ORDER BY day DESC LIMIT ?",
+                (limit,),
+            ).fetchall()
+        return [dict(row) for row in rows]
+
+    def list_events_by_kind(self, kind: str) -> list[TaskEvent]:
+        """K14 -- every event of one `kind` across every task/order, oldest
+        first, via `json_extract` on the stored payload rather than an N+1
+        `list_events(task_id)` per order. Used by the orders dashboard to
+        find each order's `order.done` timestamp (for throughput/time-to-
+        done) without a separate query per order."""
+        with self.connect() as db:
+            rows = db.execute(
+                "SELECT payload FROM events WHERE json_extract(payload,'$.kind')=? ORDER BY created_at",
+                (kind,),
+            ).fetchall()
+        return [TaskEvent.model_validate_json(row["payload"]) for row in rows]
+
     def add_memory_candidate(self, candidate_id: str, namespace: str, payload: dict) -> None:
         from datetime import datetime, timezone
         with self.connect() as db:

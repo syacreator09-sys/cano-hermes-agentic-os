@@ -41,6 +41,7 @@ if str(ROOT) not in sys.path:
 from cano_hermes import monitoring  # noqa: E402
 from cano_hermes.config import settings  # noqa: E402
 from cano_hermes.governance.budget import BudgetService  # noqa: E402
+from cano_hermes.orchestration import dashboards  # noqa: E402
 from cano_hermes.storage.sqlite import SQLiteStore  # noqa: E402
 
 BUDGET_ALERT_THRESHOLD = 0.8
@@ -235,11 +236,86 @@ def write_baserow_metrics(result: dict[str, Any]) -> list[dict[str, Any]]:
     return written
 
 
+def write_finance_and_orders_snapshot(store: SQLiteStore, budget_service: BudgetService) -> dict[str, Any]:
+    """K14 -- extra ciclo diario step (`GET /api/dashboard/{finance,
+    orders}`'s own aggregation, reused rather than recomputed): writes
+    throughput/cola/tasa-de-fallo a `metricas_diarias` (filas que no
+    existían antes de K14) y un espejo agregado de costo por motor/oficina
+    a `gastos`. Deliberately one row per (día, motor-u-oficina) bucket with
+    a non-zero cost, not one row per execution -- `gastos`' schema has no
+    concept of "individual run", and a per-run mirror would eventually
+    dwarf the table with mostly-$0 rows (most of this environment's runs
+    are tier-0/free). Every write goes through `monitoring.write_metric_
+    row`/`write_expense_row`, both already "never raise" -- a Baserow
+    outage degrades this step's return dict to `status: "error"`/
+    `"sin_token"` entries, same as every other Baserow write in this
+    script, never an exception that kills the rest of the cycle."""
+    today = BudgetService.today()
+    finance = dashboards.finance_dashboard(store, budget_service)
+    orders = dashboards.orders_dashboard(store)
+
+    # `metricas_diarias.valor` (Baserow) rejects more than 2 decimal places
+    # (confirmed live: a first version of this function that passed
+    # `failure_rate["rate"]` through unrounded -- 4 decimal places -- got a
+    # real 400 `ERROR_REQUEST_BODY_VALIDATION`/`max_decimal_places` back).
+    # Every value below is rounded to 2dp before it reaches `write_metric_
+    # row`, matching the convention `write_baserow_metrics` above already
+    # uses for its own percent fields (`round(conn_ok_pct, 2)` etc.) --
+    # percentages are stored 0-100, not as a 0-1 fraction, for the same
+    # reason.
+    metric_rows = [
+        ("sistema", "orders_active_count", float(orders["active_orders_count"]), ""),
+        ("sistema", "orders_total_count", float(orders["orders_total_count"]), ""),
+        ("sistema", "orders_failure_rate_pct", round((orders["failure_rate"]["rate"] or 0.0) * 100, 2),
+         f"{orders['failure_rate']['done_count']} done / {orders['failure_rate']['failed_or_blocked_count']} failed+blocked"),
+        ("sistema", "orders_queue_pending_plus_running",
+         float(orders["queue"]["pending_executions"] + orders["queue"]["running_executions"]),
+         "proxy sqlite, no QueueService en memoria (ver dashboards.orders_dashboard)"),
+        ("sistema", "orders_avg_hours_to_done", round(orders["throughput"]["avg_hours_to_done"] or 0.0, 2),
+         f"muestra={orders['throughput']['sample_size']}"),
+        ("costos", "finance_projected_spend_usd", round(finance["today"]["projected_spend_usd"], 2), ""),
+    ]
+    metric_writes = []
+    for oficina, metrica, valor, nota in metric_rows:
+        outcome = monitoring.write_metric_row(today, oficina, metrica, valor, nota)
+        metric_writes.append({"oficina": oficina, "metrica": metrica, "valor": valor, "result": outcome})
+
+    # `gastos.monto_usd` (Baserow) is also a 2-decimal-place field
+    # (confirmed via `GET /api/database/fields/table/136/`) -- same
+    # rounding discipline as `metric_rows` above.
+    expense_writes = []
+    for row in finance["cost_by_executor"]:
+        monto = round(row["cost_usd"], 2)
+        if monto <= 0:
+            continue
+        outcome = monitoring.write_expense_row(
+            today, row["executor"], "gasto agregado del día (motor/executor)", monto,
+            aprobado_por="daily_cycle", solicitud_id="",
+        )
+        expense_writes.append({"oficina": row["executor"], "monto_usd": monto, "result": outcome})
+    for row in finance["cost_by_office"]:
+        monto = round(row["cost_usd"], 2)
+        if monto <= 0:
+            continue
+        outcome = monitoring.write_expense_row(
+            today, f"office-{row['office']}", "gasto agregado del día (oficina K9)", monto,
+            aprobado_por="daily_cycle", solicitud_id="",
+        )
+        expense_writes.append({"oficina": f"office-{row['office']}", "monto_usd": monto, "result": outcome})
+
+    return {"metric_writes": metric_writes, "expense_writes": expense_writes}
+
+
 def main() -> int:
     result = run_cycle()
 
     baserow_writes = write_baserow_metrics(result)
     result["baserow_writes"] = baserow_writes
+
+    store = SQLiteStore(settings.database_url)
+    budget_service = BudgetService(store)
+    finance_orders_snapshot = write_finance_and_orders_snapshot(store, budget_service)
+    result["finance_orders_snapshot"] = finance_orders_snapshot
 
     report_dir = ROOT / "reports" / "daily"
     report_dir.mkdir(parents=True, exist_ok=True)
@@ -247,9 +323,16 @@ def main() -> int:
     report_path.write_text(render_markdown(result), encoding="utf-8")
 
     baserow_ok = sum(1 for w in baserow_writes if w["result"].get("status") == "ok")
+    snapshot_metric_ok = sum(1 for w in finance_orders_snapshot["metric_writes"] if w["result"].get("status") == "ok")
+    snapshot_expense_ok = sum(1 for w in finance_orders_snapshot["expense_writes"] if w["result"].get("status") == "ok")
     print(f"reporte diario: {report_path}")
     print(f"alertas: {len(result['alerts'])}")
     print(f"baserow: {baserow_ok}/{len(baserow_writes)} filas escritas en metricas_diarias")
+    print(
+        f"baserow (K14 snapshot órdenes/finanzas): "
+        f"{snapshot_metric_ok}/{len(finance_orders_snapshot['metric_writes'])} metricas_diarias, "
+        f"{snapshot_expense_ok}/{len(finance_orders_snapshot['expense_writes'])} gastos"
+    )
     if result["alerts"]:
         for alert in result["alerts"]:
             print(f"  ⚠️ {alert}")

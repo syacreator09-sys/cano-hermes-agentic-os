@@ -25,6 +25,7 @@ from cano_hermes.nexus.context import ContextBuilder
 from cano_hermes.nexus.graph import KnowledgeGraph
 from cano_hermes.nexus.graphify_adapter import GraphifyAdapter
 from cano_hermes.nexus.markdown import MarkdownVault
+from cano_hermes.orchestration import dashboards
 
 from .dependencies import (
     approvals,
@@ -560,6 +561,210 @@ def _dashboard_html(data: dict[str, Any]) -> str:
 </body></html>"""
 
 
+def _dashboard_nav(active: str) -> str:
+    """K14 -- tiny nav bar shared by all 4 dashboard HTML views (F13's
+    `/dashboard` + the 3 new ones), so each page links to the others
+    instead of being a dead end. `active` is bolded/undlined via the
+    `status` CSS class already defined in style.css (green text) --
+    reusing an existing class instead of adding new CSS, matching F13's
+    own "don't reinvent the style" instruction for K14."""
+    links = [
+        ("/dashboard", "General"),
+        ("/dashboard/finance", "Finanzas"),
+        ("/dashboard/orders", "Órdenes"),
+        ("/dashboard/offices", "Oficinas"),
+    ]
+    parts = [
+        f'<a href="{href}" class="{"status" if href == active else "muted"}" '
+        f'style="margin-right:14px;text-decoration:none">{label}</a>'
+        for href, label in links
+    ]
+    return f'<nav style="margin-bottom:16px">{"".join(parts)}</nav>'
+
+
 @app.get("/dashboard", response_class=HTMLResponse)
 def dashboard_view():
-    return _dashboard_html(dashboard_data())
+    return _dashboard_nav("/dashboard") + _dashboard_html(dashboard_data())
+
+
+@app.get("/api/dashboard/finance")
+def dashboard_finance() -> dict[str, Any]:
+    """K14 -- ledger diario, gasto por orden/tarea/motor/oficina, y
+    proyección vs `default_daily_budget_usd`. See
+    `orchestration.dashboards.finance_dashboard` for the aggregation
+    itself; this route is a plain wire to it, matching `GET /api/dashboard`
+    (F13)'s own "no logic in app.py" discipline."""
+    return dashboards.finance_dashboard(store(), budget())
+
+
+@app.get("/api/dashboard/orders")
+def dashboard_orders() -> dict[str, Any]:
+    """K14 -- órdenes activas con su árbol de subtareas, throughput, tasa
+    de fallo y proxy de tamaño de cola. See
+    `orchestration.dashboards.orders_dashboard`."""
+    return dashboards.orders_dashboard(store())
+
+
+@app.get("/api/dashboard/offices")
+def dashboard_offices() -> dict[str, Any]:
+    """K14 -- estado up/down, última corrida, artifacts, presupuesto vs
+    gasto real y (best-effort) tareas kanban por oficina K9. See
+    `orchestration.dashboards.offices_dashboard` for the caching/decision
+    notes (docker stats + kanban stats behind a 30s TTL)."""
+    return dashboards.offices_dashboard()
+
+
+def _money(value: float) -> str:
+    return f"{value:.4f}"
+
+
+def _finance_html(data: dict[str, Any]) -> str:
+    def esc(value: Any) -> str:
+        return str(value).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+    today = data["today"]
+    ledger_rows = "".join(
+        f"<tr><td>{esc(row['day'])}</td><td>${esc(_money(row['spent_usd']))}</td>"
+        f"<td>${esc(_money(row['daily_limit_usd']))}</td>"
+        f"<td>{esc(round(row['percent_used'] * 100, 1))}%</td></tr>"
+        for row in data["ledger_daily"]
+    ) or "<tr><td colspan=4 class='muted'>Sin ledger todavía.</td></tr>"
+
+    executor_rows = "".join(
+        f"<span class='pill'>{esc(row['executor'])}: ${esc(_money(row['cost_usd']))}</span>"
+        for row in data["cost_by_executor"]
+    ) or "<p class='muted'>Sin costos por motor registrados todavía (usage-*.json vacío).</p>"
+
+    office_rows = "".join(
+        f"<span class='pill'>{esc(row['office'])}: ${esc(_money(row['cost_usd']))}</span>"
+        for row in data["cost_by_office"]
+    ) or "<p class='muted'>Sin datos.</p>"
+
+    order_rows = "".join(
+        f"<tr><td><a href='/api/orders/{esc(row['order_id'])}' target='_blank'>{esc(row['order_id'])}</a></td>"
+        f"<td>{esc(row['status'])}</td><td>${esc(_money(row['cost_usd']))}</td></tr>"
+        for row in data["cost_by_order"][:20]
+    ) or "<tr><td colspan=3 class='muted'>Sin gasto agregado por orden todavía.</td></tr>"
+
+    today_limit = esc(_money(today["daily_limit_usd"]))
+    return f"""<!doctype html><html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>StarHome OS — Finanzas</title><link rel="stylesheet" href="/static/style.css"></head>
+<body style="display:block;padding:28px">
+{_dashboard_nav("/dashboard/finance")}
+<header style="border-bottom:1px solid #1d273a;padding-bottom:18px">
+<h2 style="margin:0">Finanzas — ledger, costos, proyección</h2>
+<small class="muted">Generado {esc(data['generated_at'])}</small></header>
+<div class="grid">
+<div class="card"><div class="muted">Hoy ({esc(today['day'])})</div>
+<div class="metric">${esc(_money(today['spent_usd']))} / ${today_limit}</div>
+<p class="muted">{esc(round(today['percent_used'] * 100, 1))}% usado</p></div>
+<div class="card"><div class="muted">Proyección fin de día</div>
+<div class="metric">${esc(_money(today['projected_spend_usd']))}</div>
+<p class="muted">{esc(round(today['projected_percent_used'] * 100, 1))}% del límite (lineal sobre {esc(round(today['elapsed_fraction'] * 100))}% del día)</p></div>
+<div class="card"><div class="muted">Recuperado (all-time)</div>
+<div class="metric">${esc(_money(data['totals']['all_time_recorded_cost_usd']))}</div>
+<p class="muted">{esc(data['totals']['executions_priced'])} / {esc(data['totals']['executions_total'])} ejecuciones con costo real</p></div>
+</div>
+<div class="card" style="margin-top:16px"><h3>Costo por motor/executor</h3>{executor_rows}</div>
+<div class="card" style="margin-top:16px"><h3>Costo por oficina</h3>{office_rows}</div>
+<div class="card" style="margin-top:16px"><h3>Ledger diario</h3>
+<table style="width:100%;border-collapse:collapse"><tr><th>Día</th><th>Gastado</th><th>Límite</th><th>%</th></tr>{ledger_rows}</table></div>
+<div class="card" style="margin-top:16px"><h3>Gasto por orden (top 20)</h3>
+<table style="width:100%;border-collapse:collapse"><tr><th>Orden</th><th>Estado</th><th>Costo</th></tr>{order_rows}</table></div>
+<div class="card" style="margin-top:16px"><h3>Baserow</h3>
+<p><a href="{monitoring.BASEROW_BASE_URL}/database/34/table/{monitoring.BASEROW_GASTOS_TABLE_ID}/" target="_blank" rel="noopener">tabla gastos</a></p></div>
+</body></html>"""
+
+
+@app.get("/dashboard/finance", response_class=HTMLResponse)
+def dashboard_finance_view():
+    return _finance_html(dashboards.finance_dashboard(store(), budget()))
+
+
+def _orders_html(data: dict[str, Any]) -> str:
+    def esc(value: Any) -> str:
+        return str(value).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+    throughput = data["throughput"]
+    per_day = "".join(
+        f"<span class='pill'>{esc(row['date'])}: {esc(row['count'])}</span>" for row in throughput["orders_per_day"]
+    ) or "<p class='muted'>Sin órdenes todavía.</p>"
+
+    orders_html = "".join(
+        f"<div class='card'><span class='pill'>{esc(o['status'])}</span> <span class='pill'>{esc(o['source'])}</span>"
+        f"<h3 style='margin:8px 0'>{esc(o['id'])}</h3><p class='muted'>{esc(o['objective'])}</p>"
+        f"<small>{esc(len(o['tasks']))} subtarea(s): "
+        + ", ".join(f"{esc(t['id'])}[{esc(t['status'])}]" for t in o['tasks'])
+        + "</small></div>"
+        for o in data["active_orders"]
+    ) or "<p class='muted'>Sin órdenes activas.</p>"
+
+    failure = data["failure_rate"]
+    queue = data["queue"]
+
+    return f"""<!doctype html><html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>StarHome OS — Órdenes</title><link rel="stylesheet" href="/static/style.css"></head>
+<body style="display:block;padding:28px">
+{_dashboard_nav("/dashboard/orders")}
+<header style="border-bottom:1px solid #1d273a;padding-bottom:18px">
+<h2 style="margin:0">Órdenes — análisis y throughput</h2>
+<small class="muted">Generado {esc(data['generated_at'])}</small></header>
+<div class="grid">
+<div class="card"><div class="muted">Órdenes activas</div><div class="metric">{esc(data['active_orders_count'])}</div>
+<p class="muted">de {esc(data['orders_total_count'])} totales</p></div>
+<div class="card"><div class="muted">Tiempo medio a DONE</div>
+<div class="metric">{esc(f"{throughput['avg_hours_to_done']:.1f}h") if throughput['avg_hours_to_done'] is not None else "—"}</div>
+<p class="muted">muestra: {esc(throughput['sample_size'])} orden(es)</p></div>
+<div class="card"><div class="muted">Tasa de fallo</div>
+<div class="metric">{esc(f"{failure['rate'] * 100:.1f}%") if failure['rate'] is not None else "—"}</div>
+<p class="muted">{esc(failure['done_count'])} done / {esc(failure['failed_or_blocked_count'])} failed+blocked</p></div>
+<div class="card"><div class="muted">Cola actual (proxy)</div>
+<div class="metric">{esc(queue['pending_executions'] + queue['running_executions'])}</div>
+<p class="muted">{esc(queue['pending_executions'])} pendientes · {esc(queue['running_executions'])} corriendo</p></div>
+</div>
+<div class="card" style="margin-top:16px"><h3>Órdenes/día</h3>{per_day}</div>
+<div class="card" style="margin-top:16px"><h3>Órdenes activas</h3><div class="grid">{orders_html}</div></div>
+</body></html>"""
+
+
+@app.get("/dashboard/orders", response_class=HTMLResponse)
+def dashboard_orders_view():
+    return _orders_html(dashboards.orders_dashboard(store()))
+
+
+def _offices_html(data: dict[str, Any]) -> str:
+    def esc(value: Any) -> str:
+        return str(value).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+    cards = "".join(
+        f"<div class='card'><span class='pill {'status' if o['status'] == 'up' else ''}'>{esc(o['status'])}</span>"
+        f"<h3 style='margin:8px 0'>office-{esc(o['office'])}</h3>"
+        f"<p class='muted'>perfil: {esc(o['kanban_profile'] or '—')}</p>"
+        f"<small>última corrida: {esc(o['last_run']['last_run_at']) if o['last_run'] and o['last_run']['last_run_at'] else 'sin datos'} "
+        f"({esc(o['last_run']['artifacts_count']) if o['last_run'] else 0} artifact(s))</small><br>"
+        f"<small>gasto: ${esc(_money(o['actual_spent_usd']))} / límite "
+        f"${esc(o['budget_daily_usd']) if o['budget_daily_usd'] is not None else '—'}"
+        f"{' ⚠️ sobre presupuesto' if o['over_budget'] else ''}</small><br>"
+        f"<small>tareas kanban en perfil: {esc(o['kanban_tasks_in_profile']) if o['kanban_tasks_in_profile'] is not None else 'sin datos'}</small>"
+        "</div>"
+        for o in data["offices"]
+    )
+
+    return f"""<!doctype html><html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>StarHome OS — Oficinas</title><link rel="stylesheet" href="/static/style.css"></head>
+<body style="display:block;padding:28px">
+{_dashboard_nav("/dashboard/offices")}
+<header style="border-bottom:1px solid #1d273a;padding-bottom:18px">
+<h2 style="margin:0">Oficinas K9 — estado, corridas, presupuesto</h2>
+<small class="muted">Generado {esc(data['generated_at'])} · docker_stats: {esc(data['docker_stats_status'])}
+· kanban_stats: {esc(data['kanban_board_stats_status'])}</small></header>
+<div class="grid" style="margin-top:16px">{cards}</div>
+</body></html>"""
+
+
+@app.get("/dashboard/offices", response_class=HTMLResponse)
+def dashboard_offices_view():
+    return _offices_html(dashboards.offices_dashboard())
