@@ -15,6 +15,19 @@ scripts_factory:
   - runbook long-narration-writer-agent (checklist manual del origen)
   - runbook content-repair-agent
   - storage/campaign-packages/ (formato reel.json/long.json)
+  # T9 (plan POTENCIA, 2026-08-07): flujo real end-to-end, verificado en
+  # vivo (Kimi escribio un guion real de 5 escenas, costo $0):
+  #   1. scripts/write_guion.py --canal <c> --brief storage/workspaces/
+  #      virality/<fecha>/<c>.json --apply -- lee el brief de P4-B, arma el
+  #      prompt (skill write-viral-short + perfil de canal santmun:
+  #      vox-documentary|tool-tutorial|systems-explainer|incredible-world),
+  #      invoca `hermes --oneshot` con Kimi (tier-0, gratis).
+  #   2. scripts/guion_to_videovox.py valida el YAML y lo convierte al
+  #      shape EXACTO que cano-video-vox espera (title/musicPrompt/scenes).
+  #   3. Salida: storage/workspaces/guiones/<fecha>/<canal>.scenes.json,
+  #      listo para copiarse a cano-video-vox/input/scenes.json y correr
+  #      `npm run assets && npm run render:job` (T10).
+  - scripts/write_guion.py + scripts/guion_to_videovox.py (flujo real T9)
 providers: [nvidia-nim, kimi, anthropic]
 default_model: sonnet
 budget_daily:
