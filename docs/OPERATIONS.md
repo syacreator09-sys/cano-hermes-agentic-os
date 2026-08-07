@@ -536,16 +536,27 @@ fase **documenta el patrón, no lo cablea**):
    (K12) que cualquier otra acción de ese riesgo — el patrón resuelve
    *cómo* se invoca la herramienta, no *si* se aprueba.
 
-**Caso de uso concreto ya identificado (K15, para K19):** la vista
-`GET /api/dashboard/business/cass` planeada en K19 necesita
-ventas/productos de la tienda Shopify "CASS Beauty Clinic"
-(`fss1nv-s1.myshopify.com`, MCP `claude_ai_Shopify` ya conectado a esta
-cuenta) — ese dato se resuelve exactamente con este patrón: un job pide
-`get-shop-info`/`list-orders`, una sesión Claude lo resuelve, K19 lo
-consume como fuente marcada `PENDING_NATIVE_TOOL` en su vista hasta que
-el job se resuelva. No implementado en K15 — el gate es de diseño, no de
-credenciales: el MCP ya está conectado, falta el mecanismo de handoff en
-sí (paso 1-2 arriba), que queda para cuando K19 lo necesite en firme.
+**Caso de uso concreto (K15, cableado en K19):** la vista
+`GET /api/dashboard/business/cass` (K19) necesita ventas/productos de la
+tienda Shopify "CASS Beauty Clinic" (`fss1nv-s1.myshopify.com`, MCP
+`claude_ai_Shopify` ya conectado a esta cuenta) y métricas básicas de la
+página Meta "CASS Medicina Estética" — ambas se resuelven con este
+patrón, ahora implementado (no solo diseñado): `cano_hermes.integrations.
+native_tool_bridge.request_job` (K19) escribe/lee los pasos 1, 2 y 4
+arriba como archivos reales en `storage/pending_native_tool/<job_id>.
+request.json` / `<job_id>.result.json` (gitignored, creados en runtime).
+`business/cass.py`'s `shopify_status()`/`meta_status()` llaman a ese
+bridge con los tools/params ya resueltos (`get-shop-info`/`list-orders`/
+`search_products` para Shopify; `ads_get_user_pages`/
+`ads_get_pages_for_business` para Meta, la superficie de lectura más
+cercana que el MCP Facebook conectado expone hoy) y jamás hacen una
+llamada HTTP ellos mismos (`tests/test_k19_business_cass.py::
+ShopifyMetaNeverWriteTests` lo confirma por escaneo de código fuente, no
+solo por observación de una corrida). El paso 3 (una sesión Claude
+resolviendo el job de verdad) sigue sin ejecutarse — es, por diseño,
+autónomo del proceso de fondo; queda para cuando Cano pida resolver los
+jobs `PENDING_NATIVE_TOOL` pendientes hoy (`cass-shopify-status`,
+`cass-meta-status`).
 
 ## Troubleshooting básico
 

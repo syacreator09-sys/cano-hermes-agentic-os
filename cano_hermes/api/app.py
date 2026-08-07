@@ -25,6 +25,7 @@ from cano_hermes.nexus.context import ContextBuilder
 from cano_hermes.nexus.graph import KnowledgeGraph
 from cano_hermes.nexus.graphify_adapter import GraphifyAdapter
 from cano_hermes.nexus.markdown import MarkdownVault
+from cano_hermes.business import cass as business_cass
 from cano_hermes.orchestration import dashboards
 
 from .dependencies import (
@@ -575,6 +576,7 @@ def _dashboard_nav(active: str) -> str:
         ("/dashboard/offices", "Oficinas"),
         ("/dashboard/content", "Contenido"),
         ("/dashboard/accounting", "Contabilidad"),
+        ("/dashboard/business/cass", "Negocio CASS"),
     ]
     parts = [
         f'<a href="{href}" class="{"status" if href == active else "muted"}" '
@@ -895,3 +897,91 @@ def _accounting_html(data: dict[str, Any]) -> str:
 @app.get("/dashboard/accounting", response_class=HTMLResponse)
 def dashboard_accounting_view():
     return _accounting_html(dashboards.accounting_dashboard(store(), budget()))
+
+
+@app.get("/api/dashboard/business/cass")
+def dashboard_business_cass() -> dict[str, Any]:
+    """K19 -- business view for CASS: Shopify + Meta as `PENDING_NATIVE_
+    TOOL` jobs (never an HTTP call from here, see
+    `integrations.native_tool_bridge`), a real YouTube channel snapshot
+    (`cass-healt`), and K17/K18's Baserow tables filtered to CASS. See
+    `business.cass.cass_dashboard` -- template for Cano Digital/LUZYA,
+    documented in that module's docstring."""
+    return business_cass.cass_dashboard(store(), budget())
+
+
+def _business_cass_html(data: dict[str, Any]) -> str:
+    def esc(value: Any) -> str:
+        return str(value).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+    def native_tool_card(name: str, job: dict[str, Any]) -> str:
+        status = job["status"]
+        ok = status == "RESOLVED_NATIVE_TOOL"
+        return (
+            f"<div class='card'><span class='pill {'status' if ok else ''}'>{esc(status)}</span>"
+            f"<h3 style='margin:8px 0'>{esc(name)}</h3>"
+            f"<small class='muted'>{esc(job.get('purpose') or '')}</small><br>"
+            f"<small>mcp_tools: {esc(', '.join(job.get('mcp_tools') or []))}</small><br>"
+            f"<small class='muted'>{esc(job.get('detail') or '')}</small></div>"
+        )
+
+    youtube_data = data["youtube"]
+    if youtube_data["status"] == "ok":
+        ch = youtube_data["channel"]
+        youtube_card = (
+            f"<div class='card'><span class='pill status'>ok</span>"
+            f"<h3 style='margin:8px 0'>{esc(ch['title'])} ({esc(ch['custom_url'] or '—')})</h3>"
+            f"<div class='metric'>{esc(ch['subscriber_count'])} subs</div>"
+            f"<small>{esc(ch['video_count'])} videos · {esc(ch['view_count'])} views totales</small></div>"
+        )
+    else:
+        youtube_card = (
+            f"<div class='card'><span class='pill'>{esc(youtube_data['status'])}</span>"
+            f"<h3 style='margin:8px 0'>YouTube — {esc(business_cass.YOUTUBE_CHANNEL_SLUG)}</h3>"
+            f"<small class='muted'>{esc(youtube_data.get('detail') or '')}</small></div>"
+        )
+
+    content = data["content"]
+    content_rows = "".join(
+        f"<tr><td>{esc(row['canal'] or '—')}</td><td>{esc(row['oficina_productora'] or '—')}</td>"
+        f"<td>{esc(row['estado'] or '—')}</td></tr>"
+        for row in content["rows"]
+    ) or f"<tr><td colspan=3 class='muted'>{esc(content['note'])}</td></tr>"
+
+    accounting_data = data["accounting"]
+    position = accounting_data["cash_position"]
+    position_html = (
+        f"<p>Ingresos: {_money(position['ingresos_total_usd'])} · Gastos: {_money(position['gastos_total_usd'])} "
+        f"· Saldo bruto: {_money(position['saldo_bruto_usd'])} ({position['movimientos']} movimientos)</p>"
+        if position else "<p class='muted'>Sin movimientos de contabilidad para CASS todavía.</p>"
+    )
+    month_rows = "".join(
+        f"<tr><td>{esc(row['month'])}</td><td>{_money(row['ingresos_usd'])}</td>"
+        f"<td>{_money(row['gastos_usd'])}</td><td>{_money(row['flujo_neto_usd'])}</td></tr>"
+        for row in accounting_data["movements_by_month"]
+    ) or "<tr><td colspan=4 class='muted'>Sin movimientos todavía.</td></tr>"
+
+    return f"""<!doctype html><html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>StarHome OS — Negocio CASS</title><link rel="stylesheet" href="/static/style.css"></head>
+<body style="display:block;padding:28px">
+{_dashboard_nav("/dashboard/business/cass")}
+<header style="border-bottom:1px solid #1d273a;padding-bottom:18px">
+<h2 style="margin:0">Negocio — CASS Beauty Clinic</h2>
+<small class="muted">Generado {esc(data['generated_at'])} — todo lo conectado sobre CASS, 100% lectura. Template para Cano Digital/LUZYA en business/cass.py.</small></header>
+<div class="grid" style="margin-top:16px">
+{native_tool_card("Shopify — " + business_cass.SHOPIFY_STORE_NAME, data['shopify'])}
+{native_tool_card("Meta — " + business_cass.META_PAGE_NAME, data['meta'])}
+{youtube_card}
+</div>
+<div class="card" style="margin-top:16px"><h3>Contenido (Baserow `contenido`, filtrado CASS) — {esc(content['status'])}</h3>
+<table style="width:100%;border-collapse:collapse"><tr><th>Canal</th><th>Oficina</th><th>Estado</th></tr>{content_rows}</table></div>
+<div class="card" style="margin-top:16px"><h3>Contabilidad (Baserow `contabilidad`, negocio=CASS) — {esc(accounting_data['status'])}</h3>
+{position_html}
+<table style="width:100%;border-collapse:collapse"><tr><th>Mes</th><th>Ingresos</th><th>Gastos</th><th>Flujo neto</th></tr>{month_rows}</table></div>
+</body></html>"""
+
+
+@app.get("/dashboard/business/cass", response_class=HTMLResponse)
+def dashboard_business_cass_view():
+    return _business_cass_html(business_cass.cass_dashboard(store(), budget()))

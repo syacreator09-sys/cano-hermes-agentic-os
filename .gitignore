@@ -19,12 +19,14 @@ storage/worktrees/*
 storage/workspaces/*
 storage/forge/candidates/*
 storage/forge/sandbox/*
+storage/pending_native_tool/*
 !storage/.gitkeep
 !storage/logs/.gitkeep
 !storage/artifacts/.gitkeep
 !storage/worktrees/.gitkeep
 !storage/workspaces/.gitkeep
 !storage/forge/.gitkeep
+!storage/pending_native_tool/.gitkeep
 vault/.obsidian/workspace*.json
 vault/00-inbox/private/
 secrets/
