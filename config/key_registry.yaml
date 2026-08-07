@@ -1,0 +1,2726 @@
+_meta:
+  generado_por: scripts/build_key_registry.py
+  fuente: ~/.secrets/credenciales/credenciales/.env (solo nombres)
+  nota: Ningún valor de llave vive en este archivo.
+llaves:
+- nombre: ADMIN_SECRET
+  proveedor: Admin
+  dominio: otro-proyecto
+  uso: secreto de Admin -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar con
+    Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: alto
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: AISTUDIOS_API_KEY
+  proveedor: Aistudios
+  dominio: otro-proyecto
+  uso: clave de API de Aistudios -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: AISTUDIOS_API_URL
+  proveedor: Aistudios
+  dominio: otro-proyecto
+  uso: URL de API de Aistudios -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: AISTUDIOS_EMAIL
+  proveedor: Aistudios
+  dominio: otro-proyecto
+  uso: email de Aistudios -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar con
+    Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: ANDROID_FARM_PATH
+  proveedor: Android FARM
+  dominio: otro-proyecto
+  uso: ruta de archivo de Android FARM -- sin consumidor detectado ni patrón reconocido, sin clasificar,
+    revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: ANYMAIL_API_KEY
+  proveedor: Anymail
+  dominio: otro-proyecto
+  uso: clave de API de Anymail -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: ANYTHINGLLM_API_KEY
+  proveedor: Anythingllm
+  dominio: otro-proyecto
+  uso: clave de API de Anythingllm -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: ANYTHINGLLM_API_URL
+  proveedor: Anythingllm
+  dominio: otro-proyecto
+  uso: URL de API de Anythingllm -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: APIFY_API_KEY
+  proveedor: Apify
+  dominio: otro-proyecto
+  uso: clave de API de Apify -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: APIFY_KEY_1
+  proveedor: Apify
+  dominio: otro-proyecto
+  uso: clave de Apify -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: APIFY_KEY_2
+  proveedor: Apify
+  dominio: otro-proyecto
+  uso: clave de Apify -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: APIFY_KEY_3
+  proveedor: Apify
+  dominio: otro-proyecto
+  uso: clave de Apify -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: APIFY_KEY_4
+  proveedor: Apify
+  dominio: otro-proyecto
+  uso: clave de Apify -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: APIFY_KEY_5
+  proveedor: Apify
+  dominio: otro-proyecto
+  uso: clave de Apify -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: APIFY_KEY_6
+  proveedor: Apify
+  dominio: otro-proyecto
+  uso: clave de Apify -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: APIFY_KEY_7
+  proveedor: Apify
+  dominio: otro-proyecto
+  uso: clave de Apify -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: API_BACKUP_EMAIL
+  proveedor: API Backup
+  dominio: otro-proyecto
+  uso: email de API Backup -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar con
+    Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: API_USERS
+  proveedor: API Users
+  dominio: otro-proyecto
+  uso: variable de configuración de API Users -- sin consumidor detectado ni patrón reconocido, sin clasificar,
+    revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: BASEROW_ACCOUNTING_TOKEN
+  proveedor: Baserow Accounting
+  dominio: starhome
+  uso: token de Baserow Accounting; consumida en cano-hermes-agentic-os/cano_hermes/finance/accounting.py:92
+  consumidores:
+  - cano-hermes-agentic-os/cano_hermes/finance/accounting.py:92
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: BASEROW_API_TOKEN
+  proveedor: Baserow
+  dominio: otro-proyecto
+  uso: token de API de Baserow -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: BASEROW_API_URL
+  proveedor: Baserow
+  dominio: otro-proyecto
+  uso: URL de API de Baserow -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: BASEROW_CONTENT_TOKEN
+  proveedor: Baserow Content
+  dominio: starhome
+  uso: token de Baserow Content; consumida en cano-hermes-agentic-os/cano_hermes/content/dedup.py:96
+  consumidores:
+  - cano-hermes-agentic-os/cano_hermes/content/dedup.py:96
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: BASEROW_DB_PASS
+  proveedor: Baserow DB
+  dominio: otro-proyecto
+  uso: contraseña de Baserow DB -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: alto
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: BASEROW_MCP_URL
+  proveedor: Baserow MCP
+  dominio: otro-proyecto
+  uso: URL de Baserow MCP -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar con
+    Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: BASEROW_SECRET_KEY
+  proveedor: Baserow
+  dominio: otro-proyecto
+  uso: clave secreta de Baserow -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: alto
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: BASEROW_TOKEN
+  proveedor: Baserow
+  dominio: otro-proyecto
+  uso: token de Baserow -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar con
+    Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: BOOKSTACK_TOKEN_ID
+  proveedor: Bookstack Token
+  dominio: vps-infra
+  uso: identificador de Bookstack Token -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: BOOKSTACK_TOKEN_SECRET
+  proveedor: Bookstack Token
+  dominio: vps-infra
+  uso: secreto de Bookstack Token -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: alto
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: BOOKSTACK_URL
+  proveedor: Bookstack
+  dominio: vps-infra
+  uso: URL de Bookstack -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: CAL_COM_API_KEY
+  proveedor: CAL COM
+  dominio: otro-proyecto
+  uso: clave de API de CAL COM -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: CAL_COM_EVENT_LUZYA_CHATBOT
+  proveedor: CAL COM Event Luzya Chatbot
+  dominio: otro-proyecto
+  uso: variable de configuración de CAL COM Event Luzya Chatbot -- sin consumidor detectado, revisar con
+    Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: CAL_COM_EVENT_STRATEGIC
+  proveedor: CAL COM Event Strategic
+  dominio: otro-proyecto
+  uso: variable de configuración de CAL COM Event Strategic -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: CAL_COM_EVENT_TYPE_ID
+  proveedor: CAL COM Event TYPE
+  dominio: otro-proyecto
+  uso: identificador de CAL COM Event TYPE -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: CAL_COM_EVENT_TYPE_ID_ALT
+  proveedor: CAL COM Event TYPE ID ALT
+  dominio: otro-proyecto
+  uso: variable de configuración de CAL COM Event TYPE ID ALT -- sin consumidor detectado, revisar con
+    Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: CAL_COM_URL_STRATEGIC
+  proveedor: CAL COM URL Strategic
+  dominio: otro-proyecto
+  uso: variable de configuración de CAL COM URL Strategic -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: CAL_COM_USERNAME
+  proveedor: CAL COM
+  dominio: otro-proyecto
+  uso: usuario de CAL COM -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: CAL_EVENT_TYPE_ID_CANO
+  proveedor: CAL Event TYPE ID CANO
+  dominio: otro-proyecto
+  uso: variable de configuración de CAL Event TYPE ID CANO -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: CF_ACCOUNT_ID
+  proveedor: CF Account
+  dominio: otro-proyecto
+  uso: identificador de CF Account -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: CF_AI_TOKEN
+  proveedor: CF AI
+  dominio: otro-proyecto
+  uso: token de CF AI -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: CHATWOOT_ACCOUNT_ID
+  proveedor: Chatwoot Account
+  dominio: vps-infra
+  uso: identificador de Chatwoot Account -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: CHATWOOT_AGENT_BOT_ID
+  proveedor: Chatwoot Agent BOT
+  dominio: vps-infra
+  uso: identificador de Chatwoot Agent BOT -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: CHATWOOT_AGENT_BOT_TOKEN
+  proveedor: Chatwoot Agent BOT
+  dominio: vps-infra
+  uso: token de Chatwoot Agent BOT -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: CHATWOOT_HMAC_TOKEN
+  proveedor: Chatwoot HMAC
+  dominio: vps-infra
+  uso: token de Chatwoot HMAC -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: CHATWOOT_INBOX_FACEBOOK
+  proveedor: Chatwoot Inbox Facebook
+  dominio: vps-infra
+  uso: variable de configuración de Chatwoot Inbox Facebook -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: CHATWOOT_INBOX_IG_CANO
+  proveedor: Chatwoot Inbox IG CANO
+  dominio: vps-infra
+  uso: variable de configuración de Chatwoot Inbox IG CANO -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: CHATWOOT_INBOX_INSTAGRAM
+  proveedor: Chatwoot Inbox Instagram
+  dominio: vps-infra
+  uso: variable de configuración de Chatwoot Inbox Instagram -- sin consumidor detectado, revisar con
+    Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: CHATWOOT_INBOX_WA_CANO
+  proveedor: Chatwoot Inbox WA CANO
+  dominio: vps-infra
+  uso: variable de configuración de Chatwoot Inbox WA CANO -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: CHATWOOT_INBOX_WA_LUZYA
+  proveedor: Chatwoot Inbox WA Luzya
+  dominio: vps-infra
+  uso: variable de configuración de Chatwoot Inbox WA Luzya -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: CHATWOOT_INBOX_WEB
+  proveedor: Chatwoot Inbox WEB
+  dominio: vps-infra
+  uso: variable de configuración de Chatwoot Inbox WEB -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: CHATWOOT_TOKEN
+  proveedor: Chatwoot
+  dominio: vps-infra
+  uso: token de Chatwoot -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: CHATWOOT_URL
+  proveedor: Chatwoot
+  dominio: vps-infra
+  uso: URL de Chatwoot -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: CIVITAI_API_KEY
+  proveedor: Civitai
+  dominio: otro-proyecto
+  uso: clave de API de Civitai -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: CLOUDFLARE_ACCOUNT_ID
+  proveedor: Cloudflare Account
+  dominio: otro-proyecto
+  uso: identificador de Cloudflare Account -- sin consumidor detectado ni patrón reconocido, sin clasificar,
+    revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: CLOUDFLARE_API_KEY
+  proveedor: Cloudflare
+  dominio: otro-proyecto
+  uso: clave de API de Cloudflare -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: CLOUDFLARE_AUTH_TOKEN
+  proveedor: Cloudflare AUTH
+  dominio: otro-proyecto
+  uso: token de Cloudflare AUTH -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: CLOUDFLARE_EMAIL
+  proveedor: Cloudflare
+  dominio: otro-proyecto
+  uso: email de Cloudflare -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar con
+    Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: CLOUDFLARE_TOKEN_BILLING
+  proveedor: Cloudflare Token Billing
+  dominio: otro-proyecto
+  uso: variable de configuración de Cloudflare Token Billing -- sin consumidor detectado ni patrón reconocido,
+    sin clasificar, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: CLOUDFLARE_TOKEN_DNS
+  proveedor: Cloudflare Token DNS
+  dominio: otro-proyecto
+  uso: variable de configuración de Cloudflare Token DNS -- sin consumidor detectado ni patrón reconocido,
+    sin clasificar, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: CLOUDFLARE_TOKEN_GTAV
+  proveedor: Cloudflare Token GTAV
+  dominio: otro-proyecto
+  uso: variable de configuración de Cloudflare Token GTAV -- sin consumidor detectado ni patrón reconocido,
+    sin clasificar, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: CLOUDFLARE_TOKEN_WORDPRESS
+  proveedor: Cloudflare Token Wordpress
+  dominio: otro-proyecto
+  uso: variable de configuración de Cloudflare Token Wordpress -- sin consumidor detectado ni patrón reconocido,
+    sin clasificar, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: CLOUDFLARE_TOKEN_WORKERS
+  proveedor: Cloudflare Token Workers
+  dominio: otro-proyecto
+  uso: variable de configuración de Cloudflare Token Workers -- sin consumidor detectado ni patrón reconocido,
+    sin clasificar, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: CLOUDINARY_API_KEY
+  proveedor: Cloudinary
+  dominio: otro-proyecto
+  uso: clave de API de Cloudinary -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: CLOUDINARY_API_SECRET
+  proveedor: Cloudinary
+  dominio: otro-proyecto
+  uso: secreto de API de Cloudinary -- sin consumidor detectado ni patrón reconocido, sin clasificar,
+    revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: alto
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: CLOUDINARY_CLOUD_NAME
+  proveedor: Cloudinary Cloud NAME
+  dominio: otro-proyecto
+  uso: variable de configuración de Cloudinary Cloud NAME -- sin consumidor detectado ni patrón reconocido,
+    sin clasificar, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: COHERE_API_KEY
+  proveedor: Cohere
+  dominio: otro-proyecto
+  uso: clave de API de Cohere -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: COMFYUI_API_KEY
+  proveedor: Comfyui
+  dominio: otro-proyecto
+  uso: clave de API de Comfyui -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: COMFYUI_API_KEY_2
+  proveedor: Comfyui
+  dominio: otro-proyecto
+  uso: clave de API de Comfyui -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: COMFYUI_API_KEY_3
+  proveedor: Comfyui
+  dominio: otro-proyecto
+  uso: clave de API de Comfyui -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: COMFYUI_API_KEY_4
+  proveedor: Comfyui
+  dominio: otro-proyecto
+  uso: clave de API de Comfyui -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: COMFYUI_API_KEY_5
+  proveedor: Comfyui
+  dominio: otro-proyecto
+  uso: clave de API de Comfyui -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: COOLIFY_HP290_TOKEN
+  proveedor: Coolify Hp290
+  dominio: otro-proyecto
+  uso: token de Coolify Hp290 -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: CORS_ALLOW_ORIGINS
+  proveedor: CORS Allow Origins
+  dominio: otro-proyecto
+  uso: variable de configuración de CORS Allow Origins -- sin consumidor detectado ni patrón reconocido,
+    sin clasificar, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: CORS_ORIGINS
+  proveedor: CORS Origins
+  dominio: otro-proyecto
+  uso: variable de configuración de CORS Origins -- sin consumidor detectado ni patrón reconocido, sin
+    clasificar, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: CREATOMATE_API_KEY
+  proveedor: Creatomate
+  dominio: otro-proyecto
+  uso: clave de API de Creatomate -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: CRON_SECRET
+  proveedor: CRON
+  dominio: otro-proyecto
+  uso: secreto de CRON -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: alto
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: DEEPL_API_KEY
+  proveedor: Deepl
+  dominio: otro-proyecto
+  uso: clave de API de Deepl -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: DOCSPRING_API_SECRET
+  proveedor: Docspring
+  dominio: vps-infra
+  uso: secreto de API de Docspring -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: alto
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: DOCSPRING_API_TOKEN
+  proveedor: Docspring
+  dominio: vps-infra
+  uso: token de API de Docspring -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: EASYPANEL_API_KEY
+  proveedor: Easypanel
+  dominio: otro-proyecto
+  uso: clave de API de Easypanel -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: EASYPANEL_URL
+  proveedor: Easypanel
+  dominio: otro-proyecto
+  uso: URL de Easypanel -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar con
+    Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: ELEVENLABS_API_KEY
+  proveedor: Elevenlabs
+  dominio: starhome
+  uso: clave de API de Elevenlabs; consumida en hermes-agent/.agents/skills/media-use/audio/scripts/lib/tts.mjs:28
+    (+10 más)
+  consumidores:
+  - hermes-agent/.agents/skills/media-use/audio/scripts/lib/tts.mjs:28
+  - hermes-agent/.agents/skills/media-use/audio/scripts/lib/tts.mjs:45
+  - hermes-agent/.agents/skills/media-use/audio/scripts/lib/tts.test.mjs:77
+  - hermes-agent/.agents/skills/media-use/audio/scripts/lib/tts.test.mjs:81
+  - hermes-agent/.agents/skills/media-use/audio/scripts/lib/tts.test.mjs:91
+  - hermes-agent/.agents/skills/media-use/audio/scripts/lib/tts.test.mjs:92
+  - hermes-agent/hermes_cli/web_server.py:4417
+  - hermes-agent/hermes_cli/web_server.py:4419
+  - hermes-agent/scripts/discord-voice-doctor.py:222
+  - hermes-agent/tests/tools/test_tts_streaming_e2e.py:27
+  - hermes-agent/tests/tools/test_tts_streaming_e2e.py:56
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: ELEVENLABS_API_KEY_2
+  proveedor: Elevenlabs
+  dominio: otro-proyecto
+  uso: clave de API de Elevenlabs -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: ELEVENLABS_MODEL
+  proveedor: Elevenlabs
+  dominio: otro-proyecto
+  uso: modelo de Elevenlabs -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: ELEVENLABS_VOICE_ID
+  proveedor: Elevenlabs Voice
+  dominio: otro-proyecto
+  uso: identificador de Elevenlabs Voice -- sin consumidor detectado ni patrón reconocido, sin clasificar,
+    revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: ELEVENLABS_VOICE_ID_ALFONSO
+  proveedor: Elevenlabs Voice ID Alfonso
+  dominio: otro-proyecto
+  uso: variable de configuración de Elevenlabs Voice ID Alfonso -- sin consumidor detectado ni patrón
+    reconocido, sin clasificar, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: ENVIA_API_TOKEN
+  proveedor: Envia
+  dominio: otro-proyecto
+  uso: token de API de Envia -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: ENVIRONMENT
+  proveedor: Environment
+  dominio: otro-proyecto
+  uso: variable de configuración de Environment -- sin consumidor detectado ni patrón reconocido, sin
+    clasificar, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: EVOLUTION_API_KEY_GLOBAL
+  proveedor: Evolution API KEY Global
+  dominio: otro-proyecto
+  uso: variable de configuración de Evolution API KEY Global -- sin consumidor detectado, revisar con
+    Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: EVOLUTION_API_URL
+  proveedor: Evolution
+  dominio: otro-proyecto
+  uso: URL de API de Evolution -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: EVOLUTION_BASE_URL
+  proveedor: Evolution BASE
+  dominio: otro-proyecto
+  uso: URL de Evolution BASE -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: EVOLUTION_INSTANCE_CANO
+  proveedor: Evolution Instance CANO
+  dominio: otro-proyecto
+  uso: variable de configuración de Evolution Instance CANO -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: EVOLUTION_LUZYA_INSTANCE
+  proveedor: Evolution Luzya Instance
+  dominio: otro-proyecto
+  uso: variable de configuración de Evolution Luzya Instance -- sin consumidor detectado, revisar con
+    Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: EVOLUTION_LUZYA_NUMBER
+  proveedor: Evolution Luzya Number
+  dominio: otro-proyecto
+  uso: variable de configuración de Evolution Luzya Number -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: EVOLUTION_LUZYA_TOKEN
+  proveedor: Evolution Luzya
+  dominio: otro-proyecto
+  uso: token de Evolution Luzya -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: EVOLUTION_NISSAN_INSTANCE
+  proveedor: Evolution Nissan Instance
+  dominio: otro-proyecto
+  uso: variable de configuración de Evolution Nissan Instance -- sin consumidor detectado, revisar con
+    Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: EVOLUTION_NISSAN_NUMBER
+  proveedor: Evolution Nissan Number
+  dominio: otro-proyecto
+  uso: variable de configuración de Evolution Nissan Number -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: EVOLUTION_NISSAN_TOKEN
+  proveedor: Evolution Nissan
+  dominio: otro-proyecto
+  uso: token de Evolution Nissan -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: EVOLUTION_S21_INSTANCE
+  proveedor: Evolution S21 Instance
+  dominio: otro-proyecto
+  uso: variable de configuración de Evolution S21 Instance -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: EVOLUTION_S21_NUMBER
+  proveedor: Evolution S21 Number
+  dominio: otro-proyecto
+  uso: variable de configuración de Evolution S21 Number -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: EVOLUTION_S21_TOKEN
+  proveedor: Evolution S21
+  dominio: otro-proyecto
+  uso: token de Evolution S21 -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: EVOLUTION_WEBHOOK_URL
+  proveedor: Evolution Webhook
+  dominio: otro-proyecto
+  uso: URL de Evolution Webhook -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: EXA_API_KEY
+  proveedor: EXA
+  dominio: otro-proyecto
+  uso: clave de API de EXA -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar con
+    Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: F5_TTS_REF_AUDIO_PATH
+  proveedor: F5 TTS REF Audio
+  dominio: otro-proyecto
+  uso: ruta de archivo de F5 TTS REF Audio -- sin consumidor detectado ni patrón reconocido, sin clasificar,
+    revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: FAL_API_KEY_2
+  proveedor: FAL
+  dominio: otro-proyecto
+  uso: clave de API de FAL -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar con
+    Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: FAL_KEY
+  proveedor: FAL
+  dominio: otro-proyecto
+  uso: clave de FAL -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: FFMPEG_PATH
+  proveedor: Ffmpeg
+  dominio: starhome
+  uso: ruta de archivo de Ffmpeg; consumida en hermes-agent/plugins/platforms/discord/ffmpeg_utils.py:28
+  consumidores:
+  - hermes-agent/plugins/platforms/discord/ffmpeg_utils.py:28
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: FIRECRAWL_API_KEY
+  proveedor: Firecrawl
+  dominio: otro-proyecto
+  uso: clave de API de Firecrawl -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: FORMBRICKS_DB_PASS
+  proveedor: Formbricks DB
+  dominio: vps-infra
+  uso: contraseña de Formbricks DB -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: alto
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: FORMBRICKS_SECRET
+  proveedor: Formbricks
+  dominio: vps-infra
+  uso: secreto de Formbricks -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: alto
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: GBRAIN_DATABASE_URL
+  proveedor: Gbrain Database
+  dominio: otro-proyecto
+  uso: URL de Gbrain Database -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: GEMINI_API_KEY
+  proveedor: Gemini
+  dominio: starhome
+  uso: clave de API de Gemini; consumida en hermes-agent/.agents/skills/media-use/audio/scripts/lib/bgm.mjs:21
+    (+3 más)
+  consumidores:
+  - hermes-agent/.agents/skills/media-use/audio/scripts/lib/bgm.mjs:21
+  - hermes-agent/.agents/skills/media-use/audio/scripts/lyria-recipe.py:50
+  - hermes-agent/.agents/skills/motion-graphics/grounding/locate.mjs:191
+  - hermes-agent/tests/tools/test_tts_streaming_e2e.py:57
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: GITHUB_REPO
+  proveedor: Github REPO
+  dominio: otro-proyecto
+  uso: variable de configuración de Github REPO -- sin consumidor detectado ni patrón reconocido, sin
+    clasificar, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: GITHUB_TOKEN
+  proveedor: Github
+  dominio: starhome
+  uso: token de Github; consumida en hermes-agent/optional-skills/devops/watchers/scripts/watch_github.py:118
+    (+5 más)
+  consumidores:
+  - hermes-agent/optional-skills/devops/watchers/scripts/watch_github.py:118
+  - hermes-agent/scripts/ci/live_comment.py:618
+  - hermes-agent/scripts/ci/publish_e2e_evidence.py:317
+  - hermes-agent/scripts/ci/timings_report.py:1019
+  - hermes-agent/tests/tools/test_code_execution_modes.py:313
+  - hermes-agent/tests/tools/test_skills_guard.py:401
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: GITHUB_USER
+  proveedor: Github
+  dominio: otro-proyecto
+  uso: usuario de Github -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar con
+    Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: GMAIL_APP_PASS
+  proveedor: Gmail APP
+  dominio: otro-proyecto
+  uso: contraseña de Gmail APP -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: alto
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: GMAIL_EMAIL
+  proveedor: Gmail
+  dominio: otro-proyecto
+  uso: email de Gmail -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: GOOGLE_API_KEY
+  proveedor: Google
+  dominio: starhome
+  uso: clave de API de Google; consumida en hermes-agent/.agents/skills/media-use/audio/scripts/lib/bgm.mjs:21
+    (+3 más)
+  consumidores:
+  - hermes-agent/.agents/skills/media-use/audio/scripts/lib/bgm.mjs:21
+  - hermes-agent/.agents/skills/media-use/audio/scripts/lyria-recipe.py:50
+  - hermes-agent/tests/hermes_cli/test_non_ascii_credential.py:72
+  - hermes-agent/tests/tools/test_tts_streaming_e2e.py:58
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: GOOGLE_DRIVE_FOLDER_RAG
+  proveedor: Google Drive Folder RAG
+  dominio: otro-proyecto
+  uso: variable de configuración de Google Drive Folder RAG -- sin consumidor detectado ni patrón reconocido,
+    sin clasificar, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: GOOGLE_OAUTH_CREDENTIAL_NAME
+  proveedor: Google Oauth Credential NAME
+  dominio: otro-proyecto
+  uso: variable de configuración de Google Oauth Credential NAME -- sin consumidor detectado ni patrón
+    reconocido, sin clasificar, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: GROQ_API_KEY
+  proveedor: GROQ
+  dominio: starhome
+  uso: clave de API de GROQ; consumida en hermes-agent/scripts/discord-voice-doctor.py:221
+  consumidores:
+  - hermes-agent/scripts/discord-voice-doctor.py:221
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: HEYGEN_API_KEY
+  proveedor: Heygen
+  dominio: starhome
+  uso: clave de API de Heygen; consumida en hermes-agent/.agents/skills/media-use/audio/scripts/lib/heygen.mjs:50
+    (+6 más)
+  consumidores:
+  - hermes-agent/.agents/skills/media-use/audio/scripts/lib/heygen.mjs:50
+  - hermes-agent/.agents/skills/media-use/audio/scripts/lib/heygen.test.mjs:13
+  - hermes-agent/.agents/skills/media-use/audio/scripts/lib/heygen.test.mjs:18
+  - hermes-agent/.agents/skills/media-use/audio/scripts/lib/heygen.test.mjs:19
+  - hermes-agent/.agents/skills/media-use/audio/scripts/lib/heygen.test.mjs:29
+  - hermes-agent/.agents/skills/media-use/audio/scripts/lib/heygen.test.mjs:67
+  - hermes-agent/.agents/skills/media-use/audio/scripts/lib/heygen.test.mjs:9
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: HEYGEN_N8N_CRED_ID
+  proveedor: Heygen N8N CRED
+  dominio: otro-proyecto
+  uso: identificador de Heygen N8N CRED -- sin consumidor detectado ni patrón reconocido, sin clasificar,
+    revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: HF_TOKEN
+  proveedor: HF
+  dominio: otro-proyecto
+  uso: token de HF -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: HF_TOKEN_FINEGRAINED
+  proveedor: HF Token Finegrained
+  dominio: otro-proyecto
+  uso: variable de configuración de HF Token Finegrained -- sin consumidor detectado ni patrón reconocido,
+    sin clasificar, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: HOSTINGER_API_KEY
+  proveedor: Hostinger
+  dominio: otro-proyecto
+  uso: clave de API de Hostinger -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: INSTAGRAM_TOKEN_CANO
+  proveedor: Instagram Token CANO
+  dominio: otro-proyecto
+  uso: variable de configuración de Instagram Token CANO -- sin consumidor detectado ni patrón reconocido,
+    sin clasificar, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: JAMENDO_CLIENT_ID
+  proveedor: Jamendo Client
+  dominio: otro-proyecto
+  uso: identificador de Jamendo Client -- sin consumidor detectado ni patrón reconocido, sin clasificar,
+    revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: JWT_ALGORITHM
+  proveedor: JWT
+  dominio: vps-infra
+  uso: algoritmo de JWT -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: JWT_EXPIRE_MINUTES
+  proveedor: JWT Expire Minutes
+  dominio: vps-infra
+  uso: variable de configuración de JWT Expire Minutes -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: JWT_SECRET
+  proveedor: JWT
+  dominio: vps-infra
+  uso: secreto de JWT -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: alto
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: KIE_API_KEY
+  proveedor: KIE
+  dominio: otro-proyecto
+  uso: clave de API de KIE -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar con
+    Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: KIE_API_KEY_2
+  proveedor: KIE
+  dominio: otro-proyecto
+  uso: clave de API de KIE -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar con
+    Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: KIMI_API_KEY
+  proveedor: KIMI
+  dominio: otro-proyecto
+  uso: clave de API de KIMI -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: true
+  rotacion_motivo: expuesta en transcript de sesión (F11, K9, K16 del plan Prometeo/HERMES-KICKOFF)
+- nombre: KIMI_BASE_URL
+  proveedor: KIMI BASE
+  dominio: otro-proyecto
+  uso: URL de KIMI BASE -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar con
+    Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: LEAD_SCORE_MODEL_PATH
+  proveedor: LEAD Score Model
+  dominio: otro-proyecto
+  uso: ruta de archivo de LEAD Score Model -- sin consumidor detectado ni patrón reconocido, sin clasificar,
+    revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: LEGACY_ROOT
+  proveedor: Legacy ROOT
+  dominio: otro-proyecto
+  uso: variable de configuración de Legacy ROOT -- sin consumidor detectado ni patrón reconocido, sin
+    clasificar, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: LISTMONK_ADMIN_PASS
+  proveedor: Listmonk Admin
+  dominio: vps-infra
+  uso: contraseña de Listmonk Admin -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: alto
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: LISTMONK_ADMIN_USER
+  proveedor: Listmonk Admin
+  dominio: vps-infra
+  uso: usuario de Listmonk Admin -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: LISTMONK_DB_PASS
+  proveedor: Listmonk DB
+  dominio: vps-infra
+  uso: contraseña de Listmonk DB -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: alto
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: MANYCHAT_BEARER_TOKEN
+  proveedor: Manychat Bearer
+  dominio: otro-proyecto
+  uso: token de Manychat Bearer -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: MAPBOX_TOKEN
+  proveedor: Mapbox
+  dominio: otro-proyecto
+  uso: token de Mapbox -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: METABASE_DB_PASS
+  proveedor: Metabase DB
+  dominio: vps-infra
+  uso: contraseña de Metabase DB -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: alto
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: MINIO_ACCESS_KEY
+  proveedor: Minio
+  dominio: vps-infra
+  uso: clave de acceso de Minio -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: MINIO_BUCKET
+  proveedor: Minio Bucket
+  dominio: vps-infra
+  uso: variable de configuración de Minio Bucket -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: MINIO_ENDPOINT
+  proveedor: Minio Endpoint
+  dominio: vps-infra
+  uso: variable de configuración de Minio Endpoint -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: MINIO_PASSWORD
+  proveedor: Minio
+  dominio: vps-infra
+  uso: contraseña de Minio -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: alto
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: MINIO_PUBLIC_URL
+  proveedor: Minio Public
+  dominio: vps-infra
+  uso: URL de Minio Public -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: MINIO_SECRET_KEY
+  proveedor: Minio
+  dominio: vps-infra
+  uso: clave secreta de Minio -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: alto
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: MINIO_USER
+  proveedor: Minio
+  dominio: vps-infra
+  uso: usuario de Minio -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: MISTRAL_API_KEY
+  proveedor: Mistral
+  dominio: starhome
+  uso: clave de API de Mistral; consumida en hermes-agent/scripts/discord-voice-doctor.py:255 (+1 más)
+  consumidores:
+  - hermes-agent/scripts/discord-voice-doctor.py:255
+  - hermes-agent/scripts/discord-voice-doctor.py:259
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: MODAL_CHATWOOT_URL
+  proveedor: Modal Chatwoot
+  dominio: otro-proyecto
+  uso: URL de Modal Chatwoot -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: MODAL_EMBED_URL
+  proveedor: Modal Embed
+  dominio: otro-proyecto
+  uso: URL de Modal Embed -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar con
+    Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: MODAL_LLM_RAG_URL
+  proveedor: Modal LLM RAG
+  dominio: otro-proyecto
+  uso: URL de Modal LLM RAG -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: MODAL_LLM_VOICE_URL
+  proveedor: Modal LLM Voice
+  dominio: otro-proyecto
+  uso: URL de Modal LLM Voice -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: MODAL_ORCHESTRATOR_URL
+  proveedor: Modal Orchestrator
+  dominio: otro-proyecto
+  uso: URL de Modal Orchestrator -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: MODAL_TOKEN_ID_2
+  proveedor: Modal Token
+  dominio: otro-proyecto
+  uso: identificador de Modal Token -- sin consumidor detectado ni patrón reconocido, sin clasificar,
+    revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: MODAL_TOKEN_SECRET_2
+  proveedor: Modal Token
+  dominio: otro-proyecto
+  uso: secreto de Modal Token -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: alto
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: MODAL_TRANSCRIPTION_URL
+  proveedor: Modal Transcription
+  dominio: otro-proyecto
+  uso: URL de Modal Transcription -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: MODAL_VOICE_EVENTS_URL
+  proveedor: Modal Voice Events
+  dominio: otro-proyecto
+  uso: URL de Modal Voice Events -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: MOONSHOT_API_KEY
+  proveedor: Moonshot
+  dominio: otro-proyecto
+  uso: clave de API de Moonshot; consumida en cano-investment-intelligence/.upstreams/ai_hedge_fund/hedge_fund/llm/client.py:181
+  consumidores:
+  - cano-investment-intelligence/.upstreams/ai_hedge_fund/hedge_fund/llm/client.py:181
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: MUSICGEN_MODEL
+  proveedor: Musicgen
+  dominio: otro-proyecto
+  uso: modelo de Musicgen -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar con
+    Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: N8N_API_KEY
+  proveedor: N8N
+  dominio: otro-proyecto
+  uso: clave de API de N8N -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar con
+    Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: N8N_HOST
+  proveedor: N8N HOST
+  dominio: otro-proyecto
+  uso: variable de configuración de N8N HOST -- sin consumidor detectado ni patrón reconocido, sin clasificar,
+    revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: N8N_MCP_TOKEN
+  proveedor: N8N MCP
+  dominio: otro-proyecto
+  uso: token de N8N MCP -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar con
+    Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: N8N_WEBHOOK_URL
+  proveedor: N8N Webhook
+  dominio: otro-proyecto
+  uso: URL de N8N Webhook -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar con
+    Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: NEXT_PUBLIC_API_URL
+  proveedor: NEXT Public
+  dominio: otro-proyecto
+  uso: URL de API de NEXT Public -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: NEXT_PUBLIC_MAPBOX_TOKEN
+  proveedor: NEXT Public Mapbox
+  dominio: otro-proyecto
+  uso: token de NEXT Public Mapbox -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: NOTION_CLIENTS_DB_ID
+  proveedor: Notion Clients DB
+  dominio: otro-proyecto
+  uso: identificador de Notion Clients DB -- sin consumidor detectado ni patrón reconocido, sin clasificar,
+    revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: NOTION_LEADS_DB_ID
+  proveedor: Notion Leads DB
+  dominio: otro-proyecto
+  uso: identificador de Notion Leads DB -- sin consumidor detectado ni patrón reconocido, sin clasificar,
+    revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: NOTION_PAGE_ID
+  proveedor: Notion PAGE
+  dominio: otro-proyecto
+  uso: identificador de Notion PAGE -- sin consumidor detectado ni patrón reconocido, sin clasificar,
+    revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: NOTION_RESULTS_DB_ID
+  proveedor: Notion Results DB
+  dominio: otro-proyecto
+  uso: identificador de Notion Results DB -- sin consumidor detectado ni patrón reconocido, sin clasificar,
+    revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: NOTION_TOKEN
+  proveedor: Notion
+  dominio: otro-proyecto
+  uso: token de Notion -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: NOTION_WORKSPACE
+  proveedor: Notion Workspace
+  dominio: otro-proyecto
+  uso: variable de configuración de Notion Workspace -- sin consumidor detectado ni patrón reconocido,
+    sin clasificar, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: NVIDIA_NIM_API_KEY
+  proveedor: Nvidia NIM
+  dominio: otro-proyecto
+  uso: clave de API de Nvidia NIM -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: true
+  rotacion_motivo: expuesta en transcript de sesión (F11, K9, K16 del plan Prometeo/HERMES-KICKOFF)
+- nombre: OPENAI_API_KEY
+  proveedor: Openai
+  dominio: starhome
+  uso: clave de API de Openai; consumida en cano-investment-intelligence/.upstreams/finrobot/finrobot_equity/core/src/modules/enhanced_text_generator.py:60
+    (+15 más)
+  consumidores:
+  - cano-investment-intelligence/.upstreams/finrobot/finrobot_equity/core/src/modules/enhanced_text_generator.py:60
+  - hermes-agent/cli.py:4433
+  - hermes-agent/cli.py:4435
+  - hermes-agent/hermes_cli/auth.py:2049
+  - hermes-agent/hermes_cli/models.py:2928
+  - hermes-agent/hermes_cli/models.py:2982
+  - hermes-agent/mini_swe_runner.py:209
+  - hermes-agent/optional-skills/security/godmode/scripts/auto_jailbreak.py:346
+  - hermes-agent/plugins/google_meet/meet_bot.py:463
+  - hermes-agent/tests/agent/test_redact.py:121
+  - hermes-agent/tests/hermes_cli/test_env_loader.py:140
+  - hermes-agent/tests/hermes_cli/test_env_loader.py:309
+  - hermes-agent/tests/tools/test_code_execution_modes.py:293
+  - hermes-agent/tests/tools/test_code_execution_modes.py:311
+  - hermes-agent/tests/tools/test_tts_streaming_e2e.py:59
+  - hermes-agent/tools/skills_guard.py:158
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: OPENROUTER_API_KEY
+  proveedor: Openrouter
+  dominio: starhome
+  uso: clave de API de Openrouter; consumida en cano-investment-intelligence/.upstreams/openbb_agents/99-advanced-examples/portfolio-commentary-with-search-feature/portfolio_commentary/main.py:230
+    (+24 más)
+  consumidores:
+  - cano-investment-intelligence/.upstreams/openbb_agents/99-advanced-examples/portfolio-commentary-with-search-feature/portfolio_commentary/main.py:230
+  - cano-investment-intelligence/.upstreams/openbb_agents/99-advanced-examples/portfolio-commentary-with-search-feature/portfolio_commentary/main.py:326
+  - hermes-agent/cli.py:4433
+  - hermes-agent/cli.py:4435
+  - hermes-agent/hermes_cli/auth.py:2049
+  - hermes-agent/hermes_cli/auth.py:9173
+  - hermes-agent/hermes_cli/doctor.py:2124
+  - hermes-agent/hermes_cli/models.py:1934
+  - hermes-agent/hermes_cli/models.py:2165
+  - hermes-agent/hermes_cli/models.py:2983
+  - hermes-agent/hermes_cli/status.py:664
+  - hermes-agent/mini_swe_runner.py:222
+  - hermes-agent/optional-skills/research/darwinian-evolver/scripts/parrot_openrouter.py:39
+  - hermes-agent/optional-skills/research/darwinian-evolver/templates/custom_problem_template.py:47
+  - hermes-agent/optional-skills/security/godmode/scripts/auto_jailbreak.py:342
+  - hermes-agent/optional-skills/security/godmode/scripts/auto_jailbreak.py:348
+  - hermes-agent/optional-skills/security/godmode/scripts/godmode_race.py:15
+  - hermes-agent/optional-skills/security/godmode/scripts/godmode_race.py:323
+  - hermes-agent/optional-skills/security/godmode/scripts/godmode_race.py:448
+  - hermes-agent/scripts/tool_search_livetest.py:464
+  - hermes-agent/tests/gateway/test_runtime_env_reload_config_authority.py:36
+  - hermes-agent/tests/hermes_cli/test_non_ascii_credential.py:49
+  - hermes-agent/tests/run_agent/test_sequential_chats_live.py:47
+  - hermes-agent/tests/test_trajectory_compressor.py:30
+  - hermes-agent/tools/openrouter_client.py:47
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: OUTPUT_BASE_PATH
+  proveedor: Output BASE
+  dominio: otro-proyecto
+  uso: ruta de archivo de Output BASE -- sin consumidor detectado ni patrón reconocido, sin clasificar,
+    revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: OUTPUT_DIR
+  proveedor: Output
+  dominio: otro-proyecto
+  uso: directorio de Output -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: PDFCO_API_KEY
+  proveedor: Pdfco
+  dominio: otro-proyecto
+  uso: clave de API de Pdfco -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: PERPLEXITY_API_KEY
+  proveedor: Perplexity
+  dominio: otro-proyecto
+  uso: clave de API de Perplexity -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: PERPLEXITY_API_KEY_2
+  proveedor: Perplexity
+  dominio: otro-proyecto
+  uso: clave de API de Perplexity -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: PEXELS_API_KEY
+  proveedor: Pexels
+  dominio: otro-proyecto
+  uso: clave de API de Pexels -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: PIPER_VOICE
+  proveedor: Piper Voice
+  dominio: otro-proyecto
+  uso: variable de configuración de Piper Voice -- sin consumidor detectado ni patrón reconocido, sin
+    clasificar, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: PIPER_VOICES_DIR
+  proveedor: Piper Voices
+  dominio: otro-proyecto
+  uso: directorio de Piper Voices -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: PIXABAY_API_KEY
+  proveedor: Pixabay
+  dominio: otro-proyecto
+  uso: clave de API de Pixabay -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: PLAUSIBLE_DB_PASS
+  proveedor: Plausible DB
+  dominio: vps-infra
+  uso: contraseña de Plausible DB -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: alto
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: PLAUSIBLE_SECRET_KEY
+  proveedor: Plausible
+  dominio: vps-infra
+  uso: clave secreta de Plausible -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: alto
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: PLAUSIBLE_SECRET_KEY_BASE
+  proveedor: Plausible Secret KEY BASE
+  dominio: vps-infra
+  uso: variable de configuración de Plausible Secret KEY BASE -- sin consumidor detectado, revisar con
+    Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: alto
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: PROJECT_NAME
+  proveedor: Project NAME
+  dominio: otro-proyecto
+  uso: variable de configuración de Project NAME -- sin consumidor detectado ni patrón reconocido, sin
+    clasificar, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: RAPIDAPI_KEY
+  proveedor: Rapidapi
+  dominio: otro-proyecto
+  uso: clave de Rapidapi -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar con
+    Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: RECALL_API_KEY
+  proveedor: Recall
+  dominio: otro-proyecto
+  uso: clave de API de Recall -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: RECALL_WEBHOOK_SECRET
+  proveedor: Recall Webhook
+  dominio: otro-proyecto
+  uso: secreto de Recall Webhook -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: alto
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: REDIS_AGENTS_PASSWORD
+  proveedor: Redis Agents
+  dominio: otro-proyecto
+  uso: contraseña de Redis Agents -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: alto
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: REDIS_PASSWORD
+  proveedor: Redis
+  dominio: otro-proyecto
+  uso: contraseña de Redis -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar con
+    Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: alto
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: REDIS_URL
+  proveedor: Redis
+  dominio: otro-proyecto
+  uso: URL de Redis -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: REPLICATE_API_TOKEN
+  proveedor: Replicate
+  dominio: otro-proyecto
+  uso: token de API de Replicate -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: RETELL_AGENT_ID_CANO
+  proveedor: Retell Agent ID CANO
+  dominio: otro-proyecto
+  uso: variable de configuración de Retell Agent ID CANO -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: RETELL_AGENT_JURIDICO
+  proveedor: Retell Agent Juridico
+  dominio: otro-proyecto
+  uso: variable de configuración de Retell Agent Juridico -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: RETELL_AGENT_LUZYA
+  proveedor: Retell Agent Luzya
+  dominio: otro-proyecto
+  uso: variable de configuración de Retell Agent Luzya -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: RETELL_API_KEY
+  proveedor: Retell
+  dominio: otro-proyecto
+  uso: clave de API de Retell -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: RETELL_LLM_JURIDICO
+  proveedor: Retell LLM Juridico
+  dominio: otro-proyecto
+  uso: variable de configuración de Retell LLM Juridico -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: RETELL_PHONE_JURIDICO
+  proveedor: Retell Phone Juridico
+  dominio: otro-proyecto
+  uso: variable de configuración de Retell Phone Juridico -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: SCRAPECREATORS_API_KEY
+  proveedor: Scrapecreators
+  dominio: otro-proyecto
+  uso: clave de API de Scrapecreators -- sin consumidor detectado ni patrón reconocido, sin clasificar,
+    revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: SD_MODEL_PATH
+  proveedor: SD Model
+  dominio: otro-proyecto
+  uso: ruta de archivo de SD Model -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: SENTIMENT_MODEL
+  proveedor: Sentiment
+  dominio: otro-proyecto
+  uso: modelo de Sentiment -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar con
+    Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: SHOPIFY_SHOP_URL
+  proveedor: Shopify SHOP
+  dominio: otro-proyecto
+  uso: URL de Shopify SHOP -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar con
+    Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: SHOPIFY_STORE
+  proveedor: Shopify Store
+  dominio: otro-proyecto
+  uso: variable de configuración de Shopify Store -- sin consumidor detectado ni patrón reconocido, sin
+    clasificar, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: SKYDROPX_API_KEY
+  proveedor: Skydropx
+  dominio: otro-proyecto
+  uso: clave de API de Skydropx -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: SKYDROPX_API_SECRET
+  proveedor: Skydropx
+  dominio: otro-proyecto
+  uso: secreto de API de Skydropx -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: alto
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: STRIPE_MVP_PRICE_ID
+  proveedor: Stripe MVP Price
+  dominio: otro-proyecto
+  uso: identificador de Stripe MVP Price -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: STRIPE_PUBLISHABLE_KEY
+  proveedor: Stripe
+  dominio: otro-proyecto
+  uso: clave pública de Stripe -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: STRIPE_PUBLISHABLE_KEY_LIVE
+  proveedor: Stripe Publishable KEY LIVE
+  dominio: otro-proyecto
+  uso: variable de configuración de Stripe Publishable KEY LIVE -- sin consumidor detectado, revisar con
+    Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: STRIPE_SECRET_KEY
+  proveedor: Stripe
+  dominio: otro-proyecto
+  uso: clave secreta de Stripe -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: alto
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: STRIPE_SECRET_KEY_LIVE
+  proveedor: Stripe Secret KEY LIVE
+  dominio: otro-proyecto
+  uso: variable de configuración de Stripe Secret KEY LIVE -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: alto
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: STRIPE_VIP_PRICE_ID
+  proveedor: Stripe VIP Price
+  dominio: otro-proyecto
+  uso: identificador de Stripe VIP Price -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: SUNO_API_KEY
+  proveedor: SUNO
+  dominio: otro-proyecto
+  uso: clave de API de SUNO -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: SUPABASE_DB_DIRECT_URL
+  proveedor: Supabase DB Direct
+  dominio: otro-proyecto
+  uso: URL de Supabase DB Direct -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: SUPABASE_NISSAN_KEY
+  proveedor: Supabase Nissan
+  dominio: otro-proyecto
+  uso: clave de Supabase Nissan -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: SUPABASE_NISSAN_URL
+  proveedor: Supabase Nissan
+  dominio: otro-proyecto
+  uso: URL de Supabase Nissan -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: SUPABASE_ORION_ANON_KEY
+  proveedor: Supabase Orion ANON
+  dominio: otro-proyecto
+  uso: clave de Supabase Orion ANON -- sin consumidor detectado ni patrón reconocido, sin clasificar,
+    revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: SUPABASE_ORION_SERVICE_KEY
+  proveedor: Supabase Orion Service
+  dominio: otro-proyecto
+  uso: clave de Supabase Orion Service -- sin consumidor detectado ni patrón reconocido, sin clasificar,
+    revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: SUPABASE_ORION_TUNNEL_URL
+  proveedor: Supabase Orion Tunnel
+  dominio: otro-proyecto
+  uso: URL de Supabase Orion Tunnel -- sin consumidor detectado ni patrón reconocido, sin clasificar,
+    revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: SUPABASE_ORION_URL
+  proveedor: Supabase Orion
+  dominio: otro-proyecto
+  uso: URL de Supabase Orion -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: SUPABASE_PAT
+  proveedor: Supabase PAT
+  dominio: otro-proyecto
+  uso: variable de configuración de Supabase PAT -- sin consumidor detectado ni patrón reconocido, sin
+    clasificar, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: SUPABASE_WORLDVIBE_SERVICE_KEY
+  proveedor: Supabase Worldvibe Service
+  dominio: otro-proyecto
+  uso: clave de Supabase Worldvibe Service -- sin consumidor detectado ni patrón reconocido, sin clasificar,
+    revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: SUPABASE_WORLDVIBE_URL
+  proveedor: Supabase Worldvibe
+  dominio: otro-proyecto
+  uso: URL de Supabase Worldvibe -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: TELEGRAM_BOT_TOKEN
+  proveedor: Telegram BOT
+  dominio: starhome
+  uso: token de Telegram BOT; consumida en hermes-agent/tests/hermes_cli/test_env_loader.py:311
+  consumidores:
+  - hermes-agent/tests/hermes_cli/test_env_loader.py:311
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: TELEGRAM_BOT_TOKEN_PHOTOREEL
+  proveedor: Telegram BOT Token Photoreel
+  dominio: otro-proyecto
+  uso: variable de configuración de Telegram BOT Token Photoreel -- sin consumidor detectado ni patrón
+    reconocido, sin clasificar, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: TELEGRAM_CHAT_ID
+  proveedor: Telegram CHAT
+  dominio: otro-proyecto
+  uso: identificador de Telegram CHAT -- sin consumidor detectado ni patrón reconocido, sin clasificar,
+    revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: TENANT_DEFAULT
+  proveedor: Tenant Default
+  dominio: otro-proyecto
+  uso: variable de configuración de Tenant Default -- sin consumidor detectado ni patrón reconocido, sin
+    clasificar, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: TENANT_SCHEMA_PREFIX
+  proveedor: Tenant Schema Prefix
+  dominio: otro-proyecto
+  uso: variable de configuración de Tenant Schema Prefix -- sin consumidor detectado ni patrón reconocido,
+    sin clasificar, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: THENEWSAPI_KEY
+  proveedor: Thenewsapi
+  dominio: otro-proyecto
+  uso: clave de Thenewsapi -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar con
+    Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: THENEWSAPI_TOKEN
+  proveedor: Thenewsapi
+  dominio: otro-proyecto
+  uso: token de Thenewsapi -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar con
+    Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: TIMEZONE
+  proveedor: Timezone
+  dominio: otro-proyecto
+  uso: variable de configuración de Timezone -- sin consumidor detectado ni patrón reconocido, sin clasificar,
+    revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: TTS_PROVIDER
+  proveedor: TTS Provider
+  dominio: otro-proyecto
+  uso: variable de configuración de TTS Provider -- sin consumidor detectado ni patrón reconocido, sin
+    clasificar, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: TWILIO_ACCOUNT_SID
+  proveedor: Twilio Account SID
+  dominio: otro-proyecto
+  uso: variable de configuración de Twilio Account SID -- sin consumidor detectado ni patrón reconocido,
+    sin clasificar, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: TWILIO_API_KEY_SECRET
+  proveedor: Twilio API KEY
+  dominio: otro-proyecto
+  uso: secreto de Twilio API KEY -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: alto
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: TWILIO_API_KEY_SID
+  proveedor: Twilio API KEY SID
+  dominio: otro-proyecto
+  uso: variable de configuración de Twilio API KEY SID -- sin consumidor detectado ni patrón reconocido,
+    sin clasificar, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: TWILIO_AUTH_TOKEN
+  proveedor: Twilio AUTH
+  dominio: otro-proyecto
+  uso: token de Twilio AUTH -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: TWILIO_NUMBER_CANO
+  proveedor: Twilio Number CANO
+  dominio: otro-proyecto
+  uso: variable de configuración de Twilio Number CANO -- sin consumidor detectado ni patrón reconocido,
+    sin clasificar, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: TWILIO_PHONE_NUMBER
+  proveedor: Twilio Phone Number
+  dominio: starhome
+  uso: variable de configuración de Twilio Phone Number; consumida en hermes-agent/plugins/platforms/sms/adapter.py:470
+    (+1 más)
+  consumidores:
+  - hermes-agent/plugins/platforms/sms/adapter.py:470
+  - hermes-agent/plugins/platforms/sms/adapter.py:95
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: TWILIO_TEST_ACCOUNT_SID
+  proveedor: Twilio TEST Account SID
+  dominio: otro-proyecto
+  uso: variable de configuración de Twilio TEST Account SID -- sin consumidor detectado ni patrón reconocido,
+    sin clasificar, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: TWILIO_TEST_AUTH_TOKEN
+  proveedor: Twilio TEST AUTH
+  dominio: otro-proyecto
+  uso: token de Twilio TEST AUTH -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: UPLOADPOST_API_KEY
+  proveedor: Uploadpost
+  dominio: otro-proyecto
+  uso: clave de API de Uploadpost -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: UPLOADPOST_TOKEN_2
+  proveedor: Uploadpost
+  dominio: otro-proyecto
+  uso: token de Uploadpost -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar con
+    Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: UPSTASH_API_KEY
+  proveedor: Upstash
+  dominio: otro-proyecto
+  uso: clave de API de Upstash -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: UPSTASH_REDIS_REST_TOKEN
+  proveedor: Upstash Redis REST
+  dominio: otro-proyecto
+  uso: token de Upstash Redis REST -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: UPSTASH_REDIS_REST_URL
+  proveedor: Upstash Redis REST
+  dominio: otro-proyecto
+  uso: URL de Upstash Redis REST -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: VIDEODB_API_KEY
+  proveedor: Videodb
+  dominio: otro-proyecto
+  uso: clave de API de Videodb -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: VPS1_COOLIFY_API_TOKEN
+  proveedor: VPS1 Coolify
+  dominio: vps-infra
+  uso: token de API de VPS1 Coolify -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: VPS1_COOLIFY_URL
+  proveedor: VPS1 Coolify
+  dominio: vps-infra
+  uso: URL de VPS1 Coolify -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: VPS1_EASYPANEL_KEY
+  proveedor: VPS1 Easypanel
+  dominio: vps-infra
+  uso: clave de VPS1 Easypanel -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: VPS1_EASYPANEL_URL
+  proveedor: VPS1 Easypanel
+  dominio: vps-infra
+  uso: URL de VPS1 Easypanel -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: VPS1_IP
+  proveedor: VPS1 IP
+  dominio: vps-infra
+  uso: variable de configuración de VPS1 IP -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: VPS1_SSH_PASS
+  proveedor: VPS1 SSH
+  dominio: vps-infra
+  uso: contraseña de VPS1 SSH -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: alto
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: VPS1_SSH_USER
+  proveedor: VPS1 SSH
+  dominio: vps-infra
+  uso: usuario de VPS1 SSH -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: VPS2_COOLIFY_API_TOKEN
+  proveedor: VPS2 Coolify
+  dominio: vps-infra
+  uso: token de API de VPS2 Coolify -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: VPS2_COOLIFY_URL
+  proveedor: VPS2 Coolify
+  dominio: vps-infra
+  uso: URL de VPS2 Coolify -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: VPS2_IP
+  proveedor: VPS2 IP
+  dominio: vps-infra
+  uso: variable de configuración de VPS2 IP -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: VPS2_SSH_PASS
+  proveedor: VPS2 SSH
+  dominio: vps-infra
+  uso: contraseña de VPS2 SSH -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: alto
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: VPS2_SSH_USER
+  proveedor: VPS2 SSH
+  dominio: vps-infra
+  uso: usuario de VPS2 SSH -- sin consumidor detectado, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: VPS_DOMAIN
+  proveedor: VPS Domain
+  dominio: otro-proyecto
+  uso: variable de configuración de VPS Domain -- sin consumidor detectado ni patrón reconocido, sin clasificar,
+    revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: WEBHOOK_HMAC_SECRET
+  proveedor: Webhook HMAC
+  dominio: otro-proyecto
+  uso: secreto de Webhook HMAC -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar
+    con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: alto
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: WHATSAPP_PHONE_NUMBER
+  proveedor: Whatsapp Phone Number
+  dominio: otro-proyecto
+  uso: variable de configuración de Whatsapp Phone Number -- sin consumidor detectado ni patrón reconocido,
+    sin clasificar, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: XAI_API_KEY
+  proveedor: XAI
+  dominio: starhome
+  uso: clave de API de XAI; consumida en hermes-agent/hermes_cli/tools_config.py:196 (+4 más)
+  consumidores:
+  - hermes-agent/hermes_cli/tools_config.py:196
+  - hermes-agent/plugins/video_gen/xai/__init__.py:104
+  - hermes-agent/tests/tools/test_transcription_dotenv_fallback.py:210
+  - hermes-agent/tests/tools/test_tts_streaming_e2e.py:20
+  - hermes-agent/tools/xai_http.py:42
+  validacion: presence-only
+  riesgo: medio
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: YOUTUBE_CLIENT_ID_ANIMALS
+  proveedor: Youtube Client ID Animals
+  dominio: otro-proyecto
+  uso: variable de configuración de Youtube Client ID Animals -- sin consumidor detectado ni patrón reconocido,
+    sin clasificar, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: YOUTUBE_CLIENT_ID_CANO
+  proveedor: Youtube Client ID CANO
+  dominio: otro-proyecto
+  uso: variable de configuración de Youtube Client ID CANO -- sin consumidor detectado ni patrón reconocido,
+    sin clasificar, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: YOUTUBE_CLIENT_ID_CASS
+  proveedor: Youtube Client ID CASS
+  dominio: otro-proyecto
+  uso: variable de configuración de Youtube Client ID CASS -- sin consumidor detectado ni patrón reconocido,
+    sin clasificar, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: YOUTUBE_CLIENT_ID_MOTIVE
+  proveedor: Youtube Client ID Motive
+  dominio: otro-proyecto
+  uso: variable de configuración de Youtube Client ID Motive -- sin consumidor detectado ni patrón reconocido,
+    sin clasificar, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: bajo
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: YOUTUBE_CLIENT_SECRET_ANIMALS
+  proveedor: Youtube Client Secret Animals
+  dominio: otro-proyecto
+  uso: variable de configuración de Youtube Client Secret Animals -- sin consumidor detectado ni patrón
+    reconocido, sin clasificar, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: alto
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: YOUTUBE_CLIENT_SECRET_CANO
+  proveedor: Youtube Client Secret CANO
+  dominio: otro-proyecto
+  uso: variable de configuración de Youtube Client Secret CANO -- sin consumidor detectado ni patrón reconocido,
+    sin clasificar, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: alto
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: YOUTUBE_CLIENT_SECRET_CASS
+  proveedor: Youtube Client Secret CASS
+  dominio: otro-proyecto
+  uso: variable de configuración de Youtube Client Secret CASS -- sin consumidor detectado ni patrón reconocido,
+    sin clasificar, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: alto
+  rotacion_pendiente: false
+  rotacion_motivo: ''
+- nombre: YOUTUBE_CLIENT_SECRET_MOTIVE
+  proveedor: Youtube Client Secret Motive
+  dominio: otro-proyecto
+  uso: variable de configuración de Youtube Client Secret Motive -- sin consumidor detectado ni patrón
+    reconocido, sin clasificar, revisar con Cano
+  consumidores: []
+  validacion: presence-only
+  riesgo: alto
+  rotacion_pendiente: false
+  rotacion_motivo: ''
