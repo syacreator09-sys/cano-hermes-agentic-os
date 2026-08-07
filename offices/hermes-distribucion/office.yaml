@@ -1,6 +1,13 @@
 name: hermes-distribucion
 mission: "Preparar drafts de subida verificados (YouTube nativo OAuth), dedup contra ledger, metadata veraz; el dispatch SIEMPRE es gate"
-skills: [upload-post, crosspost]
+skills: []
+# P0 (plan POTENCIA, 2026-08-07): las 2 skills antes declaradas no existen en
+# skills/ de este repo ni en hermes-agent (bundled u optional-skills) -- se
+# reclasifican como pendientes en vez de borrarse. Vendrian del origen
+# factory-v5/command-center (runbook publishing-coordinator-agent).
+skills_pendientes:
+  - upload-post   # aspiracional: envoltura del proveedor Upload-Post (drafts multi-red); portar de factory-v5
+  - crosspost     # aspiracional: crosspost coordinado entre canales; portar de factory-v5
 scripts_factory:
   - runbook publishing-coordinator-agent
   - reports/youtube_upload_ledger.csv (dedup obligatorio)

@@ -1,3 +1,7 @@
+# triage_2026-08-07 (P0 plan POTENCIA): SIGUE candidate. Solapa con
+# budget-controller (active) y cost-controller (approved); su funcion propia
+# (conciliacion contable personal/empresarial) no tiene feed de datos cableado
+# todavia -- revisar cuando el modulo de accounting K18 tenga fuentes reales.
 id: finance-controller
 name: StarHome Finance Controller
 team: finance

@@ -1,9 +1,13 @@
+# triage_2026-08-07 (P0 plan POTENCIA): PROMOVIDO candidate->approved. Team
+# revenue ya es alcanzable (dominio revenue); es el unico agente del team,
+# solo-lectura por manifiesto, y sus skills declaradas (lead-next-action,
+# pipeline-review) existen en skills/ de este repo.
 id: revenue-operator
 name: StarHome Revenue Operator
 team: revenue
 objective: Ordena leads, oportunidades, propuestas y próximas acciones sin enviar mensajes ni modificar CRM externos.
 description: Operador comercial que transforma conversaciones y registros en un pipeline priorizado con una próxima acción clara por oportunidad.
-status: candidate
+status: approved
 runtime: hermes
 model_profiles:
 - deepseek-daily

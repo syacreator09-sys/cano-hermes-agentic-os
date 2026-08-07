@@ -1,10 +1,14 @@
+# triage_2026-08-07 (P0 plan POTENCIA): PROMOVIDO testing->approved. El team
+# content ahora rutea a hermes-produccion (oficina Docker `content` real) y la
+# infraestructura de render que este agente encola (container-sandbox,
+# renderers Remotion/ffmpeg de factory-v5 montados ro) existe.
 id: media-render-worker
 name: Media Render Worker
 team: content
 objective: 'Mantiene una cola SECUENCIAL (nunca paralela: esta maquina no tiene GPU
   dedicada) de trabajos de render Remotion/ffmpeg, ejecutados dentro de container-sandbox
   rootless, sin red y sin credenciales.'
-status: testing
+status: approved
 runtime: hermes
 model_profiles:
 - kimi-office

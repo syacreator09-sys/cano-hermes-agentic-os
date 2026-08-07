@@ -1,10 +1,14 @@
+# triage_2026-08-07 (P0 plan POTENCIA): PROMOVIDO testing->approved. Solo
+# prepara drafts/dry-run; el gate real ya existe (SENSITIVE_ACTIONS +
+# ApprovalService) y el flujo dedup K17 (office-publish task.sh +
+# cano_hermes/content/dedup.py) es su consumidor real.
 id: upload-dispatcher
 name: Upload Dispatcher
 team: content
 objective: Prepara publicaciones en modo dry-run/draft para revision humana; JAMAS
   publica de verdad. Cualquier accion real de publish cae en SENSITIVE_ACTIONS (cano_hermes/governance/policy.py)
   y requiere aprobacion humana explicita antes de ejecutarse.
-status: testing
+status: approved
 runtime: hermes
 model_profiles:
 - kimi-office

@@ -1,3 +1,6 @@
+# triage_2026-08-07 (P0 plan POTENCIA): SIGUE candidate. Governance ya tiene 6
+# agentes active cubriendo la vigilancia; la supervision de toolsets/budgets
+# por oficina recien nace con P0 -- reevaluar cuando haya historial que vigilar.
 id: supervisor
 name: Supervisor
 team: governance

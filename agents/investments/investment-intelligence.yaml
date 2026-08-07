@@ -1,9 +1,14 @@
+# triage_2026-08-07 (P0 plan POTENCIA): PROMOVIDO candidate->approved. Team
+# investments ya es alcanzable (dominios investments/trading ->
+# hermes-market-intel) y cano-investment-intelligence es funcional (123 tests,
+# council offline, paper-only); la oficina trading llega en P3. Sigue sin poder
+# operar: trading prohibido por permisos y por el never: de la oficina.
 id: investment-intelligence
 name: StarHome Investment Intelligence
 team: investments
 objective: Investiga mercados, escenarios, tesis y riesgo sin emitir ni modificar órdenes financieras.
 description: Analista de inversiones que trabaja con fuentes actuales, escenarios y límites de riesgo, manteniendo separadas la investigación y la ejecución.
-status: candidate
+status: approved
 runtime: hermes
 model_profiles:
 - deepseek-daily

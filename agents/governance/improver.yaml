@@ -1,3 +1,6 @@
+# triage_2026-08-07 (P0 plan POTENCIA): SIGUE candidate. Depende de
+# aprendizajes acumulados en Nexus por analytics-learner/evaluator que aun no
+# existen en volumen; el Forge ya tiene agent-designer/skill-engineer approved.
 id: improver
 name: Improver
 team: governance

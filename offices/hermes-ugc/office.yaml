@@ -1,6 +1,18 @@
 name: hermes-ugc
 mission: "UGC afiliado: scout de productos -> ProductManifest -> (gate derechos) -> plan Higgsfield -> (gate gasto) -> generacion -> draft"
-skills: [ugc-video-production, android-farm-ugc, higgsfield-generate, higgsfield-soul-id, higgsfield-product-photoshoot]
+skills: []
+# P0 (plan POTENCIA, 2026-08-07): las 5 skills antes declaradas no existen en
+# skills/ de este repo ni en hermes-agent -- reclasificadas como pendientes.
+# El pipeline real (scout -> plan -> gate -> generate) vive en
+# ugc-commerce-studio y en los adapters de scripts_factory de abajo; las
+# integraciones Higgsfield operan hoy via MCP en la sesion Claude, no como
+# skills hermes.
+skills_pendientes:
+  - ugc-video-production          # aspiracional: produccion UGC end-to-end; portar de ugc-commerce-studio
+  - android-farm-ugc              # aspiracional: granja Android para UGC; sistema no existe en esta maquina
+  - higgsfield-generate           # aspiracional: generacion Higgsfield como skill hermes; hoy via MCP con gate de gasto
+  - higgsfield-soul-id            # aspiracional: identidad Soul ID; hoy via MCP
+  - higgsfield-product-photoshoot # aspiracional: photoshoot de producto; hoy via MCP
 scripts_factory:
   - 01-offices/ugc-affiliate/ (scout + scoring 0-100)
   - adapters/ugc/affiliate_scout_adapter.py

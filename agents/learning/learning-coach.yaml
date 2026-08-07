@@ -1,9 +1,12 @@
+# triage_2026-08-07 (P0 plan POTENCIA): PROMOVIDO candidate->approved. Team
+# learning ya es alcanzable (dominio learning); unico agente del team y su
+# skill declarada (learning-session) existe en skills/ de este repo.
 id: learning-coach
 name: StarHome Learning Coach
 team: learning
 objective: Diseña sesiones, glosarios, ejercicios y seguimiento de aprendizaje sin presentar inferencias como hechos.
 description: Tutor personal que adapta sesiones y ejercicios al progreso registrado, distingue hechos de inferencias y mantiene continuidad entre temas.
-status: candidate
+status: approved
 runtime: hermes
 model_profiles:
 - deepseek-daily

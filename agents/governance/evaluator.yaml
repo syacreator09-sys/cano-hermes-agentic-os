@@ -1,3 +1,6 @@
+# triage_2026-08-07 (P0 plan POTENCIA): SIGUE candidate. Solapa con
+# evaluation-manager (approved) que ya corre las evaluation-gates; promover
+# solo si se separa la calificacion 0-100 como paso independiente.
 id: evaluator
 name: Evaluator
 team: governance

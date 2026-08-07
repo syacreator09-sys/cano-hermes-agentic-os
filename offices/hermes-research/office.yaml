@@ -1,6 +1,17 @@
 name: hermes-research
 mission: "Radar viral diario (Apify metadata-only) y transcripts bajo demanda (Supadata con fallback Whisper) para alimentar guiones"
-skills: [viral-research, last30days, exa-search, competitor-reels-pipeline, reel-dedup-check]
+# P0 (plan POTENCIA, 2026-08-07): `reel-dedup-check` existe en skills/ de
+# este repo (se mantiene); `youtube-content` (hermes-agent bundled,
+# skills/media/youtube-content: transcript -> resumen/estructura) quedo
+# instalada en ~/.hermes/profiles/hermes-research/skills/ porque cubre la
+# mitad "transcripts bajo demanda" de la mision. Las otras 4 no existen en
+# ningun repo de esta maquina -- pendientes, no borradas.
+skills: [reel-dedup-check, youtube-content]
+skills_pendientes:
+  - viral-research           # aspiracional: radar viral empaquetado; hoy lo cubren scripts_factory de abajo
+  - last30days               # aspiracional: ventana 30 dias de performance; vendria de factory-v5
+  - exa-search               # aspiracional: busqueda Exa; requiere EXA_API_KEY que no existe en el vault
+  - competitor-reels-pipeline  # aspiracional: pipeline de reels de competencia; vendria de factory-v5
 scripts_factory:
   - scripts/run_viral_reference_expansion.py
   - scripts/build_viral_production_table.py

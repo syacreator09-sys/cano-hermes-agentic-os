@@ -1,8 +1,12 @@
+# triage_2026-08-07 (P0 plan POTENCIA): PROMOVIDO candidate->approved. Su
+# insumo existe de verdad: cada ejecucion de oficina escribe --usage-file
+# (HermesAgentExecutor) y el presupuesto diario vive en office.yaml/
+# BudgetService; conciliar ambos es consumo real hoy (y P5 lo amplia).
 id: cost-controller
 name: Cost Controller
 team: finance
 objective: Reconcilia el --usage-file de cada ejecución de oficina contra el presupuesto diario. Alerta a Cano antes de que una oficina agote su cuota, nunca gasta por su cuenta.
-status: candidate
+status: approved
 runtime: hermes
 model_profiles:
 - kimi-office

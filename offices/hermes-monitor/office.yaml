@@ -1,6 +1,13 @@
 name: hermes-monitor
 mission: "Ojos del sistema: briefing diario 8:15, vigilancia cada 10 min (procesos, disco, cola, creditos), resumen semanal, informe mensual"
-skills: [daily-ops-routine, ecosystem-overview]
+skills: []
+# P0 (plan POTENCIA, 2026-08-07): las 2 skills antes declaradas no existen en
+# skills/ de este repo ni en hermes-agent -- reclasificadas como pendientes.
+# La vigilancia real de esta oficina hoy corre por scripts (task.sh +
+# connection_matrix.py), no por skills.
+skills_pendientes:
+  - daily-ops-routine   # aspiracional: rutina diaria 8:15 empaquetada como skill; hoy vive en cron/scripts
+  - ecosystem-overview  # aspiracional: panorama de los 39 repos/sistemas; hoy lo cubre reports/ + dashboards
 scripts_factory:
   - scripts/factory_v5_preflight.py (salud de providers, 0 costo)
   - reports/ (ledger, smokes)

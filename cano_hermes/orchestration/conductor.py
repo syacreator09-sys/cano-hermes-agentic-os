@@ -16,40 +16,87 @@ DOMAIN_TEAMS = {
     "forge": "forge",
     "security": "governance",
     "finance": "finance",
+    # P0 (plan POTENCIA, 2026-08-07): the 6 previously-orphan teams. Domains
+    # are free strings set by callers (`cano_hermes/cli.py --domain`,
+    # `POST /api/tasks` TaskCreate.domain -- there is no automatic
+    # decomposer stamping domains today), so the convention is
+    # domain == team name, plus one alias where the plan/operator language
+    # differs from the team name ("trading" is how Cano and the POTENCIA
+    # plan refer to the investments work; "personal" is the natural short
+    # form of personal-operations).
+    "investments": "investments",
+    "trading": "investments",
+    "revenue": "revenue",
+    "documents": "documents",
+    "learning": "learning",
+    "personal-operations": "personal-operations",
+    "personal": "personal-operations",
+    "projects": "projects",
 }
 
-# K5 (plan HERMES-KICKOFF, gap 1): team -> hermes kanban profile name that
-# K6's `bridge/kanban_bridge.py` will pass to `hermes kanban add --profile
-# <this>`. Checked before inventing anything: `~/.hermes/profiles/` does not
-# exist on this machine (no named profiles registered yet), and
-# `~/.hermes/kanban.db`'s `tasks.profile` column has no rows to crib real
-# names from either -- so there is nothing "real" to look up for most teams.
+# Team -> hermes kanban profile name that K6's `bridge/kanban_bridge.py`
+# passes to `hermes kanban add --profile <this>`, and that
+# `governance/auto_approval.load_office_never()` resolves to
+# `offices/<profile>/office.yaml` for the office's `never:` list, and that
+# `bridge/office_launcher.ensure_office_for_profile()` uses to start the
+# right Docker container (PROFILE_TO_OFFICE).
 #
-# Where a StarHome team maps unambiguously to one of the 6 Docker offices
-# merged in PR #7 (`offices/*/office.yaml`, this repo) by name/mission, we
-# use that office's name directly -- those ARE real ids, and K9 registering
-# their kanban workers will make them live profiles without touching this
-# map:
-#   - "research"   -> hermes-research  (mission: "radar viral diario ...
-#     transcripts ... para alimentar guiones" == StarHome's research domain)
-#   - "operations" -> hermes-monitor   (mission: "Ojos del sistema: ...
-#     vigilancia" == StarHome's operations domain)
+# P0 (plan POTENCIA, 2026-08-07): the K5-era `team-*` placeholders never
+# matched any real profile/office, which left 4 of the 5 Docker offices
+# unreachable from any task.domain. Every value below is now a real profile
+# id == a real `offices/<name>/office.yaml` directory:
 #
-# Every other team gets a provisional `team-<team>` placeholder: "content"
-# is deliberately NOT pointed at any single office because four of the six
-# (guiones/produccion/distribucion/ugc) all touch content and none is a
-# clean 1:1 match; "engineering", "forge", "governance" and "finance" have
-# no corresponding Docker office at all yet. K6 can use these placeholders
-# as-is (they are valid, stable strings); K9 should replace each with the
-# real `office.yaml` profile id once that team gets its own office.
+#   - "research"    -> hermes-research   (kept from K5: "radar viral diario"
+#     == the research domain; native folder-isolated worker, no container).
+#   - "operations"  -> hermes-monitor    (kept from K5: "Ojos del sistema"
+#     == operations; Docker office `analytics`).
+#   - "content"     -> hermes-produccion (render reels/largos/carruseles --
+#     the content team's executable work (media-render-worker,
+#     factory-operator, storyboard-designer) is production; Docker office
+#     `content`. hermes-guiones stays native/cron-driven and
+#     hermes-distribucion is gate-only publishing, so neither is the
+#     content team's default lane -- see the "no entry" notes below).
+#   - "forge"       -> hermes-ugc        (Docker office `ugc`: the UGC
+#     pipeline scout->plan->generate is the forge team's build-new-capacity
+#     work in production today; agent-designer/skill-engineer artifacts
+#     stay native but the office is the forge's live workshop).
+#   - "finance"     -> hermes-monitor    (finance's routable work today is
+#     read-only vigilance: cost-controller reconciles --usage-file vs
+#     budget, budget-controller watches quotas -- exactly the analytics
+#     office's read-only monitoring lane; no dedicated finance office
+#     exists).
+#   - "investments" -> hermes-market-intel (Docker office `market-intel`:
+#     its mission literally crosses the investment-intelligence offline
+#     council signal; makes the 5th Docker office reachable. P3 will grow
+#     this into the trading office).
+#
+# Teams WITHOUT an entry (kanban_profile=None, handled everywhere --
+# auto_approval treats None as "no office never-list", kanban_bridge does
+# not route by profile at order level, office_launcher no-ops):
+#   - "engineering": goes through the claude-code/codex subscription
+#     executors directly (router.py gives engineering +3.5 to those
+#     profiles) -- a tier-0 Kimi Docker office would be a downgrade.
+#   - "governance": governance agents (task-governor, security-guardian,
+#     evaluator...) run native next to the API; governance is also the
+#     fallback team for unknown domains, and an unknown domain must NOT
+#     auto-launch a Docker container.
+#   - "revenue", "documents", "learning", "personal-operations",
+#     "projects": personal/native hermes agents, read-only by manifest,
+#     no Docker office exists for them.
+#
+# Offices with no team pointing at them, on purpose:
+#   - hermes-guiones (native, cron "0 10 * * *" -- driven by its own
+#     schedule, not by domain routing).
+#   - hermes-distribucion (gate-only publishing: reached explicitly via
+#     `hermes kanban add --profile hermes-distribucion` after human
+#     approval, never as an automatic destination for a whole domain).
 TEAM_TO_KANBAN_PROFILE = {
-    "engineering": "team-engineering",
     "research": "hermes-research",
-    "content": "team-content",
+    "content": "hermes-produccion",
     "operations": "hermes-monitor",
-    "forge": "team-forge",
-    "governance": "team-governance",
-    "finance": "team-finance",
+    "forge": "hermes-ugc",
+    "finance": "hermes-monitor",
+    "investments": "hermes-market-intel",
 }
 
 

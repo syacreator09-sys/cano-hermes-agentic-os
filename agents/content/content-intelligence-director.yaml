@@ -1,3 +1,6 @@
+# triage_2026-08-07 (P0 plan POTENCIA): SIGUE candidate. Su entregable es un
+# contrato para Factory V5 y a factory le falta runtime/stage-handlers.yaml
+# (ver memoria de sesion) -- aspiracional hasta que ese runtime exista.
 id: content-intelligence-director
 name: StarHome Content Intelligence Director
 team: content

@@ -1,3 +1,7 @@
+# triage_2026-08-07 (P0 plan POTENCIA): PROMOVIDO testing->approved. El sistema
+# de conexiones C0-C6 existe y corre (scripts/connection_matrix.py, dashboard
+# /dashboard/connections, office-analytics lo ejecuta en contenedor) -- su
+# funcion tiene consumo real hoy.
 id: connection-auditor
 name: Connection Auditor
 team: operations
@@ -5,7 +9,7 @@ objective: Corre scripts/connection_matrix.py periodicamente sobre los 5 sistema
   conocidos (StarHome, factory-v5, command-center x2, hermes-agent) y reporta cambios
   de estado en sus credenciales (presente/vacia/ausente) sin imprimir nunca un valor
   real.
-status: testing
+status: approved
 runtime: hermes
 model_profiles:
 - kimi-office

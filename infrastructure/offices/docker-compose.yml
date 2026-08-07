@@ -95,6 +95,13 @@
 #      comments/logs/workspaces -- no credentials ever live there) so this
 #      is a narrow, deliberate relaxation, not a broad one.
 
+# P0 (plan POTENCIA, 2026-08-07): HERMES_TOOLSETS here is only the DEFAULT
+# (empty = the supervisor oneshot gets no tools at all). Each service below
+# overrides it per its office.yaml contract -- valid names are keys of
+# hermes-agent's toolsets.py TOOLSETS registry (web, file, todo, ...).
+# Policy: minimum per contract; `web` only where the office's mission needs
+# outbound research (ugc scouting, market-intel signals); never `terminal`
+# or `browser` inside these tier-0 containers.
 x-hermes-tier0-env: &hermes-tier0-env
   HERMES_MODEL: kimi-k2.6
   HERMES_PROVIDER: kimi
@@ -117,6 +124,9 @@ services:
     networks: ["starhome-net"]
     environment:
       <<: *hermes-tier0-env
+      # P0: monitor reads local reports/ledgers and summarizes -- file
+      # access + todo tracking, no outbound web (contract providers: []).
+      HERMES_TOOLSETS: "file,todo"
       OFFICE_NAME: analytics
       OFFICE_PROFILE: hermes-monitor
       WORKER_MODE: kanban
@@ -177,6 +187,9 @@ services:
     networks: ["starhome-net"]
     environment:
       <<: *hermes-tier0-env
+      # P0: ugc scouting legitimately researches products/trends on the
+      # open web (RAPIDAPI/APIFY already allowlisted below) + file/todo.
+      HERMES_TOOLSETS: "web,file,todo"
       OFFICE_NAME: ugc
       OFFICE_PROFILE: hermes-ugc
       WORKER_MODE: kanban
@@ -227,6 +240,10 @@ services:
     networks: ["starhome-net"]
     environment:
       <<: *hermes-tier0-env
+      # P0: produccion renders from local mounts (factory-v5 ro) -- file
+      # + todo; media assets come from providers gated outside this
+      # container, so no web here.
+      HERMES_TOOLSETS: "file,todo"
       OFFICE_NAME: content
       # K9 mapping: office-content <-> hermes-produccion (reclassified
       # isolation: folder -> docker, see offices/hermes-produccion/office.yaml).
@@ -283,6 +300,11 @@ services:
     networks: ["starhome-net"]
     environment:
       <<: *hermes-tier0-env
+      # P0: distribucion prepares drafts/dedup from local mounts only --
+      # file + todo. NO web on purpose: this office must never be able to
+      # reach a publish endpoint even by accident (dispatch is always a
+      # human gate).
+      HERMES_TOOLSETS: "file,todo"
       OFFICE_NAME: publish
       # K9 mapping: office-publish <-> hermes-distribucion (1:1 by name and
       # mission -- "preparar drafts de subida... dispatch SIEMPRE gate").
@@ -359,6 +381,10 @@ services:
     networks: ["starhome-net"]
     environment:
       <<: *hermes-tier0-env
+      # P0: market-intel crosses read-only local signals but its mission
+      # (tendencias, candidatos) benefits from public web reads (Binance/
+      # Bitso public endpoints in P3); still zero broker credentials.
+      HERMES_TOOLSETS: "web,file,todo"
       OFFICE_NAME: market-intel
       OFFICE_PROFILE: hermes-market-intel
       WORKER_MODE: kanban

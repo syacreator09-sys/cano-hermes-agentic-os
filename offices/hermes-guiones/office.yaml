@@ -1,6 +1,16 @@
 name: hermes-guiones
 mission: "Escribir guiones reales por canal desde research: narracion 7 capitulos para largos, hooks y reels de 8s, reparacion de scripts corruptos"
-skills: [8s-script-optimizer, scroll-stopper-hooks, pattern-replicator, video-scripts, humanizalo]
+# P0 (plan POTENCIA, 2026-08-07): `humanizer` es la skill real instalada en
+# ~/.hermes/profiles/hermes-guiones/skills/ (bundled de hermes-agent,
+# skills/creative/humanizer -- equivalente directo de la "humanizalo"
+# declarada antes: humanizar texto, quitar AI-isms). Las demas no existen en
+# ningun repo de esta maquina y quedan como pendientes, no se borran.
+skills: [humanizer]
+skills_pendientes:
+  - 8s-script-optimizer   # aspiracional: optimizador de guiones de 8s; vendria de factory-v5
+  - scroll-stopper-hooks  # aspiracional: hooks que detienen el scroll; vendria de factory-v5
+  - pattern-replicator    # aspiracional: replicar patrones de guiones ganadores; vendria de factory-v5
+  - video-scripts         # aspiracional: plantillas de guion por formato; vendria de factory-v5
 scripts_factory:
   - runbook long-narration-writer-agent (checklist manual del origen)
   - runbook content-repair-agent

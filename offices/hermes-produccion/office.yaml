@@ -1,6 +1,19 @@
 name: hermes-produccion
 mission: "Renderizar reels/largos/carruseles: Remotion + ffmpeg + edge-tts + MoneyPrinter stock; QA con ffprobe y runbook de calidad"
-skills: [hyperframes, hyperframes-cli, remotion-best-practices, ffmpeg-shorts-editing, animated-captions, shorts-export-profiles, video-vision-audit]
+# P0 (plan POTENCIA, 2026-08-07): `hyperframes` SI existe
+# (hermes-agent/optional-skills/creative/hyperframes, "Render MP4/WebM
+# videos from HTML compositions") y quedo instalada en
+# ~/.hermes/profiles/hermes-produccion/skills/. Las otras 6 no existen en
+# ningun repo de esta maquina (la CLI de hyperframes viene dentro de la
+# misma skill, no separada) -- pendientes, no borradas.
+skills: [hyperframes]
+skills_pendientes:
+  - hyperframes-cli        # cubierta por la skill hyperframes instalada (scripts/ incluye la CLI); no existe como skill aparte
+  - remotion-best-practices  # aspiracional: guia Remotion; vendria de factory-v5 (renderers/remotion)
+  - ffmpeg-shorts-editing    # aspiracional: recetas ffmpeg para shorts; vendria de factory-v5
+  - animated-captions        # aspiracional: subtitulos animados; vendria de factory-v5
+  - shorts-export-profiles   # aspiracional: perfiles de export por plataforma; vendria de factory-v5
+  - video-vision-audit       # aspiracional: QA visual con vision; vendria de factory-v5 (runbook de calidad)
 scripts_factory:
   - scripts/produce_long_pilot.py
   - scripts/produce_stock_short.py

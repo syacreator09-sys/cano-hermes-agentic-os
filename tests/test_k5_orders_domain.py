@@ -5,9 +5,10 @@ rejecting an unknown `source`; (b) `TaskRecord.parent_task_id` is written
 and read back through `SQLiteStore` with no schema migration (payload is a
 full JSON blob); (c) `SQLiteStore.list_children` returns exactly the tasks
 whose `parent_task_id` matches, Python-filtered over `list_tasks()`;
-(d) `Conductor.assign(...).kanban_profile` is populated for several teams,
-including the two offices mapped for real (research/operations) and one
-provisional placeholder; (e) `POST /api/orders` -> `GET /api/orders/{id}`
+(d) `Conductor.assign(...).kanban_profile` is populated for teams mapped
+to real offices (research/operations) and is None for teams that
+deliberately have no office (engineering, governance fallback -- P0, plan
+POTENCIA); (e) `POST /api/orders` -> `GET /api/orders/{id}`
 end-to-end via `TestClient`, including that a decomposed child task shows
 up under `tasks`.
 """
@@ -120,16 +121,25 @@ class KanbanProfileMappingTests(unittest.TestCase):
         cases = {
             "research": "hermes-research",
             "operations": "hermes-monitor",
-            "engineering": "team-engineering",
         }
         for domain, expected_profile in cases.items():
             with self.subTest(domain=domain):
                 assignment = self._assign(domain)
                 self.assertEqual(assignment.kanban_profile, expected_profile)
 
-    def test_kanban_profile_falls_back_to_governance_for_unknown_domain(self):
+    def test_engineering_has_no_kanban_profile(self):
+        """P0 (plan POTENCIA): engineering runs through the claude-code/
+        codex executors directly -- the K5-era 'team-engineering'
+        placeholder is gone and no office profile applies."""
+        assignment = self._assign("engineering")
+        self.assertIsNone(assignment.kanban_profile)
+
+    def test_kanban_profile_none_for_unknown_domain(self):
+        """Unknown domains fall back to the governance team, which has no
+        kanban profile on purpose (P0): an unknown domain must never
+        auto-launch a Docker office."""
         assignment = self._assign("some-unmapped-domain")
-        self.assertEqual(assignment.kanban_profile, "team-governance")
+        self.assertIsNone(assignment.kanban_profile)
 
 
 class OrdersApiTests(unittest.TestCase):

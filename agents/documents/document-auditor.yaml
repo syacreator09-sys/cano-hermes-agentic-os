@@ -1,9 +1,13 @@
+# triage_2026-08-07 (P0 plan POTENCIA): PROMOVIDO candidate->approved. Team
+# documents ya es alcanzable (dominio documents); unico agente del team,
+# solo-lectura (source_document_mutation: prohibited) y su skill declarada
+# (document-consistency-audit) existe en skills/ de este repo.
 id: document-auditor
 name: StarHome Document Auditor
 team: documents
 objective: Revisa consistencia, fechas, referencias, sumas y metadatos sin alterar documentos originales.
 description: Auditor documental que preserva evidencia, compara versiones y reporta inconsistencias sin modificar archivos fuente.
-status: candidate
+status: approved
 runtime: hermes
 model_profiles:
 - deepseek-daily

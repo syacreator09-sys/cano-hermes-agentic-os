@@ -33,10 +33,11 @@ request is left untouched, exactly as it is today):
 4. If the task belongs to a K9 office (`kanban_profile` resolves to a
    real `offices/<profile>/office.yaml`), `approval.action` is not in
    that office's `never:` list -- a hard allowlist-negative, not a
-   suggestion. Profiles with no matching manifest (most of
-   `conductor.TEAM_TO_KANBAN_PROFILE`'s placeholder values today, e.g.
-   `"team-content"`) are treated as "no office to check against", not as
-   a failure -- there is nothing to violate.
+   suggestion. Profiles with no matching manifest (since P0, plan
+   POTENCIA, every `conductor.TEAM_TO_KANBAN_PROFILE` value is a real
+   office, but an unknown/legacy profile string can still arrive) are
+   treated as "no office to check against", not as a failure -- there is
+   nothing to violate.
 5. If a concrete write target is known for this request, it must resolve
    inside the packet's own `allowed_write_paths` (K1/K2) -- reusing
    `PermissionEngine.validate_path`, the same containment check
@@ -109,10 +110,10 @@ def load_office_never(kanban_profile: str | None, offices_root: Path | None = No
     """The `never:` allowlist-negative from a K9 `offices/<profile>/
     office.yaml`, or an empty set when `kanban_profile` is falsy or no
     manifest exists for it. A missing manifest is "nothing to check
-    against" -- most of `conductor.TEAM_TO_KANBAN_PROFILE`'s values are
-    provisional placeholders (`"team-content"` etc.) with no real
-    `office.yaml` yet, and that must not silently block every task from
-    those domains."""
+    against" -- since P0 (plan POTENCIA) every
+    `conductor.TEAM_TO_KANBAN_PROFILE` value is a real office, but an
+    unknown or legacy profile string must not silently block every task
+    from its domain."""
     if not kanban_profile:
         return frozenset()
     manifest_path = _offices_root(offices_root) / kanban_profile / "office.yaml"
