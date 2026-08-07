@@ -243,6 +243,39 @@ class FinanceAndOrdersAggregationTests(unittest.TestCase):
         by_task = {row["task_id"]: row["cost_usd"] for row in data["cost_by_task_top"]}
         self.assertAlmostEqual(by_task.get(task.id, 0.0), 1.5)
 
+        # P5 -- no provider in this fixture's usage dict, so it must be
+        # honestly bucketed under "desconocido", never guessed from
+        # executor="claude-code".
+        by_provider = {row["provider"]: row["cost_usd"] for row in data["cost_by_provider"]}
+        self.assertAlmostEqual(by_provider.get("desconocido", 0.0), 1.5)
+        self.assertNotIn("claude-code", by_provider)
+
+    def test_finance_dashboard_cost_by_provider_uses_real_usage_field(self):
+        """P5 -- a run that actually wrote a --usage-file with a real
+        provider string (confirmed live content:
+        {"model": "kimi-k2.6", "provider": "kimi-coding", ...}) surfaces
+        under its real provider name, not under 'hermes-agent'."""
+        order = OrderRecord(objective="Escribe un guion", source="api")
+        self.store.save_order(order)
+        task = TaskRecord(**TaskCreate(
+            title="Guion", objective="Escribe un guion corto", domain="content",
+            risk=RiskLevel.LOW, parent_task_id=order.id,
+        ).model_dump())
+        self.store.save_task(task)
+        execution = ExecutionResult(task_id=task.id, executor="hermes-agent", status="completed", summary="listo")
+        self.store.save_execution(execution, usage={"estimated_cost_usd": 0.0, "provider": "kimi-coding", "model": "kimi-k2.6"})
+
+        # estimated_cost_usd=0 (subscription, not metered) would be
+        # filtered out by `cost > 0` upstream -- seed a second, metered
+        # execution on the same provider to prove the aggregation path
+        # for real instead of asserting on an all-zero fixture.
+        execution2 = ExecutionResult(task_id=task.id, executor="hermes-agent", status="completed", summary="listo2")
+        self.store.save_execution(execution2, usage={"estimated_cost_usd": 0.02, "provider": "kimi-coding", "model": "kimi-k2.6"})
+
+        data = dashboards.finance_dashboard(self.store, self.budget)
+        by_provider = {row["provider"]: row["cost_usd"] for row in data["cost_by_provider"]}
+        self.assertAlmostEqual(by_provider.get("kimi-coding", 0.0), 0.02)
+
     def test_orders_dashboard_resolves_child_task_tree_and_throughput(self):
         order, _task = self._seed_order_with_costed_task()
         order.status = OrderStatus.DONE

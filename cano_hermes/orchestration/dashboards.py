@@ -206,6 +206,8 @@ def finance_dashboard(
 
     executions = store.list_executions()
     cost_by_executor: dict[str, float] = {}
+    cost_by_provider: dict[str, float] = {}
+    provider_unknown_count = 0
     cost_by_task: dict[str, float] = {}
     executor_by_task: dict[str, str] = {}
     total_recorded = 0.0
@@ -219,6 +221,20 @@ def finance_dashboard(
         total_recorded += cost
         cost_by_executor[execution["executor"]] = cost_by_executor.get(execution["executor"], 0.0) + cost
         cost_by_task[execution["task_id"]] = cost_by_task.get(execution["task_id"], 0.0) + cost
+        # P5 (plan POTENCIA, 2026-08-07): the granularity C4 documented as
+        # missing ("hoy 1 solo executor") is real now for any run that
+        # actually wrote a --usage-file -- execution_service.py already
+        # persists that file's full content (provider/model/tokens) into
+        # `execution.usage`, this just reads it back. A priced execution
+        # with no `provider` key (older runs, or claude-code's stream-json
+        # path which reports total_cost_usd but not a provider string) is
+        # counted honestly as "desconocido", never guessed.
+        provider = (execution.get("usage") or {}).get("provider")
+        if provider:
+            cost_by_provider[provider] = cost_by_provider.get(provider, 0.0) + cost
+        else:
+            provider_unknown_count += 1
+            cost_by_provider["desconocido"] = cost_by_provider.get("desconocido", 0.0) + cost
 
     tasks_by_id = {t.id: t for t in store.list_tasks()}
     cost_by_order: dict[str, float] = {}
@@ -254,26 +270,30 @@ def finance_dashboard(
         ({"executor": executor, "cost_usd": round(cost, 4)} for executor, cost in cost_by_executor.items()),
         key=lambda row: row["cost_usd"], reverse=True,
     )
-    # C4 -- honest granularity note. `executions.usage_json` (K1) is
-    # keyed by `executor`, not by upstream LLM provider -- confirmed live
-    # against this host's own sqlite (51 rows, a single distinct
-    # `executor` value: "hermes-agent") before writing this. `cost_by_
-    # executor` above is real and stays wired to `usage_json` so it is
-    # ready the moment `executor`/`usage_json` carry finer granularity,
-    # but nothing here infers or interpolates a provider from the
-    # `executor` name, a profile name, or `config/key_registry.yaml` --
-    # that would fabricate a distinction the data doesn't make. A true
-    # per-provider breakdown needs `usage_json` (or a new column) to
-    # actually record the provider; until then this field says so
-    # explicitly instead of a dashboard silently implying more
-    # granularity than the source data has.
+    cost_by_provider_rows = sorted(
+        ({"provider": provider, "cost_usd": round(cost, 4)} for provider, cost in cost_by_provider.items()),
+        key=lambda row: row["cost_usd"], reverse=True,
+    )
+    # C4/P5 -- honest granularity note. `executions.usage_json` (K1) is
+    # keyed by `executor`, and separately carries whatever the run's
+    # --usage-file reported (execution_service.py's own usage_payload
+    # logic) -- `hermes-agent` runs that actually produced a usage file
+    # DO include a real `provider` string there (confirmed live:
+    # {"model": "kimi-k2.6", "provider": "kimi-coding", ...}), but
+    # dry_run/simulated runs and claude-code's stream-json path (reports
+    # total_cost_usd, not a provider name) don't -- those are counted
+    # under "desconocido" above, never guessed from executor/profile/
+    # key_registry. `cost_by_provider` is real for what it can be real
+    # about; it is not yet a complete picture.
     distinct_executors = sorted({e["executor"] for e in executions})
     cost_by_executor_note = (
-        "Desglose real por 'executor' (columna de executions.usage_json), no por proveedor/motor "
-        f"de LLM -- hoy {len(distinct_executors)} valor(es) distinto(s) de executor "
-        f"({', '.join(distinct_executors) if distinct_executors else 'ninguno'}). El cruce fino "
-        "por proveedor requiere que usage_json incluya esa granularidad en el futuro; no se "
-        "infiere desde el nombre del profile ni desde config/key_registry.yaml."
+        "cost_by_executor: real por 'executor' -- hoy "
+        f"{len(distinct_executors)} valor(es) distinto(s) "
+        f"({', '.join(distinct_executors) if distinct_executors else 'ninguno'}). "
+        f"cost_by_provider: real desde execution.usage['provider'] (proveedor real del run) cuando "
+        f"escribio --usage-file ({provider_unknown_count} de {priced_count} ejecucion(es) priceada(s) "
+        "sin proveedor conocido, contadas en 'desconocido' -- nunca inferido desde el nombre del "
+        "executor/profile ni desde config/key_registry.yaml)."
     )
 
     office_costs = monitoring.office_usage_costs(workspace_root)
@@ -298,6 +318,7 @@ def finance_dashboard(
             "projected_percent_used": round(projected_percent, 4),
         },
         "cost_by_executor": cost_by_executor_rows,
+        "cost_by_provider": cost_by_provider_rows,
         "cost_by_executor_note": cost_by_executor_note,
         "cost_by_office": cost_by_office_rows,
         "cost_by_order": cost_by_order_rows,

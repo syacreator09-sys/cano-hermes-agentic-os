@@ -80,18 +80,35 @@ def validate_kimi_moonshot(env):
     """Kimi / Moonshot -- GET {KIMI_BASE_URL o https://api.moonshot.ai/v1}/models
     (Bearer, API compatible con OpenAI). Crear la llave es gratis y listar modelos no
     consume los créditos prepagados (solo `/chat/completions` factura). Prueba
-    KIMI_API_KEY primero, luego MOONSHOT_API_KEY."""
+    KIMI_API_KEY primero, luego MOONSHOT_API_KEY.
+
+    P5 (plan POTENCIA, 2026-08-07): además intenta `GET /users/me/balance`
+    (mismo host, gratis -- confirmado en vivo devuelve
+    {"available_balance", "voucher_balance", "cash_balance"} reales) para
+    poblar `quota`. Best-effort: si ese endpoint falla, el resultado de
+    /models arriba sigue siendo la fuente de verdad del status; el balance
+    solo se anexa si responde 200."""
     names = ["KIMI_API_KEY", "MOONSHOT_API_KEY"]
     candidate = pick_candidate(env, names)
     if candidate is None:
         return no_key_result(names)
     base = (env.get("KIMI_BASE_URL") or "https://api.moonshot.ai/v1").rstrip("/")
-    code, _body, err, latency = http_get(
-        f"{base}/models", {"Authorization": f"Bearer {env[candidate]}"}
-    )
-    return _classify_http(
+    headers = {"Authorization": f"Bearer {env[candidate]}"}
+    code, _body, err, latency = http_get(f"{base}/models", headers)
+    outcome = _classify_http(
         code, err, latency, ok_detail=f"200 -- lista de modelos obtenida (`{candidate}`)"
     )
+    if outcome["status"] == "✓":
+        bal_code, bal_body, bal_err, _ = http_get(f"{base}/users/me/balance", headers)
+        if not bal_err and bal_code == 200:
+            data = (parse_json(bal_body) or {}).get("data") or {}
+            if isinstance(data, dict) and data:
+                outcome["quota"] = {
+                    "available_balance_usd": data.get("available_balance"),
+                    "cash_balance_usd": data.get("cash_balance"),
+                    "voucher_balance_usd": data.get("voucher_balance"),
+                }
+    return outcome
 
 
 def validate_openrouter(env):
