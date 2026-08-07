@@ -1,0 +1,28 @@
+name: hermes-ads
+mission: "Generar paquetes de campana DRAFT (Meta/TikTok/Google) por canal usando el motor de cano-ai-command-center/01-offices/ads-studio (solo lectura, invocado por contrato); nunca publica ni gasta"
+skills: []
+skills_pendientes:
+  - ads-copy-optimizer  # aspiracional: no existe como skill hermes; hoy es engine/ad_copywriter.py de ads-studio, invocado directo
+scripts_factory:
+  - cano-ai-command-center/01-offices/ads-studio/engine/campaign_builder.py (SOLO LECTURA, invocado via scripts/ads_bridge.py)
+  - cano-ai-command-center/01-offices/ads-studio/config/guardrails.py (AUTHORIZED_DEFAULT=False, PUBLISH_ENABLED=False -- respetado, nunca forzado)
+# Comparado con el skill meta-ads-launch de santmun (Meta-only, MCP
+# directo): ads-studio es mas completo (3 plataformas, guardarraíles
+# explicitos en DRAFT) -- se mantiene como motor. Se adopta su convencion
+# de nombrar toda campana de prueba con prefijo "[TEST]" + fecha.
+providers: []
+default_model: kimi
+budget_daily:
+  credits: 0
+  usd: 0
+cadence: on-demand
+isolation: folder
+never:
+  - publicar
+  - pagar
+  - tocar_env
+  - aprobar_gates
+  - publicar_ad
+  - activar_campaign
+  - subir_presupuesto
+  - conectar_cuenta_ads

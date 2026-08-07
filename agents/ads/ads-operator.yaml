@@ -1,0 +1,49 @@
+# P2 (plan POTENCIA, 2026-08-07): nuevo team "ads" -- domain "ads" ->
+# team "ads" (conductor.DOMAIN_TEAMS) -> kanban_profile "hermes-ads"
+# (conductor.TEAM_TO_KANBAN_PROFILE), la nueva oficina folder-isolated que
+# invoca cano-ai-command-center/01-offices/ads-studio por contrato (solo
+# lectura). Sin skills hermes propias todavia (aspiracional, ver
+# offices/hermes-ads/office.yaml skills_pendientes) -- el trabajo real
+# corre via scripts/ads_bridge.py llamando engine/campaign_builder.py.
+id: ads-operator
+name: StarHome Ads Operator
+team: ads
+objective: Genera paquetes de campana DRAFT por canal/plataforma (copy, targeting, budget plan) sin publicar ni gastar, para revision humana.
+description: Operador de publicidad que ensambla campanas completas en modo borrador usando el motor de ads-studio, nunca conecta cuentas ni activa gasto real.
+status: approved
+runtime: hermes
+model_profiles:
+- kimi-office
+skills: []
+tools:
+- nexus_search
+- task_events
+actions:
+  allowed:
+  - build_draft_campaign
+  - generate_ad_copy
+  - propose_budget_plan
+  approval_required:
+  - publish_campaign
+  - activate_budget
+  - connect_ad_account
+  prohibited:
+  - charge_customer
+  - spend_ad_budget
+  - publish_live_ad
+permissions:
+  filesystem: workspace-only
+  network: allowlist
+  production: approval-required
+  external_write: prohibited
+  communications: approval-required
+  crm_write: prohibited
+budget:
+  max_cost_usd: 0.0
+  max_turns: 14
+  timeout_seconds: 900
+evaluations:
+- schema
+- safety
+- task-contract
+max_concurrency: 1

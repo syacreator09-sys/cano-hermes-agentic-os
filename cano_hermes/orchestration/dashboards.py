@@ -1126,3 +1126,66 @@ def _master_runtime_summary(store: SQLiteStore | None, *, recent_limit: int = 10
             for e in recent
         ],
     }
+
+
+ADS_WORKSPACE_ROOT = ROOT / "storage" / "workspaces" / "ads"
+ADS_META_SNAPSHOT_PATH = ROOT / "storage" / "pending_native_tool" / "ads-meta-status.result.json"
+
+
+def _ads_meta_snapshot(snapshot_path: Path | None = None) -> dict[str, Any]:
+    """P2 (plan POTENCIA) -- same PENDING_NATIVE_TOOL pattern as
+    `business/cass.py`'s meta_status(): the account read only happens
+    inside an interactive Claude session with the Facebook Ads MCP
+    connected, never from an unattended job (no META_ADS_ACCESS_TOKEN
+    exists in the vault). Degrades to "sin_snapshot" if nobody has ever
+    resolved this job in a live session -- never fabricates account data."""
+    path = snapshot_path or ADS_META_SNAPSHOT_PATH
+    if not path.exists():
+        return {"status": "sin_snapshot", "detail": f"{path} no existe -- correr el job ads-meta-status desde una sesion Claude con el MCP de Facebook conectado"}
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return {"status": "error", "detail": f"{exc.__class__.__name__}: {exc}"}
+    return {"status": "ok", **payload.get("data", {})}
+
+
+def _ads_draft_campaigns(workspace_root: Path | None = None) -> list[dict[str, Any]]:
+    """Escanea storage/workspaces/ads/<canal>/<platform>/<slug>/campaign.json
+    ya escritos por scripts/ads_bridge.py -- nunca llama a ads-studio de
+    nuevo, solo lee lo que ya se generó."""
+    root = workspace_root or ADS_WORKSPACE_ROOT
+    if not root.is_dir():
+        return []
+    campaigns = []
+    for campaign_json in sorted(root.glob("*/*/*/campaign.json")):
+        try:
+            data = json.loads(campaign_json.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        slug_dir = campaign_json.parent
+        campaigns.append({
+            "canal": slug_dir.parents[1].name,
+            "platform": slug_dir.parents[0].name,
+            "slug": slug_dir.name,
+            "status": data.get("status"),
+            "authorized": data.get("authorized", False),
+            "published": data.get("published", False),
+            "spend_usd": data.get("spend", 0),
+        })
+    return campaigns
+
+
+def ads_dashboard(*, snapshot_path: Path | None = None, workspace_root: Path | None = None) -> dict[str, Any]:
+    """`GET /api/dashboard/ads`'s data: campañas DRAFT generadas (nunca
+    publicadas, nunca gastan -- ver scripts/ads_bridge.py + config/
+    guardrails.py de ads-studio) + snapshot de cuentas Meta reales (P2)."""
+    generated_at = dt.datetime.now(dt.UTC)
+    campaigns = _ads_draft_campaigns(workspace_root)
+    return {
+        "generated_at": generated_at.isoformat(),
+        "meta_accounts": _ads_meta_snapshot(snapshot_path),
+        "draft_campaigns": campaigns,
+        "draft_campaigns_count": len(campaigns),
+        "published_count": sum(1 for c in campaigns if c["published"]),
+        "total_spend_usd": round(sum(c["spend_usd"] or 0 for c in campaigns), 4),
+    }

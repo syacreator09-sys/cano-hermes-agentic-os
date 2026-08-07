@@ -580,6 +580,7 @@ def _dashboard_nav(active: str) -> str:
         ("/dashboard/accounting", "Contabilidad"),
         ("/dashboard/business/cass", "Negocio CASS"),
         ("/dashboard/connections", "Conexiones"),
+        ("/dashboard/ads", "Ads"),
     ]
     parts = [
         f'<a href="{href}" class="{"status" if href == active else "muted"}" '
@@ -1122,3 +1123,62 @@ def _connections_html(data: dict[str, Any]) -> str:
 @app.get("/dashboard/connections", response_class=HTMLResponse)
 def dashboard_connections_view():
     return _connections_html(dashboards.connections_dashboard(store()))
+
+
+@app.get("/api/dashboard/ads")
+def dashboard_ads() -> dict[str, Any]:
+    """P2 -- campañas DRAFT generadas por scripts/ads_bridge.py (nunca
+    publicadas) + snapshot de cuentas Meta reales (PENDING_NATIVE_TOOL, ver
+    dashboards.ads_dashboard)."""
+    return dashboards.ads_dashboard()
+
+
+def _ads_html(data: dict[str, Any]) -> str:
+    def esc(value: Any) -> str:
+        return str(value).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+    meta = data["meta_accounts"]
+    if meta["status"] == "ok":
+        accounts_rows = "".join(
+            f"<tr><td>{esc(a.get('business_name') or '—')}</td><td>{esc(a.get('account_status'))}</td>"
+            f"<td>{esc(a.get('currency'))}</td><td>{'✓' if a.get('has_payment_method') else '—'}</td></tr>"
+            for a in meta.get("ad_accounts", [])
+        )
+        meta_section = (
+            f"<table style='width:100%;border-collapse:collapse'><tr><th>Negocio</th><th>Estado</th><th>Moneda</th>"
+            f"<th>Método de pago</th></tr>{accounts_rows}</table>"
+            f"<p class='muted'>{esc(meta.get('warning', ''))}</p>"
+        )
+    else:
+        meta_section = f"<p class='muted'>{esc(meta['status'])}: {esc(meta.get('detail', ''))}</p>"
+
+    campaign_rows = "".join(
+        f"<tr><td>{esc(c['canal'])}</td><td>{esc(c['platform'])}</td><td>{esc(c['slug'])}</td>"
+        f"<td>{esc(c['status'])}</td><td>{'✓' if c['published'] else '—'}</td><td>${esc(c['spend_usd'])}</td></tr>"
+        for c in data["draft_campaigns"]
+    ) or "<tr><td colspan='6' class='muted'>Sin campañas generadas todavía</td></tr>"
+
+    return f"""<!doctype html><html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>StarHome OS — Ads</title><link rel="stylesheet" href="/static/style.css"></head>
+<body style="display:block;padding:28px">
+{_dashboard_nav("/dashboard/ads")}
+<header style="border-bottom:1px solid #1d273a;padding-bottom:18px">
+<h2 style="margin:0">Ads — campañas draft, nunca publicadas solas</h2>
+<small class="muted">Generado {esc(data['generated_at'])}</small></header>
+<div class="grid">
+<div class="card"><div class="muted">Campañas DRAFT</div><div class="metric">{esc(data['draft_campaigns_count'])}</div></div>
+<div class="card"><div class="muted">Publicadas</div><div class="metric">{esc(data['published_count'])}</div>
+<p class="muted">siempre 0 -- publicar es gate humano manual</p></div>
+<div class="card"><div class="muted">Gasto total</div><div class="metric">${esc(data['total_spend_usd'])}</div>
+<p class="muted">siempre $0 -- ads-studio nunca gasta</p></div>
+</div>
+<div class="card" style="margin-top:16px"><h3>Cuentas Meta Ads reales</h3>{meta_section}</div>
+<div class="card" style="margin-top:16px"><h3>Campañas draft generadas</h3>
+<table style="width:100%;border-collapse:collapse"><tr><th>Canal</th><th>Plataforma</th><th>Slug</th><th>Estado</th><th>Publicada</th><th>Gasto</th></tr>{campaign_rows}</table></div>
+</body></html>"""
+
+
+@app.get("/dashboard/ads", response_class=HTMLResponse)
+def dashboard_ads_view():
+    return _ads_html(dashboards.ads_dashboard())

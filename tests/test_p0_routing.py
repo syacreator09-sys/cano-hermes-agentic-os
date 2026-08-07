@@ -35,7 +35,7 @@ OFFICES_ROOT = ROOT / "offices"
 # Profiles that are real offices but run natively (no Docker container) --
 # mirrors office_launcher's own docstring: these must NOT be in
 # PROFILE_TO_OFFICE.
-NATIVE_PROFILES = {"hermes-research", "hermes-guiones"}
+NATIVE_PROFILES = {"hermes-research", "hermes-guiones", "hermes-ads"}  # hermes-ads: P2, folder-isolated
 
 
 class DomainTeamsTests(unittest.TestCase):

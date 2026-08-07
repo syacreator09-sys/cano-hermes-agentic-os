@@ -24,6 +24,7 @@ Structure:
 from __future__ import annotations
 
 import datetime as dt
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -146,7 +147,7 @@ class DashboardRoutesShapeTests(unittest.TestCase):
         self.assertIn(data["matrix"]["status"], ("ok", "sin_datos"))
 
     def test_html_views_respond_200(self):
-        for path in ("/dashboard/finance", "/dashboard/orders", "/dashboard/offices", "/dashboard/connections"):
+        for path in ("/dashboard/finance", "/dashboard/orders", "/dashboard/offices", "/dashboard/connections", "/dashboard/ads"):
             response = self.client.get(path)
             self.assertEqual(response.status_code, 200, path)
             self.assertIn("text/html", response.headers["content-type"])
@@ -157,9 +158,18 @@ class DashboardRoutesShapeTests(unittest.TestCase):
         response = self.client.get("/dashboard/finance")
         for href in (
             "/dashboard", "/dashboard/finance", "/dashboard/orders",
-            "/dashboard/offices", "/dashboard/connections",
+            "/dashboard/offices", "/dashboard/connections", "/dashboard/ads",
         ):
             self.assertIn(f'href="{href}"', response.text)
+
+    def test_ads_route_shape(self):
+        response = self.client.get("/api/dashboard/ads")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        for key in ("meta_accounts", "draft_campaigns", "draft_campaigns_count", "published_count", "total_spend_usd"):
+            self.assertIn(key, data)
+        self.assertEqual(data["published_count"], 0)
+        self.assertEqual(data["total_spend_usd"], 0)
 
 
 class FinanceAndOrdersAggregationTests(unittest.TestCase):
@@ -570,6 +580,54 @@ class ConnectionsAggregationTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["matrix"]["status"], "sin_datos")
+
+
+class AdsAggregationTests(unittest.TestCase):
+    """P2 -- seeds a tmp_path snapshot + a tmp_path draft-campaign tree
+    (never storage/pending_native_tool or storage/workspaces/ads for real)
+    to confirm `ads_dashboard()` genuinely aggregates instead of returning
+    an always-empty shape."""
+
+    def setUp(self):
+        self._tmpdir = tempfile.TemporaryDirectory()
+        self.tmp_path = Path(self._tmpdir.name)
+
+    def tearDown(self):
+        self._tmpdir.cleanup()
+
+    def test_no_snapshot_degrades_honestly(self):
+        result = dashboards.ads_dashboard(
+            snapshot_path=self.tmp_path / "nope.json", workspace_root=self.tmp_path / "nope",
+        )
+        self.assertEqual(result["meta_accounts"]["status"], "sin_snapshot")
+        self.assertEqual(result["draft_campaigns_count"], 0)
+
+    def test_seeded_snapshot_and_campaign_aggregate(self):
+        snapshot_path = self.tmp_path / "snapshot.json"
+        snapshot_path.write_text(json.dumps({
+            "job_id": "ads-meta-status",
+            "data": {
+                "ad_accounts": [{"business_name": "Test Biz", "account_status": "ACTIVE", "currency": "MXN", "has_payment_method": True}],
+                "warning": "fixture warning",
+            },
+        }), encoding="utf-8")
+
+        workspace_root = self.tmp_path / "ads"
+        campaign_dir = workspace_root / "cano-digital" / "meta" / "[TEST] fixture -- 2026-08-07"
+        campaign_dir.mkdir(parents=True)
+        (campaign_dir / "campaign.json").write_text(json.dumps({
+            "canal": "cano-digital", "plataforma": "meta", "slug": "[TEST] fixture -- 2026-08-07",
+            "status": "DRAFT", "authorized": False, "published": False, "spend": 0.0,
+        }), encoding="utf-8")
+
+        result = dashboards.ads_dashboard(snapshot_path=snapshot_path, workspace_root=workspace_root)
+
+        self.assertEqual(result["meta_accounts"]["status"], "ok")
+        self.assertEqual(len(result["meta_accounts"]["ad_accounts"]), 1)
+        self.assertEqual(result["draft_campaigns_count"], 1)
+        self.assertEqual(result["draft_campaigns"][0]["canal"], "cano-digital")
+        self.assertEqual(result["published_count"], 0)
+        self.assertEqual(result["total_spend_usd"], 0)
 
 
 class OfficeContainerStatusMatchingTests(unittest.TestCase):

@@ -32,6 +32,8 @@ DOMAIN_TEAMS = {
     "personal-operations": "personal-operations",
     "personal": "personal-operations",
     "projects": "projects",
+    # P2 (plan POTENCIA, 2026-08-07): new team, new office (hermes-ads).
+    "ads": "ads",
 }
 
 # Team -> hermes kanban profile name that K6's `bridge/kanban_bridge.py`
@@ -97,6 +99,9 @@ TEAM_TO_KANBAN_PROFILE = {
     "forge": "hermes-ugc",
     "finance": "hermes-monitor",
     "investments": "hermes-market-intel",
+    # P2: hermes-ads is folder-isolated (like hermes-research/hermes-guiones)
+    # -- no Docker container, no entry in office_launcher.PROFILE_TO_OFFICE.
+    "ads": "hermes-ads",
 }
 
 
