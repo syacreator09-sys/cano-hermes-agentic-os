@@ -151,3 +151,32 @@ Los 4 quedaron marcados `rotacion_pendiente: true` en
 `build_key_registry.py --check` sigue en verde). Este es el cierre del plan
 CONEXIONES completo (C0-C6) — suite en 435 tests verde, gate Factory V5 en
 el mismo 4/5 documentado arriba, sin cambios.
+
+## Actualización 2026-08-07 (PLAN POTENCIA — convergencia final)
+
+Cierre completo del segundo plan de la sesión (master 24/7, oficinas Ads y
+Trading/Crypto, bucle de contenido, costos por proveedor). Detalle completo
+en `reports/potencia-convergencia-2026-08-07.md`. 14 commits reales en
+`cano-hermes-agentic-os`, 2 en `cano-video-vox`, 1 en
+`cano-investment-intelligence` — cada fase verificada con corridas reales
+(órdenes reales, guiones reales escritos por Kimi, conexión real a Meta Ads
+vía MCP, oficina Docker reclamando y corriendo una tarea real, balance real
+de Kimi).
+
+Pendientes nuevos (continúa la numeración desde #27):
+
+| # | Qué | Acción |
+|---|---|---|
+| 27 | `hermes-gateway.service` (host) y las oficinas Docker compiten por las mismas tareas del tablero kanban, con protocolos distintos (el gateway espera `kanban_complete`/`kanban_block` explícitos, las oficinas solo corren `hermes --oneshot` y salen) | Decidir: el gateway debería ignorar perfiles de oficina, o las oficinas Docker no deberían correr su propio loop de kanban |
+| 28 | `cano-tutorial-suite` necesita `npm run init` interactivo (pide rutas de los 3 sub-repos + confirma permisos live desactivados) | Correrlo tú una vez desde tu propia terminal, es un wizard interactivo |
+| 29 | `ELEVENLABS_API_KEY` del vault falla auth ("API key ID used as API key was used") | Revisar/regenerar esa credencial específica en elevenlabs.io (distinto del bloque #23-26 de arriba) |
+| 30 | `cano-invest-api` (systemd --user) ahora escucha en `0.0.0.0:8000` en vez de `127.0.0.1:8000`, para que las oficinas Docker la alcancen vía `host.docker.internal` | Verificar que es aceptable — sigue siendo solo-máquina-local (sin port forwarding a ningún lado), y cada endpoint es read-only/paper-only (`/v1/orders/live` sigue 404) |
+| 31 | Meta Ads: confirmado en vivo que hay 2 cuentas reales conectadas, ambas con método de pago activo | Ninguna acción requerida — informativo, los guardarraíles de `hermes-ads` (nunca publica/gasta) ya protegen contra esto |
+
+**Incidente propio corregido en el mismo pase**: la primera corrida real del
+bridge de Ads escribió por error en `cano-ai-command-center` (solo lectura)
+en vez de en este repo; al limpiar el error con `rm -rf` borré por accidente
+un directorio de demo preexistente de ese repo — restaurado de inmediato con
+`git checkout --` antes de cualquier commit, sin pérdida real. Corregido de
+raíz (el bridge ahora siempre pasa `outputs_root` explícito) para que no
+pueda repetirse.
