@@ -201,15 +201,18 @@ def validate_gemini(env):
     return _classify_http(code, err, latency, ok_detail="200 -- lista de modelos obtenida")
 
 
-def validate_xai(env):
-    """xAI -- GET https://api.x.ai/v1/models (Bearer). Gratis."""
-    candidate = pick_candidate(env, ["XAI_API_KEY"])
-    if candidate is None:
-        return no_key_result(["XAI_API_KEY"])
-    code, _body, err, latency = http_get(
-        "https://api.x.ai/v1/models", {"Authorization": f"Bearer {env[candidate]}"}
-    )
-    return _classify_http(code, err, latency, ok_detail="200 -- lista de modelos obtenida")
+validate_xai = policy_skip(
+    "GET https://api.x.ai/v1/models (Bearer) es el endpoint documentado y en teoría "
+    "gratuito, pero el team vinculado a la llave del vault devuelve 403 "
+    "'permission-denied' con el mensaje literal 'has either used all available "
+    "credits or reached its monthly spending limit... please purchase more credits "
+    "or raise your spending limit' -- confirmado en vivo el 2026-08-07, no es llave "
+    "invalida (no es 401). xAI exige spending limit/créditos en la cuenta para CUALQUIER "
+    "request, incluida esta de solo lectura -- mismo patrón que Replicate a veces exige "
+    "(tarjeta en archivo) pero aquí sí bloquea. Resolverlo implica configurar facturación, "
+    "fuera de alcance por política de cero gasto -- no es un fallo reparable en el "
+    "validador ni una llave para rotar."
+)
 
 
 validate_perplexity = presence_only(

@@ -91,11 +91,23 @@ def pick_candidate(env: Mapping[str, str], names: Sequence[str]) -> str | None:
     return None
 
 
+_DEFAULT_UA = (
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) "
+    "Chrome/124.0.0.0 Safari/537.36"
+)
+
+
 def http_get(url: str, headers: dict | None = None, timeout: int = 5):
     """GET sin levantar jamas. Devuelve (status_code|None, body_bytes|None,
     error_detail|None, latency_ms). `error_detail` solo se llena si no hubo
-    respuesta HTTP en absoluto (timeout, DNS, conexion rechazada, etc)."""
-    req = request.Request(url, method="GET")
+    respuesta HTTP en absoluto (timeout, DNS, conexion rechazada, etc).
+
+    Envia un `User-Agent` de navegador por defecto (overridable via `headers`):
+    el UA por defecto de `urllib` (`Python-urllib/3.x`) dispara el WAF de
+    Cloudflare (error 1010 "Access denied") en proveedores como Replicate y
+    Pexels -- confirmado en la investigación C6 del 2026-08-07, donde ambos
+    devolvian ✗ por esto y no por llave invalida (con este UA, 200 en ambos)."""
+    req = request.Request(url, method="GET", headers={"User-Agent": _DEFAULT_UA})
     for k, v in (headers or {}).items():
         req.add_header(k, v)
     start = time.monotonic()

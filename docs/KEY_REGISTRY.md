@@ -13,16 +13,16 @@ Vault: 283 líneas `NOMBRE=`, 273 nombres únicos (10 declarados dos veces por l
 | `ELEVENLABS_API_KEY` | Elevenlabs | clave de API de Elevenlabs; consumida en hermes-agent/.agents/skills/media-use/audio/scripts/lib/tts.mjs:28 (+10 más) | medio | no |
 | `FFMPEG_PATH` | Ffmpeg | ruta de archivo de Ffmpeg; consumida en hermes-agent/plugins/platforms/discord/ffmpeg_utils.py:28 | bajo | no |
 | `GEMINI_API_KEY` | Gemini | clave de API de Gemini; consumida en hermes-agent/.agents/skills/media-use/audio/scripts/lib/bgm.mjs:21 (+3 más) | medio | no |
-| `GITHUB_TOKEN` | Github | token de Github; consumida en hermes-agent/optional-skills/devops/watchers/scripts/watch_github.py:118 (+5 más) | medio | no |
+| `GITHUB_TOKEN` | Github | token de Github; consumida en hermes-agent/optional-skills/devops/watchers/scripts/watch_github.py:118 (+5 más) | medio | sí |
 | `GOOGLE_API_KEY` | Google | clave de API de Google; consumida en hermes-agent/.agents/skills/media-use/audio/scripts/lib/bgm.mjs:21 (+3 más) | medio | no |
 | `GROQ_API_KEY` | GROQ | clave de API de GROQ; consumida en hermes-agent/scripts/discord-voice-doctor.py:221 | medio | no |
-| `HEYGEN_API_KEY` | Heygen | clave de API de Heygen; consumida en hermes-agent/.agents/skills/media-use/audio/scripts/lib/heygen.mjs:50 (+6 más) | medio | no |
-| `MISTRAL_API_KEY` | Mistral | clave de API de Mistral; consumida en hermes-agent/scripts/discord-voice-doctor.py:255 (+1 más) | medio | no |
+| `HEYGEN_API_KEY` | Heygen | clave de API de Heygen; consumida en hermes-agent/.agents/skills/media-use/audio/scripts/lib/heygen.mjs:50 (+6 más) | medio | sí |
+| `MISTRAL_API_KEY` | Mistral | clave de API de Mistral; consumida en hermes-agent/scripts/discord-voice-doctor.py:255 (+1 más) | medio | sí |
 | `OPENAI_API_KEY` | Openai | clave de API de Openai; consumida en cano-investment-intelligence/.upstreams/finrobot/finrobot_equity/core/src/modules/enhanced_text_generator.py:60 (+15 más) | medio | no |
 | `OPENROUTER_API_KEY` | Openrouter | clave de API de Openrouter; consumida en cano-investment-intelligence/.upstreams/openbb_agents/99-advanced-examples/portfolio-commentary-with-search-feature/portfolio_commentary/main.py:230 (+24 más) | medio | no |
 | `TELEGRAM_BOT_TOKEN` | Telegram BOT | token de Telegram BOT; consumida en hermes-agent/tests/hermes_cli/test_env_loader.py:311 | medio | no |
 | `TWILIO_PHONE_NUMBER` | Twilio Phone Number | variable de configuración de Twilio Phone Number; consumida en hermes-agent/plugins/platforms/sms/adapter.py:470 (+1 más) | bajo | no |
-| `XAI_API_KEY` | XAI | clave de API de XAI; consumida en hermes-agent/hermes_cli/tools_config.py:196 (+4 más) | medio | no |
+| `XAI_API_KEY` | XAI | clave de API de XAI; consumida en hermes-agent/hermes_cli/tools_config.py:196 (+4 más) -- validacion en vivo movida a policy-skip 2026-08-07: GET /v1/models devuelve 403 permission-denied porque el team no tiene creditos/spending limit configurado, no por llave invalida; resolverlo implica facturar, fuera de alcance por politica de cero gasto. | medio | no |
 
 ## Otro proyecto (210)
 
@@ -72,9 +72,9 @@ Vault: 283 líneas `NOMBRE=`, 273 nombres únicos (10 declarados dos veces por l
 | `CLOUDFLARE_TOKEN_GTAV` | Cloudflare Token GTAV | variable de configuración de Cloudflare Token GTAV -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar con Cano | medio | no |
 | `CLOUDFLARE_TOKEN_WORDPRESS` | Cloudflare Token Wordpress | variable de configuración de Cloudflare Token Wordpress -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar con Cano | medio | no |
 | `CLOUDFLARE_TOKEN_WORKERS` | Cloudflare Token Workers | variable de configuración de Cloudflare Token Workers -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar con Cano | medio | no |
-| `CLOUDINARY_API_KEY` | Cloudinary | clave de API de Cloudinary -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar con Cano | medio | no |
-| `CLOUDINARY_API_SECRET` | Cloudinary | secreto de API de Cloudinary -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar con Cano | alto | no |
-| `CLOUDINARY_CLOUD_NAME` | Cloudinary Cloud NAME | variable de configuración de Cloudinary Cloud NAME -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar con Cano | bajo | no |
+| `CLOUDINARY_API_KEY` | Cloudinary | clave de API de Cloudinary -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar con Cano | medio | sí |
+| `CLOUDINARY_API_SECRET` | Cloudinary | secreto de API de Cloudinary -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar con Cano | alto | sí |
+| `CLOUDINARY_CLOUD_NAME` | Cloudinary Cloud NAME | variable de configuración de Cloudinary Cloud NAME -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar con Cano | bajo | sí |
 | `COHERE_API_KEY` | Cohere | clave de API de Cohere -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar con Cano | medio | no |
 | `COMFYUI_API_KEY` | Comfyui | clave de API de Comfyui -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar con Cano | medio | no |
 | `COMFYUI_API_KEY_2` | Comfyui | clave de API de Comfyui -- sin consumidor detectado ni patrón reconocido, sin clasificar, revisar con Cano | medio | no |
@@ -300,7 +300,13 @@ Vault: 283 líneas `NOMBRE=`, 273 nombres únicos (10 declarados dos veces por l
 - Infraestructura VPS (autohospedada): 48
 - Sin consumidor detectado: 257
 
-## Rotación pendiente (2)
+## Rotación pendiente (8)
 
+- `CLOUDINARY_API_KEY` -- GET https://api.cloudinary.com/v1_1/{cloud_name}/usage con Basic auth devuelve 401 'cloud_name mismatch' -- confirmado en vivo 2026-08-07. El mensaje del proveedor indica que CLOUDINARY_CLOUD_NAME en el vault no corresponde a la cuenta de este api_key/api_secret (ese campo del vault hoy coincide caracter por caracter con CLOUDINARY_API_KEY, lo que sugiere un error de carga: alguien copio el api_key en el campo de cloud_name). No es un bug del validador -- el endpoint/auth son correctos. Hace falta que Cano corrija CLOUDINARY_CLOUD_NAME en el vault con el nombre real de la cuenta (visible en el dashboard de Cloudinary).
+- `CLOUDINARY_API_SECRET` -- Mismo chequeo que CLOUDINARY_API_KEY (comparten validador, un solo request con las tres credenciales): 401 'cloud_name mismatch', causa raiz es CLOUDINARY_CLOUD_NAME incorrecto en el vault, no el secreto en si. Ver motivo de CLOUDINARY_API_KEY.
+- `CLOUDINARY_CLOUD_NAME` -- Causa raiz del fallo de Cloudinary: este campo en el vault contiene el mismo valor que CLOUDINARY_API_KEY caracter por caracter (no un nombre de cuenta) -- confirmado programaticamente sin exponer valores. El proveedor responde 401 'cloud_name mismatch', consistente con un campo mal cargado. Cano debe reemplazarlo por el cloud_name real desde el dashboard de Cloudinary.
+- `GITHUB_TOKEN` -- GET https://api.github.com/user con Bearer + Accept devuelve 401 'Bad credentials' de forma consistente -- probado tambien con esquema 'token' y con User-Agent explicito, mismo resultado. Endpoint/headers correctos segun docs.github.com/rest, el validador esta bien. Token revocado o expirado.
+- `HEYGEN_API_KEY` -- GET https://api.heygen.com/v2/user/remaining_quota con x-api-key devuelve 401 Unauthorized -- confirmado en vivo 2026-08-07, endpoint/header correctos segun docs.heygen.com. El valor guardado en el vault no tiene forma de llave real de HeyGen (es un texto de marcador de posicion, nunca se cargo la llave real). No es un bug del validador: hace falta que Cano genere y cargue una llave real desde app.heygen.com.
 - `KIMI_API_KEY` -- expuesta en transcript de sesión (F11, K9, K16 del plan Prometeo/HERMES-KICKOFF)
+- `MISTRAL_API_KEY` -- GET https://api.mistral.ai/v1/models con Bearer devuelve 401 'Invalid API Key' de forma consistente -- confirmado en vivo 2026-08-07, mismo endpoint/header que documenta la API oficial de Mistral, el validador esta correcto. Llave revocada o caducada, no una llave que nunca se cargo.
 - `NVIDIA_NIM_API_KEY` -- expuesta en transcript de sesión (F11, K9, K16 del plan Prometeo/HERMES-KICKOFF)

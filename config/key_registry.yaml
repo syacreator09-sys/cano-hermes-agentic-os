@@ -593,8 +593,14 @@ llaves:
   consumidores: []
   validacion: live-free
   riesgo: medio
-  rotacion_pendiente: false
-  rotacion_motivo: ''
+  rotacion_pendiente: true
+  rotacion_motivo: 'GET https://api.cloudinary.com/v1_1/{cloud_name}/usage con Basic auth devuelve 401
+    ''cloud_name mismatch'' -- confirmado en vivo 2026-08-07. El mensaje del proveedor indica que CLOUDINARY_CLOUD_NAME
+    en el vault no corresponde a la cuenta de este api_key/api_secret (ese campo del vault hoy coincide
+    caracter por caracter con CLOUDINARY_API_KEY, lo que sugiere un error de carga: alguien copio el api_key
+    en el campo de cloud_name). No es un bug del validador -- el endpoint/auth son correctos. Hace falta
+    que Cano corrija CLOUDINARY_CLOUD_NAME en el vault con el nombre real de la cuenta (visible en el
+    dashboard de Cloudinary).'
 - nombre: CLOUDINARY_API_SECRET
   proveedor: Cloudinary
   dominio: otro-proyecto
@@ -603,8 +609,10 @@ llaves:
   consumidores: []
   validacion: live-free
   riesgo: alto
-  rotacion_pendiente: false
-  rotacion_motivo: ''
+  rotacion_pendiente: true
+  rotacion_motivo: 'Mismo chequeo que CLOUDINARY_API_KEY (comparten validador, un solo request con las
+    tres credenciales): 401 ''cloud_name mismatch'', causa raiz es CLOUDINARY_CLOUD_NAME incorrecto en
+    el vault, no el secreto en si. Ver motivo de CLOUDINARY_API_KEY.'
 - nombre: CLOUDINARY_CLOUD_NAME
   proveedor: Cloudinary Cloud NAME
   dominio: otro-proyecto
@@ -613,8 +621,11 @@ llaves:
   consumidores: []
   validacion: presence-only
   riesgo: bajo
-  rotacion_pendiente: false
-  rotacion_motivo: ''
+  rotacion_pendiente: true
+  rotacion_motivo: 'Causa raiz del fallo de Cloudinary: este campo en el vault contiene el mismo valor
+    que CLOUDINARY_API_KEY caracter por caracter (no un nombre de cuenta) -- confirmado programaticamente
+    sin exponer valores. El proveedor responde 401 ''cloud_name mismatch'', consistente con un campo mal
+    cargado. Cano debe reemplazarlo por el cloud_name real desde el dashboard de Cloudinary.'
 - nombre: COHERE_API_KEY
   proveedor: Cohere
   dominio: otro-proyecto
@@ -1107,8 +1118,10 @@ llaves:
   - hermes-agent/tests/tools/test_skills_guard.py:401
   validacion: live-free
   riesgo: medio
-  rotacion_pendiente: false
-  rotacion_motivo: ''
+  rotacion_pendiente: true
+  rotacion_motivo: GET https://api.github.com/user con Bearer + Accept devuelve 401 'Bad credentials'
+    de forma consistente -- probado tambien con esquema 'token' y con User-Agent explicito, mismo resultado.
+    Endpoint/headers correctos segun docs.github.com/rest, el validador esta bien. Token revocado o expirado.
 - nombre: GITHUB_USER
   proveedor: Github
   dominio: otro-proyecto
@@ -1197,8 +1210,12 @@ llaves:
   - hermes-agent/.agents/skills/media-use/audio/scripts/lib/heygen.test.mjs:9
   validacion: live-free
   riesgo: medio
-  rotacion_pendiente: false
-  rotacion_motivo: ''
+  rotacion_pendiente: true
+  rotacion_motivo: 'GET https://api.heygen.com/v2/user/remaining_quota con x-api-key devuelve 401 Unauthorized
+    -- confirmado en vivo 2026-08-07, endpoint/header correctos segun docs.heygen.com. El valor guardado
+    en el vault no tiene forma de llave real de HeyGen (es un texto de marcador de posicion, nunca se
+    cargo la llave real). No es un bug del validador: hace falta que Cano genere y cargue una llave real
+    desde app.heygen.com.'
 - nombre: HEYGEN_N8N_CRED_ID
   proveedor: Heygen N8N CRED
   dominio: otro-proyecto
@@ -1472,8 +1489,10 @@ llaves:
   - hermes-agent/scripts/discord-voice-doctor.py:259
   validacion: live-free
   riesgo: medio
-  rotacion_pendiente: false
-  rotacion_motivo: ''
+  rotacion_pendiente: true
+  rotacion_motivo: GET https://api.mistral.ai/v1/models con Bearer devuelve 401 'Invalid API Key' de forma
+    consistente -- confirmado en vivo 2026-08-07, mismo endpoint/header que documenta la API oficial de
+    Mistral, el validador esta correcto. Llave revocada o caducada, no una llave que nunca se cargo.
 - nombre: MODAL_CHATWOOT_URL
   proveedor: Modal Chatwoot
   dominio: otro-proyecto
@@ -2633,14 +2652,17 @@ llaves:
 - nombre: XAI_API_KEY
   proveedor: XAI
   dominio: starhome
-  uso: clave de API de XAI; consumida en hermes-agent/hermes_cli/tools_config.py:196 (+4 más)
+  uso: 'clave de API de XAI; consumida en hermes-agent/hermes_cli/tools_config.py:196 (+4 más) -- validacion
+    en vivo movida a policy-skip 2026-08-07: GET /v1/models devuelve 403 permission-denied porque el team
+    no tiene creditos/spending limit configurado, no por llave invalida; resolverlo implica facturar,
+    fuera de alcance por politica de cero gasto.'
   consumidores:
   - hermes-agent/hermes_cli/tools_config.py:196
   - hermes-agent/plugins/video_gen/xai/__init__.py:104
   - hermes-agent/tests/tools/test_transcription_dotenv_fallback.py:210
   - hermes-agent/tests/tools/test_tts_streaming_e2e.py:20
   - hermes-agent/tools/xai_http.py:42
-  validacion: live-free
+  validacion: policy-skip
   riesgo: medio
   rotacion_pendiente: false
   rotacion_motivo: ''

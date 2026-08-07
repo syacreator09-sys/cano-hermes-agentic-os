@@ -128,3 +128,26 @@ NO son las 14 composiciones de producción reales de la OMEN
 (EditorialExplainer, CampaignCarousel, Short, Long, etc.). Esas necesitan
 transferencia de archivos reales desde la OMEN (mismo patrón que
 `stage-handlers.yaml`), no se pueden fabricar sin el código fuente real.
+
+## Actualización 2026-08-07 (C6 — convergencia del plan CONEXIONES, cierre)
+
+Investigué en vivo los 7 `✗` conocidos de la matriz de conexiones (detalle
+completo, con status HTTP y mensajes de error del proveedor, en
+`reports/conexiones-convergencia-2026-08-07.md`). 2 eran bug del validador
+(Replicate y Pexels bloqueados por el WAF de Cloudflare por el `User-Agent`
+por defecto de `urllib` — ya reparado en `scripts/validators/__init__.py`,
+ambos ahora `✓`), 1 se reclasificó a `policy-skip` (xAI, gate de
+facturación de cuenta). Quedan 4 pendientes reales para ti:
+
+| # | Qué | Detalle |
+|---|---|---|
+| 23 | Rotar `MISTRAL_API_KEY` | 401 "Invalid API Key" consistente — endpoint/header del validador correctos, la llave está revocada o caducada |
+| 24 | Rotar `GITHUB_TOKEN` | 401 "Bad credentials" — probado con `Bearer`, `token` y `User-Agent` explícito, mismo resultado en los tres. Token revocado o expirado |
+| 25 | Generar `HEYGEN_API_KEY` real | El valor actual en el vault es un texto de marcador de posición (nunca se cargó la llave real) — sacarla de `app.heygen.com` |
+| 26 | Corregir `CLOUDINARY_CLOUD_NAME` en el vault | Hoy es idéntico carácter por carácter a `CLOUDINARY_API_KEY` (error de carga) — el proveedor responde "cloud_name mismatch". El nombre real está en el dashboard de Cloudinary |
+
+Los 4 quedaron marcados `rotacion_pendiente: true` en
+`config/key_registry.yaml` con motivo explícito cada uno (sin drift:
+`build_key_registry.py --check` sigue en verde). Este es el cierre del plan
+CONEXIONES completo (C0-C6) — suite en 435 tests verde, gate Factory V5 en
+el mismo 4/5 documentado arriba, sin cambios.

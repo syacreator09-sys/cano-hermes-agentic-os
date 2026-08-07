@@ -1270,43 +1270,43 @@ Cada fila corre contra el vault (`~/.secrets/credenciales/credenciales/.env`), n
 proveedor|estado|detalle|latencia_ms|cuota
 ---|---|---|---|---
 anthropic|—|sin llave utilizable en el vault (ANTHROPIC_API_KEY)||
-apify|✓|200 -- perfil de usuario obtenido (`APIFY_API_KEY`)|510|
-baserow|—|error de red/host no disponible: URLError|204|
-cloudflare|✓|200 -- token `CLOUDFLARE_AUTH_TOKEN` activo|199|
-cloudinary|✗|credenciales inválidas (HTTP 401)|304|
-cohere|✓|200 -- lista de modelos obtenida|288|
-deepl|✓|200 -- uso consultado|674|{"character_count": 0, "character_limit": 500000}
-elevenlabs|—|respuesta inesperada HTTP 400|182|
+apify|✓|200 -- perfil de usuario obtenido (`APIFY_API_KEY`)|736|
+baserow|—|error de red/host no disponible: URLError|197|
+cloudflare|✓|200 -- token `CLOUDFLARE_AUTH_TOKEN` activo|248|
+cloudinary|✗|credenciales inválidas (HTTP 401)|337|
+cohere|✓|200 -- lista de modelos obtenida|309|
+deepl|✓|200 -- uso consultado|723|{"character_count": 0, "character_limit": 500000}
+elevenlabs|—|respuesta inesperada HTTP 400|201|
 exa|✓|presente en vault (`EXA_API_KEY`), sin verificar en vivo -- el único endpoint de cuenta documentado ("Get API Key Usage", docs.exa.ai/reference/team-management/get-api-key-usage) exige el ID de la llave -- no solo el secreto -- y vive bajo team-management (scope de owner); sin un whoami simple confirmado, no se implementa como live-free||
-firecrawl|✓|200 -- créditos consultados|331|{"remaining_credits": 1294, "plan_credits": 1000}
-gemini|—|respuesta inesperada HTTP 400|405|
-github|✗|llave invalida o sin permiso (HTTP 401)|263|
+firecrawl|✓|200 -- créditos consultados|345|{"remaining_credits": 1294, "plan_credits": 1000}
+gemini|—|respuesta inesperada HTTP 400|448|
+github|✗|llave invalida o sin permiso (HTTP 401)|301|
 groq|—|sin llave utilizable en el vault (GROQ_API_KEY)||
-heygen|✗|llave invalida (HTTP 401)|283|
+heygen|✗|llave invalida (HTTP 401)|322|
 higgsfield|policy-skip|cuenta suspendida (ver memoria del operador) y cualquier endpoint de balance/consulta es potencialmente facturable -- fuera de alcance por política, igual que en el gate de Factory V5 (factory/kie_readiness.py marca 'higgsfield' PASS solo verificando que los flags de habilitación estén en false, sin red).||
-huggingface|✓|200 -- whoami ok (`HF_TOKEN`)|148|
+huggingface|✓|200 -- whoami ok (`HF_TOKEN`)|229|
 kie|policy-skip|factory/kie_readiness.py (factory-ia-channel-v5) SÍ tiene un chequeo local sin red (local_readiness()), pero exige un objeto Settings completo, toca ffmpeg y el CLI de Remotion, y su propio check 'provider_balance' queda BLOCKED sin un balance_lookup no facturable explícito -- ese es el mismo criterio de política que aplica aquí. Invocarlo por subprocess desde este repo acoplaría connection_matrix a las dependencias internas de factory-v5 (settings, node, ffmpeg) para un beneficio marginal (solo confirmaría presencia de KIE_API_KEY, que ya reporta la matriz base). Se documenta como policy-skip en vez de duplicar o acoplar esa lógica.||
-kimi_moonshot|✓|200 -- lista de modelos obtenida (`KIMI_API_KEY`)|452|
-mistral|✗|llave invalida o sin permiso (HTTP 401)|324|
+kimi_moonshot|✓|200 -- lista de modelos obtenida (`KIMI_API_KEY`)|986|
+mistral|✗|llave invalida o sin permiso (HTTP 401)|380|
 modal|policy-skip|Modal se administra por CLI (`modal token`/`modal app`), no expone un endpoint HTTP público de whoami -- verificar el token exigiría invocar el CLI de Modal, fuera del alcance HTTP-only de este validador.||
-n8n|—|error de red/host no disponible: URLError|191|
-notion|✓|200 -- bot user obtenido|296|
+n8n|—|error de red/host no disponible: URLError|211|
+notion|✓|200 -- bot user obtenido|574|
 nvidia_nim|✓|200 -- lista de modelos obtenida|388|
-openai|✓|200 -- lista de modelos obtenida|653|
-openrouter|✓|200 -- estado de la llave obtenido|219|{"limit_remaining": null, "is_free_tier": true}
+openai|✓|200 -- lista de modelos obtenida|690|
+openrouter|✓|200 -- estado de la llave obtenido|278|{"limit_remaining": null, "is_free_tier": true}
 perplexity|✓|presente en vault (`PERPLEXITY_API_KEY`), sin verificar en vivo -- no existe endpoint documentado de validación sin costo -- verificado en docs.perplexity.ai: todos los endpoints públicos (Gateway/Agent/Search/chat) son facturables, no hay whoami/models gratuito||
-pexels|✗|llave invalida o sin permiso (HTTP 403)|80|
-pixabay|—|error de red: TimeoutError|5043|
+pexels|✓|200 -- búsqueda de prueba ok|86|
+pixabay|✓|200 -- búsqueda de prueba ok|323|
 rapidapi|✓|presente en vault (`RAPIDAPI_KEY`), sin verificar en vivo -- sin endpoint gratuito y documentado de whoami/perfil confirmado tras revisar docs.rapidapi.com -- la Subscriptions API real vive bajo el Platform API (GraphQL) con credenciales de partner distintas a la llave de consumidor X-RapidAPI-Key; implementarlo a ciegas arriesgaría pegarle a un endpoint de terceros facturable en vez de uno propio de RapidAPI||
-replicate|✗|llave invalida o sin permiso (HTTP 403)|166|
-stripe|✓|200 -- balance obtenido (`STRIPE_SECRET_KEY`)|459|
-supabase|—|proyecto orion: error de red: URLError|79|
-telegram|✓|200 -- getMe ok (`TELEGRAM_BOT_TOKEN`)|581|
-uploadpost|✓|200 -- perfiles listados|601|
-upstash|—|error de red: URLError|43|
-xai|✗|llave invalida o sin permiso (HTTP 403)|184|
+replicate|✓|200 -- cuenta obtenida|189|
+stripe|✓|200 -- balance obtenido (`STRIPE_SECRET_KEY`)|622|
+supabase|—|proyecto orion: error de red: URLError|93|
+telegram|✓|200 -- getMe ok (`TELEGRAM_BOT_TOKEN`)|620|
+uploadpost|✓|200 -- perfiles listados|625|
+upstash|—|error de red: URLError|38|
+xai|policy-skip|GET https://api.x.ai/v1/models (Bearer) es el endpoint documentado y en teoría gratuito, pero el team vinculado a la llave del vault devuelve 403 'permission-denied' con el mensaje literal 'has either used all available credits or reached its monthly spending limit... please purchase more credits or raise your spending limit' -- confirmado en vivo el 2026-08-07, no es llave invalida (no es 401). xAI exige spending limit/créditos en la cuenta para CUALQUIER request, incluida esta de solo lectura -- mismo patrón que Replicate a veces exige (tarjeta en archivo) pero aquí sí bloquea. Resolverlo implica configurar facturación, fuera de alcance por política de cero gasto -- no es un fallo reparable en el validador ni una llave para rotar.||
 
-**Total validadores**: ✓ 17  ✗ 7  — 9  policy-skip 3
+**Total validadores**: ✓ 20  ✗ 4  — 8  policy-skip 4
 
 ## Resumen — totales por sistema (presencia)
 
