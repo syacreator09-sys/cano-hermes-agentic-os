@@ -57,6 +57,23 @@ PYEOF
 fi
 
 echo
+echo "-- step: content matrix dedup (K17, cano_hermes/content/dedup.py) --"
+echo "Single point of truth for 'que contenido existe y en que estado esta' -- consulted BEFORE any draft, per the K17 mandate. Separate from the upload_log_ugc.db check above (that one guards against re-publishing what already went out; this one guards against drafting a SECOND piece for a channel+angle+date that's already draft-or-later in the matrix)."
+if [ -n "${CONTENT_DEDUP_KEY:-}" ]; then
+    cd /home/cano/repos/cano-hermes-agentic-os
+    DEDUP_JSON="$(python3 -m cano_hermes.content.dedup check-key "$CONTENT_DEDUP_KEY")"
+    DEDUP_EXIT=$?
+    echo "$DEDUP_JSON"
+    if [ "$DEDUP_EXIT" -eq 1 ]; then
+        echo "FAIL: content matrix reports dedup_key '${CONTENT_DEDUP_KEY}' already at draft-or-later state -- refusing to draft (K17 dedup gate)."
+        exit 1
+    fi
+    cd - >/dev/null
+else
+    echo "CONTENT_DEDUP_KEY not set for this run -- content-matrix dedup skipped. This K9 phase's kanban task payload doesn't carry a resolved channel+angle+date yet (see K17 report); set CONTENT_DEDUP_KEY=<hash> (cano_hermes.content.dedup.compute_dedup_key) when a real content package flows into this office."
+fi
+
+echo
 echo "-- step: release guard --"
 echo "release guard = confirm dedup step above did not find a blocking duplicate, AND no real publish credential is present in this environment."
 if env | grep -qE '^(UPLOAD_POST_|TIKTOK_|META_|YOUTUBE_).*_(TOKEN|KEY|SECRET)='; then

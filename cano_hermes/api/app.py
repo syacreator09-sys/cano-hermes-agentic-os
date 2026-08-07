@@ -573,6 +573,7 @@ def _dashboard_nav(active: str) -> str:
         ("/dashboard/finance", "Finanzas"),
         ("/dashboard/orders", "Órdenes"),
         ("/dashboard/offices", "Oficinas"),
+        ("/dashboard/content", "Contenido"),
     ]
     parts = [
         f'<a href="{href}" class="{"status" if href == active else "muted"}" '
@@ -768,3 +769,58 @@ def _offices_html(data: dict[str, Any]) -> str:
 @app.get("/dashboard/offices", response_class=HTMLResponse)
 def dashboard_offices_view():
     return _offices_html(dashboards.offices_dashboard())
+
+
+@app.get("/api/dashboard/content")
+def dashboard_content() -> dict[str, Any]:
+    """K17 -- content control matrix: Baserow `contenido` (the single
+    point of truth) joined with every other real source the K17 mandate
+    named (factory-v5 ledger, ugc-affiliate discovered research,
+    `upload_log_ugc.db`, this repo's own K5-K7 orders/tasks). See
+    `orchestration.dashboards.content_dashboard` for which sources
+    actually have data today vs. which are real-but-empty."""
+    return dashboards.content_dashboard(store())
+
+
+def _content_html(data: dict[str, Any]) -> str:
+    def esc(value: Any) -> str:
+        return str(value).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+    matrix_rows = "".join(
+        f"<tr><td>{esc(row['canal'] or '—')}</td><td>{esc(row['oficina_productora'] or '—')}</td>"
+        f"<td>{esc(row['estado'] or '—')}</td><td>{esc(row['video_id'] or '—')}</td>"
+        f"<td>{esc(row['dedup_key'] or '—')}</td></tr>"
+        for row in data["baserow_contenido"]["rows"]
+    ) or "<tr><td colspan=5 class='muted'>Tabla contenido vacia todavia (Baserow).</td></tr>"
+
+    sources = "".join(
+        f"<div class='card'><span class='pill {'status' if s['has_data'] else ''}'>"
+        f"{'con datos' if s['has_data'] else 'vacio/pendiente'}</span>"
+        f"<h3 style='margin:8px 0'>{esc(name)}</h3>"
+        f"<small class='muted'>{esc(s.get('detail') or s.get('status') or '')}</small></div>"
+        for name, s in data["sources_summary"].items()
+    )
+
+    campaigns = "".join(
+        f"<span class='pill'>{esc(c['name'])} [{esc(c['status'])}]</span>"
+        for c in data["factory_v5"]["campaigns"]
+    ) or "<p class='muted'>Sin campañas factory-v5.</p>"
+
+    return f"""<!doctype html><html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>StarHome OS — Contenido</title><link rel="stylesheet" href="/static/style.css"></head>
+<body style="display:block;padding:28px">
+{_dashboard_nav("/dashboard/content")}
+<header style="border-bottom:1px solid #1d273a;padding-bottom:18px">
+<h2 style="margin:0">Matriz de control de contenido (K17)</h2>
+<small class="muted">Generado {esc(data['generated_at'])} — punto único de verdad; office-publish la consulta antes de cada draft.</small></header>
+<div class="card" style="margin-top:16px"><h3>Tabla Baserow `contenido` ({esc(data['baserow_contenido']['status'])})</h3>
+<table style="width:100%;border-collapse:collapse"><tr><th>Canal</th><th>Oficina</th><th>Estado</th><th>video_id</th><th>dedup_key</th></tr>{matrix_rows}</table></div>
+<div class="card" style="margin-top:16px"><h3>Campañas factory-v5 (factory.db)</h3>{campaigns}</div>
+<div class="card" style="margin-top:16px"><h3>Fuentes — con datos vs. vacías</h3><div class="grid">{sources}</div></div>
+</body></html>"""
+
+
+@app.get("/dashboard/content", response_class=HTMLResponse)
+def dashboard_content_view():
+    return _content_html(dashboards.content_dashboard(store()))

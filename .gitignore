@@ -46,4 +46,5 @@ infrastructure/offices/data/*/reports/*
 !infrastructure/offices/data/*/output/.gitkeep
 !infrastructure/offices/data/*/reports/.gitkeep
 infrastructure/baserow/baserow_api_token.txt
+infrastructure/baserow/baserow_content_api_token.txt
 infrastructure/baserow/data/

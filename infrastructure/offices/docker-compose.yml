@@ -294,7 +294,27 @@ services:
       # No publish credentials here, ever. Do not add UPLOAD_POST_*,
       # TIKTOK_*, META_*, YOUTUBE_* etc. to this service. Real dispatch is
       # gated by ApprovalService (F3) outside this container.
+      # K17: content-matrix dedup gate (cano_hermes/content/dedup.py),
+      # called for real from task.sh below -- BASEROW_BASE_URL overrides
+      # monitoring.py's host-only "localhost:8085" default (see that
+      # module's own comment) to the Baserow container's name+internal
+      # port on the shared network; BASEROW_CONTENT_TOKEN is scoped to
+      # ONLY the `contenido` table's own workspace (never the
+      # gastos/metricas/solicitudes/productos_ugc token) -- see
+      # infrastructure/baserow/setup_content_table.py.
+      BASEROW_BASE_URL: http://starhome-baserow
+      # Confirmed live: Baserow's Caddy front-end vhost-routes strictly on
+      # Host header (BASEROW_PUBLIC_URL=http://localhost:8085 on that
+      # service) -- without this, a request to starhome-baserow's internal
+      # port gets Caddy's literal "Site not found" page, not the API.
+      BASEROW_HOST_HEADER: localhost:8085
+      BASEROW_CONTENT_TOKEN: ${BASEROW_CONTENT_TOKEN:-}
     volumes:
+      # K17: read-only mount of this repo itself, same pattern
+      # office-analytics already uses, so `python3 -m
+      # cano_hermes.content.dedup` is importable from task.sh below.
+      - /home/cano/repos/cano-hermes-agentic-os:/home/cano/repos/cano-hermes-agentic-os:ro
+      - ./common/empty.env:/home/cano/repos/cano-hermes-agentic-os/.env:ro
       - /home/cano/repos/hermes-agent:/home/cano/repos/hermes-agent:ro
       - /home/cano/.local/share/uv/python:/home/cano/.local/share/uv/python:ro
       - ./common/empty.env:/home/cano/repos/hermes-agent/.env:ro

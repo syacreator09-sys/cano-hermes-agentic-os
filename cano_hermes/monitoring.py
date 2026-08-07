@@ -19,6 +19,7 @@ machine already runs locally (F11).
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -33,7 +34,17 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 VAULT_ENV_PATH = Path.home() / ".secrets/credenciales/credenciales/.env"
-BASEROW_BASE_URL = "http://localhost:8085"
+# K17: overridable via env for callers running inside a Docker office
+# container on `starhome-net` -- "localhost:8085" only resolves on the
+# HOST (that's `ports: 127.0.0.1:8085:80` in infrastructure/baserow/
+# docker-compose.yml, a host-only bind). Inside a container on the shared
+# network the real address is the Baserow container's own name on its
+# INTERNAL port (`http://starhome-baserow` -> port 80, not 8085) -- see
+# `infrastructure/offices/publish/task.sh`'s dedup step (K17) for the one
+# real caller of this override today; every host-side caller (this
+# module's own write_metric_row/write_expense_row, the dashboard HTML
+# links) keeps working unchanged since the env var is normally unset.
+BASEROW_BASE_URL = os.environ.get("BASEROW_BASE_URL", "http://localhost:8085")
 # Table IDs for the 4 F11 tables (database 34, workspace "StarHome
 # Prometeo"). Baserow assigns these once at table creation and they are
 # not sequential (other trashed workspaces consumed intermediate ids) --
@@ -420,6 +431,38 @@ def run_validate() -> dict[str, Any]:
 # for every other credential (F2's VAULT_PATH), not from this repo's own
 # .env (Settings/pydantic never sees it either).
 # --------------------------------------------------------------------------
+
+# K17: the local Baserow container's Caddy front-end vhost-routes strictly
+# on the Host header (it's configured with BASEROW_PUBLIC_URL=
+# http://localhost:8085 -- see infrastructure/baserow/docker-compose.yml)
+# -- confirmed live that a request to `http://starhome-baserow/...` (the
+# only address reachable from INSIDE another container on `starhome-net`;
+# "localhost:8085" only resolves on the host, see BASEROW_BASE_URL above)
+# gets Caddy's literal "Site not found" page unless the Host header is
+# forced back to "localhost:8085". `office-publish/task.sh`'s K17 dedup
+# step is the one real in-container caller today (BASEROW_HOST_HEADER set
+# alongside BASEROW_BASE_URL in that service's docker-compose environment
+# block); unset on the host, where BASEROW_BASE_URL is already
+# "localhost:8085" and Caddy's own Host header matches it natively.
+BASEROW_HOST_HEADER = os.environ.get("BASEROW_HOST_HEADER")
+
+
+def baserow_headers(token: str | None = None, *, json_body: bool = False) -> dict[str, str]:
+    """Shared header-building for every Baserow REST call in this repo
+    (this module's write_metric_row/write_expense_row and
+    cano_hermes.content.dedup's fetch_rows/insert_content_row) -- one
+    place to apply the Host-header override above, instead of repeating
+    the "if BASEROW_HOST_HEADER: ..." check at every call site."""
+    headers: dict[str, str] = {}
+    if token:
+        headers["Authorization"] = f"Token {token}"
+    if json_body:
+        headers["Content-Type"] = "application/json"
+    if BASEROW_HOST_HEADER:
+        headers["Host"] = BASEROW_HOST_HEADER
+    return headers
+
+
 def _baserow_token() -> str | None:
     if not VAULT_ENV_PATH.exists():
         return None
@@ -453,7 +496,7 @@ def write_metric_row(fecha: str, oficina: str, metrica: str, valor: float, nota:
     req = urllib.request.Request(
         f"{BASEROW_BASE_URL}/api/database/rows/table/{BASEROW_METRICAS_TABLE_ID}/?user_field_names=true",
         data=body, method="POST",
-        headers={"Authorization": f"Token {token}", "Content-Type": "application/json"},
+        headers=baserow_headers(token, json_body=True),
     )
     try:
         with urllib.request.urlopen(req, timeout=10) as resp:
@@ -493,7 +536,7 @@ def write_expense_row(
     req = urllib.request.Request(
         f"{BASEROW_BASE_URL}/api/database/rows/table/{BASEROW_GASTOS_TABLE_ID}/?user_field_names=true",
         data=body, method="POST",
-        headers={"Authorization": f"Token {token}", "Content-Type": "application/json"},
+        headers=baserow_headers(token, json_body=True),
     )
     try:
         with urllib.request.urlopen(req, timeout=10) as resp:

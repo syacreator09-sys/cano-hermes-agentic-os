@@ -25,6 +25,8 @@ of raising, so a GET against this module is never the cause of a 500.
 from __future__ import annotations
 
 import datetime as dt
+import json
+import sqlite3
 from pathlib import Path
 from typing import Any
 
@@ -32,6 +34,7 @@ import yaml
 
 from cano_hermes import monitoring
 from cano_hermes.bridge import office_launcher, office_usage
+from cano_hermes.content import dedup
 from cano_hermes.domain.enums import OrderStatus, TaskStatus
 from cano_hermes.governance.budget import BudgetService
 from cano_hermes.storage.sqlite import SQLiteStore
@@ -384,4 +387,274 @@ def offices_dashboard(*, docker_stats_ttl: float = 30.0, kanban_stats_ttl: float
         "docker_stats_status": docker_stats.get("status"),
         "kanban_board_stats_status": kanban_stats.get("status"),
         "cache_ttl_seconds": {"docker_stats": docker_stats_ttl, "kanban_board_stats": kanban_stats_ttl},
+    }
+
+
+# --------------------------------------------------------------------------
+# K17 -- content control matrix (`GET /api/dashboard/content`).
+#
+# Real, live-confirmed paths on this machine (checked before writing this
+# module, not assumed from the plan's wording):
+#   - factory-v5's REAL ledger is `storage/factory.db` (sqlite), not
+#     `storage/campaign-packages/` -- confirmed live that path doesn't
+#     exist at all on this host (`ls storage/campaign-packages` ->
+#     "No existe el archivo o el directorio"; `storage/` only has
+#     `factory.db` and an unrelated `cache/`). factory.db carries real
+#     rows today: distribution_campaigns=4, publications=1, plan_items=2
+#     (checked live, 2026-08-06).
+#   - `upload_log_ugc.db` does not exist anywhere on this host (`find ~
+#     -iname upload_log_ugc.db` -> nothing) -- exactly the state
+#     office-publish/task.sh already documents (created at runtime by
+#     command-center's uploader.py, never committed). Reported here as
+#     "ledger_absent", the same status task.sh uses, not silently skipped.
+#   - ugc-affiliate's `01-products-research/discovered/*.json` (command-
+#     center, READ-ONLY per this repo's root CLAUDE.md) has 4 files / 139
+#     real discovered products (checked live) -- pre-commitment research
+#     candidates, not matrix rows: they carry no channel/campaign state of
+#     ours, only a `categoria` and the SOURCE tiktok video's id (not one we
+#     published), so they're surfaced as raw "idea"-stage material, never
+#     written into the `contenido` table.
+#   - this repo's own orders/tasks (K5-K7): checked live against
+#     production `storage/hermes.db` -- 115 tasks, ZERO with
+#     `route_profile` set to a content-producing office profile
+#     (hermes-ugc/hermes-produccion/hermes-distribucion) or at all (every
+#     row is `route_profile=None`). No order has been decomposed through
+#     K6 into an office-routed subtask yet in production, so this source
+#     is real but currently empty -- reported as such, not padded.
+# --------------------------------------------------------------------------
+
+FACTORY_V5_DB_PATH = Path.home() / "repos/factory-ia-channel-v5/storage/factory.db"
+FACTORY_V5_CAMPAIGN_PACKAGES_DIR = Path.home() / "repos/factory-ia-channel-v5/storage/campaign-packages"
+UGC_DISCOVERED_DIR = (
+    Path.home() / "repos/cano-ai-command-center/01-offices/ugc-affiliate/01-products-research/discovered"
+)
+# Same path office-publish/task.sh's LEDGER_DB already uses (K9) -- kept
+# in sync deliberately, this is the one real ledger location, not a
+# second guess at where it "should" live.
+UPLOAD_LOG_UGC_DB_PATH = Path.home() / "repos/cano-ai-command-center/01-offices/ugc-affiliate/upload_log_ugc.db"
+
+_CONTENT_TASK_PROFILES = frozenset({"hermes-ugc", "hermes-produccion", "hermes-distribucion"})
+
+
+def _factory_v5_snapshot(db_path: Path | None = None, *, limit: int = 20) -> dict[str, Any]:
+    """Read-only snapshot of factory-v5's real campaign ledger. Never
+    raises -- a missing/locked/corrupt sqlite file degrades to a
+    "ausente"/"error" status, same contract as every other dashboard
+    source in this module."""
+    path = db_path or FACTORY_V5_DB_PATH
+    empty = {"campaigns": [], "publications": [], "plan_items": [],
+              "totals": {"campaigns": 0, "publications": 0, "plan_items": 0}}
+    if not path.is_file():
+        return {"status": "ausente", "detail": f"{path} no existe en este host", **empty}
+    try:
+        conn = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
+        conn.row_factory = sqlite3.Row
+        campaigns = [dict(r) for r in conn.execute(
+            "SELECT id, name, scope, status, publish_mode, start_date, end_date "
+            "FROM distribution_campaigns ORDER BY created_at DESC LIMIT ?", (limit,),
+        )]
+        publications = [dict(r) for r in conn.execute(
+            "SELECT id, channel_id, platform, status, scheduled_at, published_at, external_id "
+            "FROM publications ORDER BY created_at DESC LIMIT ?", (limit,),
+        )]
+        plan_items = [dict(r) for r in conn.execute(
+            "SELECT id, plan_id, channel_id, title, format, status, planned_at, budget_usd "
+            "FROM plan_items ORDER BY created_at DESC LIMIT ?", (limit,),
+        )]
+        conn.close()
+    except sqlite3.Error as exc:
+        return {"status": "error", "detail": f"{exc.__class__.__name__}: {exc}", **empty}
+
+    return {
+        "status": "ok", "detail": None,
+        "campaigns": campaigns, "publications": publications, "plan_items": plan_items,
+        "totals": {
+            "campaigns": len(campaigns), "publications": len(publications), "plan_items": len(plan_items),
+        },
+    }
+
+
+def _campaign_packages_snapshot(directory: Path | None = None) -> dict[str, Any]:
+    """`storage/campaign-packages/` is the path the K17 mandate names --
+    confirmed live it does not exist at all on this machine today (only
+    `storage/factory.db` and an unrelated `cache/` dir are there).
+    Reported honestly rather than silently substituted by
+    `_factory_v5_snapshot` above (both are surfaced to the caller
+    separately)."""
+    dir_path = directory or FACTORY_V5_CAMPAIGN_PACKAGES_DIR
+    if not dir_path.is_dir():
+        return {"status": "ausente", "detail": f"{dir_path} no existe", "package_count": 0}
+    packages = [p.name for p in dir_path.iterdir() if p.is_file() or (p.is_dir() and p.name != "cache")]
+    return {
+        "status": "ok" if packages else "vacio",
+        "detail": None if packages else f"{dir_path} existe pero no tiene paquetes todavia (solo cache/)",
+        "package_count": len(packages),
+    }
+
+
+def _ugc_discovered_snapshot(directory: Path | None = None, *, per_file_sample: int = 3) -> dict[str, Any]:
+    """Read-only snapshot of ugc-affiliate's discovered-product research
+    files (command-center, F9's own source). Each file is a JSON list of
+    candidate products -- pre-commitment research, not matrix rows."""
+    dir_path = directory or UGC_DISCOVERED_DIR
+    if not dir_path.is_dir():
+        return {"status": "ausente", "detail": f"{dir_path} no existe", "files": [],
+                "totals": {"files": 0, "products": 0}}
+
+    files_summary: list[dict[str, Any]] = []
+    total_products = 0
+    for path in sorted(dir_path.glob("*.json")):
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            files_summary.append({"file": path.name, "status": "error", "detail": str(exc), "product_count": 0})
+            continue
+        if not isinstance(data, list):
+            files_summary.append({
+                "file": path.name, "status": "error",
+                "detail": "se esperaba una lista JSON", "product_count": 0,
+            })
+            continue
+        total_products += len(data)
+        sample = [
+            {
+                "nombre": (item.get("nombre") or "")[:80] if isinstance(item, dict) else None,
+                "categoria": item.get("categoria") if isinstance(item, dict) else None,
+                "plataforma": item.get("plataforma") if isinstance(item, dict) else None,
+                "video_id_fuente": item.get("video_id") if isinstance(item, dict) else None,
+            }
+            for item in data[:per_file_sample]
+        ]
+        files_summary.append({
+            "file": path.name, "status": "ok", "product_count": len(data), "sample": sample,
+        })
+
+    return {
+        "status": "ok", "detail": None, "files": files_summary,
+        "totals": {"files": len(files_summary), "products": total_products},
+    }
+
+
+def _upload_log_ugc_snapshot(db_path: Path | None = None) -> dict[str, Any]:
+    """Same read-only query office-publish/task.sh already runs (only rows
+    with status=success and a real, non-placeholder req_id count as
+    "published") -- mirrored here so the dashboard and the dedup gate
+    agree on what "already published" means."""
+    path = db_path or UPLOAD_LOG_UGC_DB_PATH
+    if not path.parent.is_dir():
+        return {"status": "ledger_dir_not_mounted", "detail": f"{path.parent} no existe en este host", "rows": []}
+    if not path.is_file():
+        return {
+            "status": "ledger_absent",
+            "detail": (
+                f"{path} no existe -- se crea en runtime por uploader.py (command-center); "
+                "aun no hay ninguna escritura real en este host (F9/reel-dedup-check)."
+            ),
+            "rows": [],
+        }
+    try:
+        conn = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
+        rows = [
+            dict(zip(("canal", "slug", "fecha", "status", "req_id"), r, strict=True))
+            for r in conn.execute(
+                "SELECT canal, slug, fecha, status, req_id FROM uploads ORDER BY fecha DESC LIMIT 20"
+            )
+        ]
+        conn.close()
+    except sqlite3.Error as exc:
+        return {"status": "error", "detail": f"{exc.__class__.__name__}: {exc}", "rows": []}
+    return {"status": "ok", "detail": None, "rows": rows}
+
+
+def content_dashboard(
+    store: SQLiteStore, *,
+    factory_db_path: Path | None = None,
+    campaign_packages_dir: Path | None = None,
+    ugc_discovered_dir: Path | None = None,
+    upload_log_path: Path | None = None,
+) -> dict[str, Any]:
+    """`GET /api/dashboard/content`'s data (K17) -- the content control
+    matrix: single point of truth for "what content exists and in what
+    state, on any channel or campaign", aggregating the Baserow
+    `contenido` table (cano_hermes.content.dedup) with every other real
+    source the K17 mandate named. Every source below degrades to an
+    explicit status/detail on missing-file/unreachable/bad-data instead of
+    raising -- same contract `finance_dashboard`/`offices_dashboard`
+    already use.
+
+    All keyword paths are overridable purely for tests (fixtures instead
+    of the real host paths); production callers (the HTTP route) pass
+    none and get the real, live-confirmed locations documented on the
+    module-level constants above.
+    """
+    generated_at = dt.datetime.now(dt.UTC)
+
+    baserow = dedup.fetch_rows()
+    baserow_rows = [
+        {
+            "id": row.get("id"),
+            "canal": row.get("canal"),
+            "oficina_productora": row.get("oficina_productora"),
+            "estado": dedup.estado_value(row),
+            "video_id": row.get("video_id"),
+            "costo_usd": row.get("costo_usd"),
+            "link_artifact": row.get("link_artifact"),
+            "fecha": row.get("fecha"),
+            "dedup_key": row.get("dedup_key"),
+        }
+        for row in baserow.get("rows", [])
+    ] if baserow["status"] == "ok" else []
+
+    factory = _factory_v5_snapshot(factory_db_path)
+    campaign_packages = _campaign_packages_snapshot(campaign_packages_dir)
+    ugc_discovered = _ugc_discovered_snapshot(ugc_discovered_dir)
+    upload_log = _upload_log_ugc_snapshot(upload_log_path)
+
+    all_tasks = store.list_tasks()
+    content_tasks = [
+        {
+            "id": t.id, "title": t.title[:120], "status": t.status.value,
+            "route_profile": t.route_profile, "parent_task_id": t.parent_task_id,
+        }
+        for t in all_tasks if t.route_profile in _CONTENT_TASK_PROFILES
+    ]
+
+    factory_has_data = factory["status"] == "ok" and sum(factory["totals"].values()) > 0
+    sources_summary = {
+        "baserow_contenido": {
+            "has_data": bool(baserow_rows), "count": len(baserow_rows), "status": baserow["status"],
+        },
+        "factory_v5_ledger_db": {
+            "has_data": factory_has_data, "status": factory["status"], "totals": factory["totals"],
+            "detail": "storage/factory.db, NO storage/campaign-packages/ (vacio, ver campaign_packages_dir)",
+        },
+        "factory_v5_campaign_packages_dir": {
+            "has_data": campaign_packages["status"] == "ok", "status": campaign_packages["status"],
+            "detail": campaign_packages["detail"],
+        },
+        "ugc_discovered_json": {
+            "has_data": ugc_discovered["totals"]["products"] > 0, "status": ugc_discovered["status"],
+            "totals": ugc_discovered["totals"],
+        },
+        "upload_log_ugc_db": {
+            "has_data": upload_log["status"] == "ok" and bool(upload_log["rows"]),
+            "status": upload_log["status"], "detail": upload_log["detail"],
+        },
+        "orders_tasks_k5_k7": {
+            "has_data": bool(content_tasks), "count": len(content_tasks),
+            "detail": "tasks con route_profile en {hermes-ugc, hermes-produccion, hermes-distribucion}",
+        },
+    }
+
+    return {
+        "generated_at": generated_at.isoformat(),
+        "baserow_contenido": {
+            "status": baserow["status"], "detail": baserow.get("detail"), "rows": baserow_rows,
+        },
+        "factory_v5": factory,
+        "factory_v5_campaign_packages": campaign_packages,
+        "ugc_discovered": ugc_discovered,
+        "upload_log_ugc": upload_log,
+        "content_tasks": content_tasks,
+        "sources_summary": sources_summary,
     }
