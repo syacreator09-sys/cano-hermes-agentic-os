@@ -72,3 +72,31 @@ anidados de factory-v5 (symlinks desde `~/repos/`, `.gitignore` actualizado).
 - Ítems #2 y #3 de la tabla "Rápidos" arriba: resueltos en cuanto a conexión;
   #3 (wrangler) 100% operativo, #2 (codex) conectado pero bloqueado por cuota
   hasta 9:35 PM.
+
+## Actualización 2026-08-07 (USB con credenciales, fusionado en vivo)
+
+Cano trajo `credenciales.rar` por USB desde la OMEN (protegido con
+contraseña, dada por fuera del vault normal, nunca impresa). Contenía 7
+snapshots históricos de `.env` (abr-ago 2026) + tokens YouTube completos
+de los 8 canales.
+
+- ✅ **44 claves nuevas fusionadas al vault** (solo agregadas, nunca
+  sobrescritas las que ya funcionaban): `RAPIDAPI_KEY`, `KIE_API_KEY` +
+  `KIE_API_KEY_2`, `GBRAIN_DATABASE_URL`, `HEYGEN_API_KEY`,
+  `SHOPIFY_SHOP_URL`/`SHOPIFY_STORE`, `SKYDROPX_*`, `ENVIA_API_TOKEN`,
+  `YOUTUBE_CLIENT_ID/SECRET_CASS`, `MINIO_*`, `CF_AI_TOKEN`,
+  `VPS1/VPS2_COOLIFY_API_TOKEN`, y más. Pendientes #6 (Supadata — NO
+  estaba en este RAR, sigue pendiente), #9 (RapidAPI — **resuelto**), #7
+  parcial (Kie sí, Higgsfield no estaba en este RAR).
+- ✅ **8/8 canales de YouTube ahora en vivo** (antes 2/8), validado con
+  `channels.list(mine=True)` real contra cada uno: cano-digital-ia (52
+  subs/125 videos), cass-healt (33/108), sya-animals (58/109), sya-motive
+  (265/186), unsolved-lens (15/17), cosmic-lens (13/17), wild-whiskers
+  (10/15), sleepy-lofi (13/15). Pendientes #13/#14 de canales YouTube
+  **resueltos por completo**.
+- Backup del RAR extraído (7 versiones de `.env` + tokens) queda en
+  `~/.secrets/backups-locales/usb-extract-20260807/` (permisos 600/700,
+  fuera de cualquier repo git).
+- Nota: `SUPADATA_API_KEY` y `HIGGSFIELD_API_KEY` NO estaban en ninguna
+  de las 7 versiones de este RAR — siguen genuinamente pendientes de otra
+  fuente.
