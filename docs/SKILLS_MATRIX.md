@@ -4,7 +4,7 @@
 
 Fuentes leídas directamente (nada inventado):
 
-1. `skills/*/manifest.json` + `SKILL.md` de este repo (StarHome OS) — 54 skills.
+1. `skills/*/manifest.json` + `SKILL.md` de este repo (StarHome OS) — 59 skills (era 54 en F6; ver nota K15 en `## Resumen`).
 2. `agents/*/*.yaml` de este repo — para resolver `skill → agente → oficina(team) → ejecutor`.
 3. `~/.hermes/skills/<categoria>/` — 14 categorías del catálogo de hermes-agent.
 4. Búsqueda local (`~/.claude/skills`, `~/.codex/`, `factory-ia-channel-v5/renderers/hyperframes`) + catálogo remoto `github.com/heygen-com/hyperframes` (vía `gh api` y fetch de `SKILL.md`) para HyperFrames.
@@ -18,13 +18,13 @@ Nota sobre "ejecutor": los `agents/*/*.yaml` de StarHome declaran `runtime` con 
 
 ---
 
-## 1. StarHome nativo (`skills/*`) — 54 skills
+## 1. StarHome nativo (`skills/*`) — 59 skills
 
-**Hallazgo de credenciales (aplica a las 54 filas):** ningún `manifest.json` ni `SKILL.md` de este directorio declara una env var propia — los 54 `SKILL.md` son boilerplate procedimental ("Confirmar objetivo… Ejecutar en modo seguro o sandbox… Registrar evidencia…") sin bloque de configuración. El acceso a credenciales no es un atributo del skill sino del **runtime que lo ejecuta**, aislado por tier en `cano_hermes/runtimes/subprocess_executor.py:26-40` (claude-code→ANTHROPIC, codex→OPENAI, hermes-agent→NVIDIA/KIMI/OPENROUTER, sandbox/openclaw→ninguna). Por eso la columna credenciales dice "No (heredada del tier del ejecutor)" en las 54 filas — es correcto y no un hueco de datos.
+**Hallazgo de credenciales (aplica a las 59 filas):** ningún `manifest.json` ni `SKILL.md` de este directorio declara una env var propia — los 59 `SKILL.md` son boilerplate procedimental ("Confirmar objetivo… Ejecutar en modo seguro o sandbox… Registrar evidencia…") sin bloque de configuración. El acceso a credenciales no es un atributo del skill sino del **runtime que lo ejecuta**, aislado por tier en `cano_hermes/runtimes/subprocess_executor.py:26-40` (claude-code→ANTHROPIC, codex→OPENAI, hermes-agent→NVIDIA/KIMI/OPENROUTER, sandbox/openclaw→ninguna). Por eso la columna credenciales dice "No (heredada del tier del ejecutor)" en las 59 filas — es correcto y no un hueco de datos.
 
 Leyenda ejecutor: `claude-code` · `codex` · `hermes-agent` (yaml `runtime: hermes`) · `api` (modelo vía API directa, sin pasar por CLI de hermes) · `python` (script nativo StarHome) · `browser` (automatización vía Playwright/similar).
 
-### Content (9)
+### Content (13)
 
 | skill | oficina | ejecutor | credenciales | riesgo |
 |---|---|---|---|---|
@@ -37,8 +37,13 @@ Leyenda ejecutor: `claude-code` · `codex` · `hermes-agent` (yaml `runtime: her
 | scriptwriting | content | api | No (heredada del tier) | bajo |
 | storyboard | content | api | No (heredada del tier) | bajo |
 | trend-radar | content | api | No (heredada del tier) | bajo |
+| adaptive-content-orchestrator² | content | hermes-agent | No (heredada del tier) | bajo (declarado `"risk": "low"` en su manifest) |
+| factory-v5-contract² | content | hermes-agent | No (heredada del tier)¹ | bajo (declarado `"risk": "low"`; solo-lectura de `factory-ia-channel-v5`, dry-run salvo aprobación explícita) |
+| command-center-contract² | content | api | No (heredada del tier) | bajo (declarado `"risk": "low"`; solo-lectura de `cano-ai-command-center`) |
+| reel-dedup-check² | content | hermes-agent | No (heredada del tier) | bajo (declarado `"risk": "low"`; es el check de dedup en sí, no publica) |
 
-¹ `factory-v5` invoca Factory V5 **por contrato**; las credenciales reales viven en el `.env` de `factory-ia-channel-v5` (repo externo, no tocado aquí).
+¹ `factory-v5`/`factory-v5-contract` invocan Factory V5 **por contrato**; las credenciales reales viven en el `.env` de `factory-ia-channel-v5` (repo externo, no tocado aquí).
+² **Añadido en K15** — existía en `skills/` desde F8/F9 (auditoría de 30 días los marcó "a medias/huérfanos") y K9 ya los había cableado a un agente (`agents/content/factory-operator.yaml`, `agents/content/analytics-learner.yaml`, `agents/content/distributor.yaml`), pero nunca se añadieron como fila propia a esta tabla — K15 lo corrige. `scripts/validate.py` (extendido en K15) confirma que los 4 ya no son huérfanos: cada uno aparece en el `skills:` de al menos un agente.
 
 ### Documents (1)
 
@@ -46,7 +51,7 @@ Leyenda ejecutor: `claude-code` · `codex` · `hermes-agent` (yaml `runtime: her
 |---|---|---|---|---|
 | document-consistency-audit | documents | hermes-agent | No (heredada del tier) | medio |
 
-### Engineering (8)
+### Engineering (9)
 
 | skill | oficina | ejecutor | credenciales | riesgo |
 |---|---|---|---|---|
@@ -58,6 +63,9 @@ Leyenda ejecutor: `claude-code` · `codex` · `hermes-agent` (yaml `runtime: her
 | graphify-map | engineering | python | No (heredada del tier) | bajo |
 | testing | engineering | python | No (heredada del tier) | bajo |
 | ui-review | engineering | browser | No (heredada del tier) | bajo |
+| engineering-loop³ | engineering | hermes-agent | No (heredada del tier) | bajo (declarado `"risk": "low"`) |
+
+³ **Añadido en K0** (fase previa a este plan) para reparar `agents/engineering/engineering-lead.yaml` (referenciaba un skill inexistente en `main`, hallazgo de la auditoría de 30 días) — mismo patrón de coordinación que los otros "-lead" (`forge-governance`, `content-pipeline`, `research-plan`). Nunca se había añadido como fila a esta tabla hasta K15.
 
 ### Finance (3)
 
@@ -271,8 +279,17 @@ el detalle completo de los 40 repos revisados.
 
 ## Resumen
 
-**Total de skills/pipelines inventariados: 98**
-(54 StarHome nativo + 14 categorías hermes-agent + 19 HyperFrames catálogo remoto + 1 graphify + 4 oficinas Docker F11 + 1 oficina Docker F14 + 6 herramientas externas F7: video-docs-builder, agent-rules-kit, cano-tutorial-suite, cano-screen-tutorial-skill, cano-video-vox, fba-hunter launcher)
+**Total de skills/pipelines inventariados: 103** (actualizado en K15; era 98 en F6/F7)
+(59 StarHome nativo + 14 categorías hermes-agent + 19 HyperFrames catálogo remoto + 1 graphify + 4 oficinas Docker F11 + 1 oficina Docker F14 + 6 herramientas externas F7: video-docs-builder, agent-rules-kit, cano-tutorial-suite, cano-screen-tutorial-skill, cano-video-vox, fba-hunter launcher)
+
+**K15 — de dónde salen los 5 StarHome nativo nuevos (54→59):** `adaptive-content-orchestrator`,
+`factory-v5-contract`, `command-center-contract`, `reel-dedup-check` (creados F8/F9, cableados a
+un agente por K9, pero nunca añadidos como fila a esta tabla hasta ahora) + `engineering-loop`
+(creado K0 para reparar la referencia rota que la auditoría de 30 días encontró en
+`agents/engineering/engineering-lead.yaml`). Ninguno es contenido nuevo de K15 — K15 solo
+corrigió que esta matriz no los reflejaba. `scripts/validate.py`, extendido en K15 con un
+chequeo de huérfanos/referencias colgantes, confirma **cero huérfanos** sobre los 59 actuales
+(ver `## Hallazgos para K15` abajo).
 
 ### Por riesgo
 
@@ -280,15 +297,15 @@ el detalle completo de los 40 repos revisados.
 |---|---|---|
 | alto | 5 | StarHome: investment-thesis-review (1) · HyperFrames: media-use, motion-graphics, talking-head-recut (3) · Oficinas Docker: office-publish (1) |
 | medio | 25 | StarHome: 9 · hermes-agent (categorías con credencial sensible): autonomous-ai-agents, email, github, productivity, social-media (5) · HyperFrames: hyperframes-router, product-launch-video, pr-to-video, figma (4) · Oficinas Docker: office-ugc, office-market-intel (2) · F7: cano-video-vox (1, proveedores de pago sin camino gratis documentado) — resto bajo |
-| bajo | 68 | el resto |
+| bajo | 73 | el resto (68 previo + 5 filas StarHome nuevas de K15, todas declaradas `"risk": "low"` en su manifest) |
 
-### Por oficina (solo StarHome nativo, 54 skills — únicas con `team` explícito en `agents/*.yaml`)
+### Por oficina (solo StarHome nativo, 59 skills — únicas con `team` explícito en `agents/*.yaml`)
 
-content 9 · engineering 8 · governance 7 · forge 6 · research 6 · operations 5 · finance 3 · personal-operations 3 · projects 2 · revenue 2 · documents 1 · investments 1 · learning 1
+content 13 · engineering 9 · governance 7 · forge 6 · research 6 · operations 5 · finance 3 · personal-operations 3 · projects 2 · revenue 2 · documents 1 · investments 1 · learning 1
 
 ### Por credenciales requeridas
 
-- **StarHome nativo (54):** 0 declaran env vars propias — 100% heredan del tier del ejecutor.
+- **StarHome nativo (59):** 0 declaran env vars propias — 100% heredan del tier del ejecutor.
 - **hermes-agent (14 categorías):** 6 de 14 tienen al menos un skill con credencial confirmada por texto (autonomous-ai-agents, email, github, mlops parcial, productivity, social-media) + 2 parciales (creative/comfyui, media/gif-search) = **8 de 14 categorías** tocan credenciales.
 - **HyperFrames (19, no instaladas):** 3 con credencial probable no confirmada (media-use, pr-to-video, figma); resto sin evidencia.
 - **graphify (1):** 0 obligatorias.
@@ -307,3 +324,10 @@ content 9 · engineering 8 · governance 7 · forge 6 · research 6 · operation
 6. **hermes-agent no tiene concepto de "oficina" StarHome.** Su catálogo de 14 categorías es una biblioteca de capacidades transversal, consumida por cualquier agente `runtime: hermes` de cualquier team. Mapear categorías de hermes-agent 1:1 a oficinas StarHome sería inventar una relación que no existe en el código — se dejó `oficina = N/A` a propósito.
 7. **Contradicción sin resolver en command-center sobre `thumbnail-simple-skill` (santmun).** `reuse-map-santmun.md` lo da por extraído en `thumbnail_engine`, pero `SANTMUN_QUARANTINE_AUDIT_20260727.md` lo lista bajo "Bloqueadas por licencia desconocida". No se pudo resolver desde este repo (command-center es solo lectura) — ver `docs/SANTMUN_REFERENCE_MAP.md`. Si F15 toca Factory V5, marcar como pendiente de aclarar con quien mantiene ese repo, no asumir ninguna de las dos versiones.
 8. **El mecanismo MCP portable de esta máquina existe pero está vacío.** `hermes_cli/mcp_config.py` (hermes-agent) declara que los MCP servers viven en `~/.hermes/config.yaml` bajo la clave `mcp_servers`, interpolando secretos desde un `~/.hermes/.env` opcional. En esta máquina, `~/.hermes/config.yaml` tiene `mcp_servers: {}` (vacío) y `~/.hermes/.env` **no existe**. Ninguno de los 4 MCP portables (`n8n-mcp`, `notion`, `rapidapi-tiktok`, `factory-ia-channel`) está registrado todavía. No se creó el archivo a ciegas — ver `docs/MCP_PORTABLE_CONNECTORS.md` para el hallazgo completo y qué falta antes de activarlos.
+   **Actualización K15: ya no vacío.** `n8n-mcp` y `notion-mcp` fueron activados poco después de este hallazgo (ver `docs/MCP_PORTABLE_CONNECTORS.md`, sección "2026-08-06 — n8n-mcp y notion-mcp ACTIVADOS") y siguen `✓ enabled` (`hermes mcp list`) tras todos los restarts del gateway de K0/K10/K13/K14 — verificado en vivo hoy: `~/.hermes/logs/agent.log` muestra el último restart (18:34:22) registrando `MCP: registered 51 tool(s) from 2 server(s)` (24 de `notion-mcp`, 27 de `n8n-mcp`). `rapidapi-tiktok` sigue bloqueado — `RAPIDAPI_KEY` sigue ausente de `~/.secrets/credenciales/credenciales/.env`, confirmado por quinta vez (F1, F2, F7, F15, K15). Ver `docs/OPERATIONS.md` para el patrón `PENDING_NATIVE_TOOL` documentado en K15 para los MCP de Claude.ai (Shopify/Meta/Gamma/Adobe/Canva/Vercel/Upload-post), que son un caso aparte: no viven en `~/.hermes/config.yaml`, solo son invocables desde una sesión Claude.
+
+## Hallazgos para K15 (mejora continua de memoria, skills, MCP)
+
+9. **RESUELTO — cero skills huérfanos.** `scripts/validate.py` ganó un chequeo real de huérfanos (skill sin ningún agente que lo referencie en `skills:`) y de referencias colgantes (agente que referencia un skill inexistente), corrido sobre el estado actual (59 skills StarHome / 54 agentes). Resultado: **0 huérfanos, 0 referencias colgantes** — los 4 huérfanos de la auditoría de 30 días (`adaptive-content-orchestrator`, `factory-v5-contract`, `command-center-contract`, `reel-dedup-check`) ya habían sido cableados por K9; esta fase solo lo verificó con código, no con grep manual, y dejó el chequeo permanente (`tests/test_k15_validate_orphans.py`, 5 tests). El chequeo excluye a propósito `skills/candidates/*` (cuarentena de `SkillFactory`, no cableada por diseño hasta que un humano la promueve).
+10. **Los 5 skills que ya existían en `skills/` pero nunca habían sido añadidos como fila propia a esta matriz** (`adaptive-content-orchestrator`, `factory-v5-contract`, `command-center-contract`, `reel-dedup-check`, `engineering-loop`) quedaron añadidos en las secciones §Content y §Engineering arriba, con oficina/ejecutor/riesgo resueltos desde su `manifest.json` real y el agente que los referencia — ver la nota "K15 — de dónde salen los 5" en `## Resumen`.
+11. **Deuda de contenido de los 59 `SKILL.md` boilerplate — decisión: no se reescriben en esta fase.** El hallazgo #4 de F15 (boilerplate idéntico de 5 pasos, `progressive_disclosure: true`) sigue siendo cierto para los 59 actuales. K15 decide **no** invertir en reescribir contenido específico por skill: no hay evidencia de que algo lo consuma mal (nada roto, cero huérfanos, `validate.py` pasa), y el detalle real ya vive donde el propio manifiesto dice que vive (prompt del agente / `references/`). Reescribir 59 procedimientos a mano sin un caso de uso real que lo exija sería "polish de bajo valor" (instrucción explícita de esta fase) a costa de tiempo mejor gastado en lo roto/huérfano — que hoy es cero. Se deja como deuda documentada, no como pendiente activo.

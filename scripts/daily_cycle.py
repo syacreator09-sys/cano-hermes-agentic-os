@@ -15,7 +15,13 @@ publicación):
      + créditos Higgsfield si existiera un tracker en algún repo de
      contrato (no existe hoy — documentado, no inventado).
   5. Auditoría — `scripts/validate.py` como proxy PASS/FLAG.
-  6. Escribe cada métrica a la tabla `metricas_diarias` de Baserow (F11,
+  6. Memoria (K11/K15) — candidatos pendientes en `memory_candidates`
+     (`MemoryCandidateService.list(status="candidate")`): solo visibiliza,
+     NUNCA auto-aprueba ni promueve al vault (regla 9 del `CLAUDE.md` raíz:
+     "Store durable lessons as candidates; never mutate approved memory
+     directly" -- la promoción sigue siendo 100% humana, vía `POST
+     /api/memory/candidates/{id}/resolve`).
+  7. Escribe cada métrica a la tabla `metricas_diarias` de Baserow (F11,
      vía su API REST con `BASEROW_TOKEN` del vault) y un reporte markdown
      en `reports/daily/<fecha>.md`, con un `⚠️ ATENCIÓN:` arriba del
      documento si algo de salud falló o el presupuesto del día superó 80%.
@@ -41,10 +47,39 @@ if str(ROOT) not in sys.path:
 from cano_hermes import monitoring  # noqa: E402
 from cano_hermes.config import settings  # noqa: E402
 from cano_hermes.governance.budget import BudgetService  # noqa: E402
+from cano_hermes.governance.memory_candidates import MemoryCandidateService  # noqa: E402
 from cano_hermes.orchestration import dashboards  # noqa: E402
 from cano_hermes.storage.sqlite import SQLiteStore  # noqa: E402
 
 BUDGET_ALERT_THRESHOLD = 0.8
+
+
+def memory_candidates_snapshot(store: SQLiteStore) -> dict[str, Any]:
+    """K15 -- read-only visibility for `scripts/daily_cycle.py` into K11's
+    `memory_candidates` table via `MemoryCandidateService.list(status=
+    "candidate")` ("candidate" is the real status string `add_memory_
+    candidate` writes at insert time -- see `SQLiteStore.list_memory_
+    candidates`). NEVER resolves/promotes anything: the only path in the
+    codebase that writes to the vault from a candidate stays `MemoryCandi
+    dateService.resolve(..., decision="approved", ...)`, reachable only via
+    the human-gated `POST /api/memory/candidates/{id}/resolve` (root
+    CLAUDE.md rule 9: "Store durable lessons as candidates; never mutate
+    approved memory directly"). Never raises -- a broken vault path or a
+    corrupt row must not kill the rest of the cycle, same contract as every
+    other step in `run_cycle`."""
+    try:
+        service = MemoryCandidateService(store, settings.vault_path)
+        pending = service.list(status="candidate")
+    except Exception as exc:  # noqa: BLE001 -- one failing step must not kill the cycle
+        return {"status": "error", "detail": str(exc)}
+    return {
+        "status": "ok",
+        "pending_count": len(pending),
+        "pending": [
+            {"id": c["id"], "namespace": c["namespace"], "created_at": c["created_at"]}
+            for c in pending
+        ],
+    }
 
 
 def run_cycle() -> dict[str, Any]:
@@ -94,6 +129,12 @@ def run_cycle() -> dict[str, Any]:
     # 5. Audit proxy.
     result["audit"] = monitoring.run_validate()
 
+    # 6. Memory candidates pending human review (K11 built the reader/
+    # promoter, `memory_candidates` table + `MemoryCandidateService`; K15
+    # wires it into the daily cycle so pending candidates surface here too,
+    # not only via `GET /api/memory/candidates?status=candidate`).
+    result["memory_candidates"] = memory_candidates_snapshot(store)
+
     # Alerts (presentation-only, per the F13 mandate -- no push).
     alerts: list[str] = []
     if result["health"]["starhome_api"]["status"] != "ok":
@@ -104,6 +145,11 @@ def run_cycle() -> dict[str, Any]:
         alerts.append("`nexus doctor` devolvió error.")
     if result["audit"]["status"] != "PASS":
         alerts.append("`scripts/validate.py` marcó FLAG (ver sección Auditoría).")
+    if result["memory_candidates"]["status"] == "ok" and result["memory_candidates"]["pending_count"] > 0:
+        alerts.append(
+            f"{result['memory_candidates']['pending_count']} candidato(s) de memoria "
+            "esperando revisión humana (ver sección Memoria)."
+        )
     if percent_used > BUDGET_ALERT_THRESHOLD:
         alerts.append(
             f"Presupuesto del día al {percent_used * 100:.0f}% "
@@ -202,6 +248,22 @@ def render_markdown(result: dict[str, Any]) -> str:
     else:
         if audit.get("stderr"):
             lines.append(f"  - stderr: `{audit['stderr'][-500:]}`")
+    lines.append("")
+
+    mem = result["memory_candidates"]
+    lines.append("## 6. Memoria — candidatos pendientes (K11/K15)")
+    lines.append("")
+    if mem["status"] != "ok":
+        lines.append(f"- **error**: {mem.get('detail')}")
+    else:
+        lines.append(f"- Pendientes de revisión humana: **{mem['pending_count']}**")
+        if mem["pending_count"]:
+            lines.append("- Resolver vía `POST /api/memory/candidates/{id}/resolve` "
+                         '(`{"decision": "approved"|"rejected", "actor": "..."}`):')
+            for c in mem["pending"]:
+                lines.append(f"  - `{c['id']}` ({c['namespace']}, creado {c['created_at']})")
+        else:
+            lines.append("- Nada pendiente.")
     lines.append("")
 
     return "\n".join(lines) + "\n"

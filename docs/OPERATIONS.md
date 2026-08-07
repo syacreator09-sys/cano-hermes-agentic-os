@@ -141,7 +141,20 @@ grep "MCP: registered" ~/.hermes/logs/agent.log | tail -1
 ```
 
 Debe verse algo como `MCP: registered 51 tool(s) from 2 server(s)` (24 de
-`notion-mcp`, 27 de `n8n-mcp`). Nota operativa: los argumentos de arranque de
+`notion-mcp`, 27 de `n8n-mcp`).
+
+**Sweep K15 (2026-08-06) — confirmado vivo tras todos los restarts de
+K0/K10/K13/K14:** `hermes mcp list` en vivo muestra ambos `✓ enabled`.
+`~/.hermes/logs/agent.log` confirma el restart más reciente (18:34:22,
+posterior a K14) registrando `MCP: registered 51 tool(s) from 2 server(s)`
+— 24 de `notion-mcp`, 27 de `n8n-mcp` (subió de 9 a 27 entre K0 y K14
+porque `n8n-mcp` expone más tools de escritura cuando su credencial tiene
+más scope, no por ningún cambio de este repo). `rapidapi-tiktok` sigue
+bloqueado — `RAPIDAPI_KEY` sigue ausente de
+`~/.secrets/credenciales/credenciales/.env` (confirmado de nuevo hoy,
+`grep -c RAPIDAPI_KEY` → 0). Nada que activar ni reparar en este sweep.
+
+Nota operativa: los argumentos de arranque de
 estos servidores MCP (incluidas sus API keys, pasadas por `--env` en
 `args:`) quedan visibles en claro vía `ps`/`systemctl status` mientras el
 proceso vive — es inherente a cómo `npx` recibe credenciales por línea de
@@ -466,6 +479,73 @@ exactamente el mismo `transcribe_audio()` ya verificado arriba. Dado que el
 entrypoint es idéntico y el archivo de prueba (mp3, no ogg) transcribió
 bien, la expectativa razonable es que una nota `.ogg` real de Telegram
 funcione igual — pero es una inferencia, no una observación directa.
+
+## Patrón `PENDING_NATIVE_TOOL` — MCP de Claude.ai (K15)
+
+Los MCP conectados a esta cuenta de Claude.ai (Shopify, Meta/Facebook,
+Gamma, Adobe, Canva, Vercel, Upload-post, etc.) son **invocables solo
+desde una sesión Claude interactiva** — viven en la capa MCP del cliente
+Claude.ai, no en `~/.hermes/config.yaml` como `n8n-mcp`/`notion-mcp`
+(sección anterior). StarHome (proceso `api/app.py`, `:8787`) y el gateway
+hermes-agent (`hermes serve`) son procesos de fondo sin sesión Claude
+adjunta — no tienen forma de llamar `mcp__claude_ai_Shopify__*` ni
+ninguno de sus pares en tiempo real. No hay wiring hacia el backend de
+StarHome para estos conectores y no lo habrá mientras sigan atados a una
+sesión de cliente (confirmado en K11/K15, no es un hueco de
+implementación pendiente).
+
+Esto no es un caso nuevo: es exactamente el problema que Factory V5 ya
+resolvió para ImageGen nativa de ChatGPT/Codex (`codex_native_imagegen`,
+documentado en `~/repos/cano-ai-command-center/01-offices/factory-ia-
+channel-v5/docs/cano/NATIVE-IMAGEGEN-BRIDGE.md`, repo de solo lectura —
+leído para este diseño, no modificado). El patrón que Factory V5 usa,
+adaptado aquí como diseño para una fase futura que lo implemente (esta
+fase **documenta el patrón, no lo cablea**):
+
+1. **Un job StarHome que necesita un MCP de Claude.ai** (p. ej. "leer
+   ventas de la tienda Shopify CASS" para el dashboard de K19, o
+   "publicar un draft en Canva") se marca `status: PENDING_NATIVE_TOOL`
+   en vez de `FAILED` o quedarse `RUNNING` indefinidamente — mismo
+   principio que los estados `PENDING_NATIVE_TOOL` / `CLAIMED` /
+   `GENERATED` / `VALIDATED` del bridge de ImageGen: la solicitud es un
+   artefacto en disco (o una fila de tabla), no una llamada síncrona que
+   se cuelga esperando un tool que el proceso de fondo no tiene.
+2. El job carga: qué MCP/tool exacto se necesita (`mcp__claude_ai_
+   Shopify__get-shop-info`, por ejemplo), los parámetros ya resueltos, y
+   dónde debe escribirse el resultado (mismo espíritu que
+   `outputs/jobs/<job_id>/native-image-requests/<slide_id>.json` del
+   bridge de ImageGen, pero para esta capa sería algo como
+   `storage/pending_native_tool/<job_id>.json`).
+3. **Una sesión Claude futura resuelve el job**: lee la solicitud
+   pendiente (vía un comando explícito, no automático — "resuelve los
+   jobs PENDING_NATIVE_TOOL de StarHome"), invoca el MCP real con sesión
+   propia autenticada, y escribe el resultado firmado de vuelta (mismo
+   principio que el resultado con `asset_hash`/`request_hash` del bridge
+   de ImageGen — el resultado debe ser verificable contra lo que se
+   pidió, no un texto libre).
+4. StarHome valida el resultado (forma/hash/campos esperados) y
+   transiciona el job — igual que Factory V5 nunca declara `COMPLETE`
+   solo por tener una solicitud o un archivo, StarHome nunca debe
+   declarar el paso DONE solo por la existencia de un resultado sin
+   validar su forma.
+5. **Nunca autónomo en el sentido de gasto/publicación**: igual que el
+   bridge de ImageGen ("publicar sigue requiriendo flujo manual y
+   aprobación humana"), cualquier job `PENDING_NATIVE_TOOL` que implique
+   escribir/gastar/publicar (crear un descuento en Shopify, publicar un
+   post) pasa por el mismo `ApprovalService`/`governance/auto_approval.py`
+   (K12) que cualquier otra acción de ese riesgo — el patrón resuelve
+   *cómo* se invoca la herramienta, no *si* se aprueba.
+
+**Caso de uso concreto ya identificado (K15, para K19):** la vista
+`GET /api/dashboard/business/cass` planeada en K19 necesita
+ventas/productos de la tienda Shopify "CASS Beauty Clinic"
+(`fss1nv-s1.myshopify.com`, MCP `claude_ai_Shopify` ya conectado a esta
+cuenta) — ese dato se resuelve exactamente con este patrón: un job pide
+`get-shop-info`/`list-orders`, una sesión Claude lo resuelve, K19 lo
+consume como fuente marcada `PENDING_NATIVE_TOOL` en su vista hasta que
+el job se resuelva. No implementado en K15 — el gate es de diseño, no de
+credenciales: el MCP ya está conectado, falta el mecanismo de handoff en
+sí (paso 1-2 arriba), que queda para cuando K19 lo necesite en firme.
 
 ## Troubleshooting básico
 
