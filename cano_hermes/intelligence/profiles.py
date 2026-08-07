@@ -25,6 +25,11 @@ DEFAULT_PROFILES = [
     ModelProfile("grok-trends", "xai", "configurable", "api", 3, 4, 4, True, True),
     ModelProfile("claude-subscription", "anthropic", "claude-code", "cli", 1, 5, 5, True, True, True),
     ModelProfile("codex-subscription", "openai", "codex", "app_server", 1, 5, 4, True, True, True),
+    # A0 (plan AUTONOMÍA TOTAL): AAH resolves capabilities/model internally
+    # (its own router picks claude/codex per role) -- "auto-routed" is
+    # deliberate, StarHome does not fix a model for it. Same cost_tier as
+    # the two CLI subscriptions above: it IS one, just orchestrated.
+    ModelProfile("aah-subscription", "aah", "auto-routed", "cli", 1, 5, 5, True, False, True),
     ModelProfile("anthropic-premium", "anthropic", "configurable", "api", 5, 5, 5, True, True),
     ModelProfile("openai-premium", "openai", "configurable", "api", 5, 5, 5, True, True),
 

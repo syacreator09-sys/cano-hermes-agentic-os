@@ -37,6 +37,12 @@ EXECUTOR_SECRET_ALLOWLIST: dict[str, frozenset[str]] = {
     }),
     "openclaw": frozenset(),
     "container-sandbox": frozenset(),  # ephemeral workers get zero secrets, ever
+    # A0 (plan AUTONOMÍA TOTAL, 2026-08-07): AAH is subscription-first by
+    # its own design (uses the host's already-authenticated claude/codex
+    # CLIs) -- an empty allowlist here is structurally what makes "AAH
+    # never receives an API key" true, not just documented (see
+    # docs/AAH_INTEGRATION_CONTRACT.md section 3).
+    "aah": frozenset(),
 }
 
 

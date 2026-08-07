@@ -3,6 +3,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
+from cano_hermes.runtimes.aah import AAHExecutor
 from cano_hermes.runtimes.base import ExecutionPacket
 from cano_hermes.runtimes.claude_code import ClaudeCodeExecutor
 from cano_hermes.runtimes.codex import CodexExecutor
@@ -54,6 +55,14 @@ class CredentialIsolationTests(unittest.TestCase):
 
     def test_unlisted_executor_gets_no_secrets_at_all(self):
         env = self.env_for(OpenClawExecutor(mode="supervised"))
+        for name in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "NVIDIA_NIM_API_KEY", "OPENROUTER_API_KEY"):
+            self.assertNotIn(name, env)
+
+    def test_aah_sees_zero_secrets_subscription_first(self):
+        """A0: AAH uses the host's already-authenticated claude/codex CLIs
+        directly, never an API key -- structurally enforced by the same
+        empty-allowlist mechanism as openclaw/container-sandbox above."""
+        env = self.env_for(AAHExecutor("/fake/factory", mode="supervised"))
         for name in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "NVIDIA_NIM_API_KEY", "OPENROUTER_API_KEY"):
             self.assertNotIn(name, env)
 

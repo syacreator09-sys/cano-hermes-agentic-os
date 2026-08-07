@@ -12,6 +12,7 @@ from cano_hermes.governance.budget import BudgetService
 from cano_hermes.governance.policy import PermissionEngine
 from cano_hermes.orchestration.completion import complete_execution
 from cano_hermes.orchestration.conductor import kanban_profile_for_domain
+from cano_hermes.runtimes.aah import AAHExecutor
 from cano_hermes.runtimes.base import ExecutionPacket
 from cano_hermes.runtimes.claude_code import ClaudeCodeExecutor
 from cano_hermes.runtimes.codex import CodexExecutor
@@ -38,8 +39,15 @@ AGENT_RUNTIME_TO_EXECUTOR: dict[str, str] = {
     "codex": "codex",
     "browser": "openclaw",
     "python": "container-sandbox",
+    "aah": "aah",  # A0: engineering-domain tasks routed to Adaptive Agent Harness
 }
 DEFAULT_EXECUTOR_ID = "hermes-agent"
+
+# A0: `.aah/bin/factory` is a project-local binary `install.sh` writes into
+# this repo's own root (there is no global `factory` on PATH -- AAH is
+# installed per-project, see docs/AAH_INTEGRATION_CONTRACT.md section 2).
+REPO_ROOT = Path(__file__).resolve().parents[2]
+AAH_BINARY = REPO_ROOT / ".aah" / "bin" / "factory"
 
 # Global, named lock: any task whose metadata marks it as a render (Remotion/
 # ffmpeg) contends for this single key regardless of its own workspace. No
@@ -75,6 +83,7 @@ class ExecutionService:
             "hermes-agent": HermesAgentExecutor(mode=mode),
             "openclaw": OpenClawExecutor(mode=mode),
             "container-sandbox": ContainerSandboxExecutor(mode=mode),
+            "aah": AAHExecutor(str(AAH_BINARY), mode=mode),
         }
         # Compose the governance services rather than reimplementing their
         # logic here: ApprovalService and BudgetService each own a single
