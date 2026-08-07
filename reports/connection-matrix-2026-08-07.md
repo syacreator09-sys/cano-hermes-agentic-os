@@ -128,7 +128,7 @@ ARCEEAI|command-center (root)|ARCEEAI_API_KEY|✗|variable ausente en este archi
 ARCEEAI|command-center (content-studio)|ARCEEAI_API_KEY|✗|variable ausente en este archivo
 ARCEEAI|hermes-agent|ARCEEAI_API_KEY|—|comentada / pendiente
 ARCEEAI|Vault (fuente de verdad)|ARCEEAI_API_KEY|✗|variable ausente en este archivo
-BASEROW|StarHome|BASEROW_ACCOUNTING_TOKEN|✗|variable ausente en este archivo
+BASEROW|StarHome|BASEROW_ACCOUNTING_TOKEN|✓|
 BASEROW|factory-v5|BASEROW_ACCOUNTING_TOKEN|✗|variable ausente en este archivo
 BASEROW|command-center (root)|BASEROW_ACCOUNTING_TOKEN|✗|variable ausente en este archivo
 BASEROW|command-center (content-studio)|BASEROW_ACCOUNTING_TOKEN|✗|variable ausente en este archivo
@@ -140,7 +140,7 @@ BASEROW|command-center (root)|BASEROW_API_TOKEN|✓|
 BASEROW|command-center (content-studio)|BASEROW_API_TOKEN|✗|variable ausente en este archivo
 BASEROW|hermes-agent|BASEROW_API_TOKEN|✓|
 BASEROW|Vault (fuente de verdad)|BASEROW_API_TOKEN|✓|
-BASEROW|StarHome|BASEROW_CONTENT_TOKEN|✗|variable ausente en este archivo
+BASEROW|StarHome|BASEROW_CONTENT_TOKEN|✓|
 BASEROW|factory-v5|BASEROW_CONTENT_TOKEN|✗|variable ausente en este archivo
 BASEROW|command-center (root)|BASEROW_CONTENT_TOKEN|✗|variable ausente en este archivo
 BASEROW|command-center (content-studio)|BASEROW_CONTENT_TOKEN|✗|variable ausente en este archivo
@@ -528,7 +528,7 @@ GOOGLE|StarHome|GOOGLE_API_KEY|✗|variable ausente en este archivo
 GOOGLE|factory-v5|GOOGLE_API_KEY|✗|variable ausente en este archivo
 GOOGLE|command-center (root)|GOOGLE_API_KEY|✗|variable ausente en este archivo
 GOOGLE|command-center (content-studio)|GOOGLE_API_KEY|✗|variable ausente en este archivo
-GOOGLE|hermes-agent|GOOGLE_API_KEY|—|comentada / pendiente
+GOOGLE|hermes-agent|GOOGLE_API_KEY|—|presente, valor vacio
 GOOGLE|Vault (fuente de verdad)|GOOGLE_API_KEY|—|presente, valor vacio
 GOOGLE|StarHome|GOOGLE_CLIENT_SECRET|✗|variable ausente en este archivo
 GOOGLE|factory-v5|GOOGLE_CLIENT_SECRET|✗|variable ausente en este archivo
@@ -546,7 +546,7 @@ GROQ|StarHome|GROQ_API_KEY|✗|variable ausente en este archivo
 GROQ|factory-v5|GROQ_API_KEY|✗|variable ausente en este archivo
 GROQ|command-center (root)|GROQ_API_KEY|—|presente, valor vacio
 GROQ|command-center (content-studio)|GROQ_API_KEY|✗|variable ausente en este archivo
-GROQ|hermes-agent|GROQ_API_KEY|—|comentada / pendiente
+GROQ|hermes-agent|GROQ_API_KEY|—|presente, valor vacio
 GROQ|Vault (fuente de verdad)|GROQ_API_KEY|—|presente, valor vacio
 HEYGEN|StarHome|HEYGEN_API_KEY|✓|
 HEYGEN|factory-v5|HEYGEN_API_KEY|✗|variable ausente en este archivo
@@ -1270,41 +1270,41 @@ Cada fila corre contra el vault (`~/.secrets/credenciales/credenciales/.env`), n
 proveedor|estado|detalle|latencia_ms|cuota
 ---|---|---|---|---
 anthropic|—|sin llave utilizable en el vault (ANTHROPIC_API_KEY)||
-apify|✓|200 -- perfil de usuario obtenido (`APIFY_API_KEY`)|512|
-baserow|—|error de red/host no disponible: URLError|234|
-cloudflare|✓|200 -- token `CLOUDFLARE_AUTH_TOKEN` activo|218|
-cloudinary|✗|credenciales inválidas (HTTP 401)|366|
-cohere|✓|200 -- lista de modelos obtenida|317|
-deepl|✓|200 -- uso consultado|708|{"character_count": 0, "character_limit": 500000}
-elevenlabs|—|respuesta inesperada HTTP 400|205|
+apify|✓|200 -- perfil de usuario obtenido (`APIFY_API_KEY`)|714|
+baserow|—|error de red/host no disponible: URLError|186|
+cloudflare|✓|200 -- token `CLOUDFLARE_AUTH_TOKEN` activo|241|
+cloudinary|✗|credenciales inválidas (HTTP 401)|515|
+cohere|✓|200 -- lista de modelos obtenida|455|
+deepl|✓|200 -- uso consultado|706|{"character_count": 0, "character_limit": 500000}
+elevenlabs|—|respuesta inesperada HTTP 400|233|
 exa|✓|presente en vault (`EXA_API_KEY`), sin verificar en vivo -- el único endpoint de cuenta documentado ("Get API Key Usage", docs.exa.ai/reference/team-management/get-api-key-usage) exige el ID de la llave -- no solo el secreto -- y vive bajo team-management (scope de owner); sin un whoami simple confirmado, no se implementa como live-free||
-firecrawl|✓|200 -- créditos consultados|371|{"remaining_credits": 1294, "plan_credits": 1000}
-gemini|—|respuesta inesperada HTTP 400|439|
-github|✗|llave invalida o sin permiso (HTTP 401)|289|
+firecrawl|✓|200 -- créditos consultados|392|{"remaining_credits": 1294, "plan_credits": 1000}
+gemini|—|respuesta inesperada HTTP 400|515|
+github|✗|llave invalida o sin permiso (HTTP 401)|286|
 groq|—|sin llave utilizable en el vault (GROQ_API_KEY)||
-heygen|✗|llave invalida (HTTP 401)|512|
+heygen|✗|llave invalida (HTTP 401)|372|
 higgsfield|policy-skip|cuenta suspendida (ver memoria del operador) y cualquier endpoint de balance/consulta es potencialmente facturable -- fuera de alcance por política, igual que en el gate de Factory V5 (factory/kie_readiness.py marca 'higgsfield' PASS solo verificando que los flags de habilitación estén en false, sin red).||
-huggingface|✓|200 -- whoami ok (`HF_TOKEN`)|197|
+huggingface|✓|200 -- whoami ok (`HF_TOKEN`)|213|
 kie|policy-skip|factory/kie_readiness.py (factory-ia-channel-v5) SÍ tiene un chequeo local sin red (local_readiness()), pero exige un objeto Settings completo, toca ffmpeg y el CLI de Remotion, y su propio check 'provider_balance' queda BLOCKED sin un balance_lookup no facturable explícito -- ese es el mismo criterio de política que aplica aquí. Invocarlo por subprocess desde este repo acoplaría connection_matrix a las dependencias internas de factory-v5 (settings, node, ffmpeg) para un beneficio marginal (solo confirmaría presencia de KIE_API_KEY, que ya reporta la matriz base). Se documenta como policy-skip en vez de duplicar o acoplar esa lógica.||
-kimi_moonshot|✓|200 -- lista de modelos obtenida (`KIMI_API_KEY`)|1138|
-mistral|✗|llave invalida o sin permiso (HTTP 401)|387|
+kimi_moonshot|✓|200 -- lista de modelos obtenida (`KIMI_API_KEY`)|580|
+mistral|✗|llave invalida o sin permiso (HTTP 401)|465|
 modal|policy-skip|Modal se administra por CLI (`modal token`/`modal app`), no expone un endpoint HTTP público de whoami -- verificar el token exigiría invocar el CLI de Modal, fuera del alcance HTTP-only de este validador.||
-n8n|—|error de red/host no disponible: URLError|199|
-notion|✓|200 -- bot user obtenido|352|
-nvidia_nim|✓|200 -- lista de modelos obtenida|409|
-openai|✓|200 -- lista de modelos obtenida|804|
-openrouter|✓|200 -- estado de la llave obtenido|862|{"limit_remaining": null, "is_free_tier": true}
+n8n|—|error de red/host no disponible: URLError|184|
+notion|✓|200 -- bot user obtenido|568|
+nvidia_nim|✓|200 -- lista de modelos obtenida|583|
+openai|✓|200 -- lista de modelos obtenida|756|
+openrouter|✓|200 -- estado de la llave obtenido|386|{"limit_remaining": null, "is_free_tier": true}
 perplexity|✓|presente en vault (`PERPLEXITY_API_KEY`), sin verificar en vivo -- no existe endpoint documentado de validación sin costo -- verificado en docs.perplexity.ai: todos los endpoints públicos (Gateway/Agent/Search/chat) son facturables, no hay whoami/models gratuito||
-pexels|✗|llave invalida o sin permiso (HTTP 403)|88|
-pixabay|✓|200 -- búsqueda de prueba ok|321|
+pexels|✗|llave invalida o sin permiso (HTTP 403)|129|
+pixabay|✓|200 -- búsqueda de prueba ok|2105|
 rapidapi|✓|presente en vault (`RAPIDAPI_KEY`), sin verificar en vivo -- sin endpoint gratuito y documentado de whoami/perfil confirmado tras revisar docs.rapidapi.com -- la Subscriptions API real vive bajo el Platform API (GraphQL) con credenciales de partner distintas a la llave de consumidor X-RapidAPI-Key; implementarlo a ciegas arriesgaría pegarle a un endpoint de terceros facturable en vez de uno propio de RapidAPI||
-replicate|✗|llave invalida o sin permiso (HTTP 403)|160|
-stripe|✓|200 -- balance obtenido (`STRIPE_SECRET_KEY`)|458|
-supabase|—|proyecto orion: error de red: URLError|110|
-telegram|✓|200 -- getMe ok (`TELEGRAM_BOT_TOKEN`)|587|
-uploadpost|✓|200 -- perfiles listados|602|
-upstash|—|error de red: URLError|243|
-xai|✗|llave invalida o sin permiso (HTTP 403)|135|
+replicate|✗|llave invalida o sin permiso (HTTP 403)|205|
+stripe|✓|200 -- balance obtenido (`STRIPE_SECRET_KEY`)|404|
+supabase|—|proyecto orion: error de red: URLError|105|
+telegram|✓|200 -- getMe ok (`TELEGRAM_BOT_TOKEN`)|636|
+uploadpost|✓|200 -- perfiles listados|634|
+upstash|—|error de red: URLError|259|
+xai|✗|llave invalida o sin permiso (HTTP 403)|204|
 
 **Total validadores**: ✓ 18  ✗ 7  — 8  policy-skip 3
 
@@ -1312,12 +1312,12 @@ xai|✗|llave invalida o sin permiso (HTTP 403)|135|
 
 sistema|✓|✗|—
 ---|---|---|---
-StarHome|120|83|3
+StarHome|122|81|3
 factory-v5|12|192|2
 command-center (root)|34|152|20
 command-center (content-studio)|22|181|3
 hermes-agent|120|58|28
 Vault (fuente de verdad)|140|57|9
 
-**Total general (presencia)**: ✓ 448  ✗ 723  — 65
+**Total general (presencia)**: ✓ 450  ✗ 721  — 65
 

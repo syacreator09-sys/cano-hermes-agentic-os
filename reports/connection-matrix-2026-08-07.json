@@ -5,8 +5,8 @@
     "StarHome": {
       "found": true,
       "counts": {
-        "✓": 120,
-        "✗": 83,
+        "✓": 122,
+        "✗": 81,
         "—": 3
       }
     },
@@ -52,20 +52,20 @@
     }
   },
   "totals": {
-    "✓": 448,
-    "✗": 723,
+    "✓": 450,
+    "✗": 721,
     "—": 65
   },
   "validators": {
-    "rapidapi": {
-      "status": "✓",
-      "detail": "presente en vault (`RAPIDAPI_KEY`), sin verificar en vivo -- sin endpoint gratuito y documentado de whoami/perfil confirmado tras revisar docs.rapidapi.com -- la Subscriptions API real vive bajo el Platform API (GraphQL) con credenciales de partner distintas a la llave de consumidor X-RapidAPI-Key; implementarlo a ciegas arriesgaría pegarle a un endpoint de terceros facturable en vez de uno propio de RapidAPI",
-      "latency_ms": null,
-      "quota": null
-    },
     "anthropic": {
       "status": "—",
       "detail": "sin llave utilizable en el vault (ANTHROPIC_API_KEY)",
+      "latency_ms": null,
+      "quota": null
+    },
+    "rapidapi": {
+      "status": "✓",
+      "detail": "presente en vault (`RAPIDAPI_KEY`), sin verificar en vivo -- sin endpoint gratuito y documentado de whoami/perfil confirmado tras revisar docs.rapidapi.com -- la Subscriptions API real vive bajo el Platform API (GraphQL) con credenciales de partner distintas a la llave de consumidor X-RapidAPI-Key; implementarlo a ciegas arriesgaría pegarle a un endpoint de terceros facturable en vez de uno propio de RapidAPI",
       "latency_ms": null,
       "quota": null
     },
@@ -75,16 +75,19 @@
       "latency_ms": null,
       "quota": null
     },
+    "openrouter": {
+      "status": "✓",
+      "detail": "200 -- estado de la llave obtenido",
+      "latency_ms": 386,
+      "quota": {
+        "limit_remaining": null,
+        "is_free_tier": true
+      }
+    },
     "cohere": {
       "status": "✓",
       "detail": "200 -- lista de modelos obtenida",
-      "latency_ms": 317,
-      "quota": null
-    },
-    "mistral": {
-      "status": "✗",
-      "detail": "llave invalida o sin permiso (HTTP 401)",
-      "latency_ms": 387,
+      "latency_ms": 455,
       "quota": null
     },
     "perplexity": {
@@ -93,85 +96,82 @@
       "latency_ms": null,
       "quota": null
     },
-    "nvidia_nim": {
-      "status": "✓",
-      "detail": "200 -- lista de modelos obtenida",
-      "latency_ms": 409,
+    "mistral": {
+      "status": "✗",
+      "detail": "llave invalida o sin permiso (HTTP 401)",
+      "latency_ms": 465,
       "quota": null
     },
     "gemini": {
       "status": "—",
       "detail": "respuesta inesperada HTTP 400",
-      "latency_ms": 439,
+      "latency_ms": 515,
+      "quota": null
+    },
+    "kimi_moonshot": {
+      "status": "✓",
+      "detail": "200 -- lista de modelos obtenida (`KIMI_API_KEY`)",
+      "latency_ms": 580,
+      "quota": null
+    },
+    "nvidia_nim": {
+      "status": "✓",
+      "detail": "200 -- lista de modelos obtenida",
+      "latency_ms": 583,
       "quota": null
     },
     "xai": {
       "status": "✗",
       "detail": "llave invalida o sin permiso (HTTP 403)",
-      "latency_ms": 135,
-      "quota": null
-    },
-    "apify": {
-      "status": "✓",
-      "detail": "200 -- perfil de usuario obtenido (`APIFY_API_KEY`)",
-      "latency_ms": 512,
+      "latency_ms": 204,
       "quota": null
     },
     "replicate": {
       "status": "✗",
       "detail": "llave invalida o sin permiso (HTTP 403)",
-      "latency_ms": 160,
+      "latency_ms": 205,
       "quota": null
     },
-    "elevenlabs": {
-      "status": "—",
-      "detail": "respuesta inesperada HTTP 400",
-      "latency_ms": 205,
+    "apify": {
+      "status": "✓",
+      "detail": "200 -- perfil de usuario obtenido (`APIFY_API_KEY`)",
+      "latency_ms": 714,
       "quota": null
     },
     "openai": {
       "status": "✓",
       "detail": "200 -- lista de modelos obtenida",
-      "latency_ms": 804,
+      "latency_ms": 756,
       "quota": null
     },
-    "github": {
-      "status": "✗",
-      "detail": "llave invalida o sin permiso (HTTP 401)",
-      "latency_ms": 289,
-      "quota": null
-    },
-    "openrouter": {
-      "status": "✓",
-      "detail": "200 -- estado de la llave obtenido",
-      "latency_ms": 862,
-      "quota": {
-        "limit_remaining": null,
-        "is_free_tier": true
-      }
-    },
-    "notion": {
-      "status": "✓",
-      "detail": "200 -- bot user obtenido",
-      "latency_ms": 352,
-      "quota": null
-    },
-    "heygen": {
-      "status": "✗",
-      "detail": "llave invalida (HTTP 401)",
-      "latency_ms": 512,
+    "elevenlabs": {
+      "status": "—",
+      "detail": "respuesta inesperada HTTP 400",
+      "latency_ms": 233,
       "quota": null
     },
     "supabase": {
       "status": "—",
       "detail": "proyecto orion: error de red: URLError",
-      "latency_ms": 110,
+      "latency_ms": 105,
+      "quota": null
+    },
+    "github": {
+      "status": "✗",
+      "detail": "llave invalida o sin permiso (HTTP 401)",
+      "latency_ms": 286,
+      "quota": null
+    },
+    "heygen": {
+      "status": "✗",
+      "detail": "llave invalida (HTTP 401)",
+      "latency_ms": 372,
       "quota": null
     },
     "cloudflare": {
       "status": "✓",
       "detail": "200 -- token `CLOUDFLARE_AUTH_TOKEN` activo",
-      "latency_ms": 218,
+      "latency_ms": 241,
       "quota": null
     },
     "exa": {
@@ -180,44 +180,44 @@
       "latency_ms": null,
       "quota": null
     },
-    "deepl": {
-      "status": "✓",
-      "detail": "200 -- uso consultado",
-      "latency_ms": 708,
-      "quota": {
-        "character_count": 0,
-        "character_limit": 500000
-      }
-    },
     "baserow": {
       "status": "—",
       "detail": "error de red/host no disponible: URLError",
-      "latency_ms": 234,
-      "quota": null
-    },
-    "pexels": {
-      "status": "✗",
-      "detail": "llave invalida o sin permiso (HTTP 403)",
-      "latency_ms": 88,
-      "quota": null
-    },
-    "kimi_moonshot": {
-      "status": "✓",
-      "detail": "200 -- lista de modelos obtenida (`KIMI_API_KEY`)",
-      "latency_ms": 1138,
+      "latency_ms": 186,
       "quota": null
     },
     "n8n": {
       "status": "—",
       "detail": "error de red/host no disponible: URLError",
-      "latency_ms": 199,
+      "latency_ms": 184,
       "quota": null
     },
-    "telegram": {
-      "status": "✓",
-      "detail": "200 -- getMe ok (`TELEGRAM_BOT_TOKEN`)",
-      "latency_ms": 587,
+    "pexels": {
+      "status": "✗",
+      "detail": "llave invalida o sin permiso (HTTP 403)",
+      "latency_ms": 129,
       "quota": null
+    },
+    "notion": {
+      "status": "✓",
+      "detail": "200 -- bot user obtenido",
+      "latency_ms": 568,
+      "quota": null
+    },
+    "stripe": {
+      "status": "✓",
+      "detail": "200 -- balance obtenido (`STRIPE_SECRET_KEY`)",
+      "latency_ms": 404,
+      "quota": null
+    },
+    "deepl": {
+      "status": "✓",
+      "detail": "200 -- uso consultado",
+      "latency_ms": 706,
+      "quota": {
+        "character_count": 0,
+        "character_limit": 500000
+      }
     },
     "kie": {
       "status": "policy-skip",
@@ -237,49 +237,49 @@
       "latency_ms": null,
       "quota": null
     },
-    "stripe": {
+    "telegram": {
       "status": "✓",
-      "detail": "200 -- balance obtenido (`STRIPE_SECRET_KEY`)",
-      "latency_ms": 458,
+      "detail": "200 -- getMe ok (`TELEGRAM_BOT_TOKEN`)",
+      "latency_ms": 636,
       "quota": null
     },
-    "huggingface": {
-      "status": "✓",
-      "detail": "200 -- whoami ok (`HF_TOKEN`)",
-      "latency_ms": 197,
+    "upstash": {
+      "status": "—",
+      "detail": "error de red: URLError",
+      "latency_ms": 259,
       "quota": null
     },
     "firecrawl": {
       "status": "✓",
       "detail": "200 -- créditos consultados",
-      "latency_ms": 371,
+      "latency_ms": 392,
       "quota": {
         "remaining_credits": 1294,
         "plan_credits": 1000
       }
     },
-    "upstash": {
-      "status": "—",
-      "detail": "error de red: URLError",
-      "latency_ms": 243,
-      "quota": null
-    },
-    "pixabay": {
+    "huggingface": {
       "status": "✓",
-      "detail": "200 -- búsqueda de prueba ok",
-      "latency_ms": 321,
+      "detail": "200 -- whoami ok (`HF_TOKEN`)",
+      "latency_ms": 213,
       "quota": null
     },
     "cloudinary": {
       "status": "✗",
       "detail": "credenciales inválidas (HTTP 401)",
-      "latency_ms": 366,
+      "latency_ms": 515,
       "quota": null
     },
     "uploadpost": {
       "status": "✓",
       "detail": "200 -- perfiles listados",
-      "latency_ms": 602,
+      "latency_ms": 634,
+      "quota": null
+    },
+    "pixabay": {
+      "status": "✓",
+      "detail": "200 -- búsqueda de prueba ok",
+      "latency_ms": 2105,
       "quota": null
     }
   },
