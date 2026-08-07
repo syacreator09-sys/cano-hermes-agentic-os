@@ -16,6 +16,7 @@ class ApprovalService:
         self,
         store: SQLiteStore,
         on_request: Callable[[ApprovalRequest], None] | None = None,
+        on_resolved: Callable[[ApprovalRequest], None] | None = None,
     ) -> None:
         """`on_request`, when given, is called with the freshly persisted
         `ApprovalRequest` every time `request()` raises one -- K4's
@@ -24,9 +25,18 @@ class ApprovalService:
         Telegram the moment a task needs his sign-off, not only when he
         happens to check the dashboard. Wrapped in try/except for the same
         reason as `TaskEngine.on_transition`: a notification failure must
-        never take the approval-request flow down with it."""
+        never take the approval-request flow down with it.
+
+        `on_resolved`, when given, is called with the persisted
+        `ApprovalRequest` every time `resolve()` finishes (approved or
+        rejected) -- K18's `finance.accounting.on_approval_resolved` hooks
+        in here to turn an approved, costed request into a real
+        `contabilidad` movement. Same best-effort contract as
+        `on_request`: wrapped in try/except so a bookkeeping failure can
+        never take the resolution itself down with it."""
         self.store = store
         self.on_request = on_request
+        self.on_resolved = on_resolved
 
     def request(self, approval: ApprovalRequest) -> ApprovalRequest:
         saved = self.store.save_approval(approval)
@@ -46,4 +56,10 @@ class ApprovalService:
         approval.status = ApprovalStatus.APPROVED if approved else ApprovalStatus.REJECTED
         approval.resolved_at = datetime.now(timezone.utc)
         approval.resolved_by = actor
-        return self.store.save_approval(approval)
+        saved = self.store.save_approval(approval)
+        if self.on_resolved is not None:
+            try:
+                self.on_resolved(saved)
+            except Exception:
+                logger.warning("on_resolved callback failed for approval %s", saved.id, exc_info=True)
+        return saved

@@ -36,6 +36,7 @@ from cano_hermes import monitoring
 from cano_hermes.bridge import office_launcher, office_usage
 from cano_hermes.content import dedup
 from cano_hermes.domain.enums import OrderStatus, TaskStatus
+from cano_hermes.finance import accounting
 from cano_hermes.governance.budget import BudgetService
 from cano_hermes.storage.sqlite import SQLiteStore
 
@@ -657,4 +658,79 @@ def content_dashboard(
         "upload_log_ugc": upload_log,
         "content_tasks": content_tasks,
         "sources_summary": sources_summary,
+    }
+
+
+# --------------------------------------------------------------------------
+# K18 -- unified accounting (`GET /api/dashboard/accounting`). Extends K14's
+# `finance_dashboard` (agent/engine spend ledger, `BudgetService`) rather
+# than duplicating it -- this view imports and reuses that function
+# directly, then adds the second ledger K14 never covered: real business
+# accounting (CASS / Cano Digital / LUZYA / otro) from the `contabilidad`
+# Baserow table (`cano_hermes.finance.accounting`, K18).
+# --------------------------------------------------------------------------
+def accounting_dashboard(
+    store: SQLiteStore, budget: BudgetService, *, business_rows: list[dict] | None = None,
+) -> dict[str, Any]:
+    """Both ledgers, side by side, cut by negocio and by month:
+      - `agent_ledger`: exactly `finance_dashboard`'s own return shape
+        (daily BudgetService ledger, cost by executor/order/task/office) --
+        not recomputed, just imported and reused, per the K18 mandate
+        ("reusa lo que K14 ya calcula, impórtalo").
+      - `business_ledger`: `contabilidad` rows aggregated by
+        `finance.accounting.cash_position` (running balance per negocio)
+        + a per-negocio/per-month ingreso/gasto breakdown this function
+        computes directly (the one aggregation `cash_position`/
+        `finance_close` don't already provide standalone).
+
+    `business_rows` is test-only (a fixture list skips the live Baserow
+    fetch entirely, same convention as `content_dashboard`'s path
+    overrides); production callers (the HTTP route) pass none and get
+    `accounting.fetch_rows()`."""
+    generated_at = dt.datetime.now(dt.UTC)
+
+    agent_ledger = finance_dashboard(store, budget)
+
+    if business_rows is not None:
+        baserow_status, baserow_detail, rows = "ok", None, business_rows
+    else:
+        fetched = accounting.fetch_rows()
+        baserow_status = fetched["status"]
+        baserow_detail = fetched.get("detail")
+        rows = fetched["rows"] if baserow_status == "ok" else []
+
+    position = accounting.cash_position(rows)
+
+    by_negocio_month: dict[str, dict[str, dict[str, float]]] = {}
+    for row in rows:
+        negocio = accounting.select_value(row, "negocio") or "otro"
+        tipo = accounting.select_value(row, "tipo")
+        monto = accounting.numeric_value(row.get("monto"))
+        if monto is None or tipo not in ("ingreso", "gasto"):
+            continue
+        month = (row.get("fecha") or "")[:7] or "(sin fecha)"
+        bucket = by_negocio_month.setdefault(negocio, {}).setdefault(month, {"ingresos_usd": 0.0, "gastos_usd": 0.0})
+        bucket["ingresos_usd" if tipo == "ingreso" else "gastos_usd"] += monto
+
+    movements_by_negocio_month = [
+        {
+            "negocio": negocio, "month": month,
+            "ingresos_usd": round(values["ingresos_usd"], 4),
+            "gastos_usd": round(values["gastos_usd"], 4),
+            "flujo_neto_usd": round(values["ingresos_usd"] - values["gastos_usd"], 4),
+        }
+        for negocio, months in by_negocio_month.items()
+        for month, values in sorted(months.items())
+    ]
+
+    return {
+        "generated_at": generated_at.isoformat(),
+        "agent_ledger": agent_ledger,
+        "business_ledger": {
+            "baserow_status": baserow_status,
+            "baserow_detail": baserow_detail,
+            "movements_total": len(rows),
+            "cash_position": position,
+            "by_negocio_and_month": movements_by_negocio_month,
+        },
     }

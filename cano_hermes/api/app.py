@@ -574,6 +574,7 @@ def _dashboard_nav(active: str) -> str:
         ("/dashboard/orders", "Órdenes"),
         ("/dashboard/offices", "Oficinas"),
         ("/dashboard/content", "Contenido"),
+        ("/dashboard/accounting", "Contabilidad"),
     ]
     parts = [
         f'<a href="{href}" class="{"status" if href == active else "muted"}" '
@@ -613,6 +614,34 @@ def dashboard_offices() -> dict[str, Any]:
     `orchestration.dashboards.offices_dashboard` for the caching/decision
     notes (docker stats + kanban stats behind a 30s TTL)."""
     return dashboards.offices_dashboard()
+
+
+@app.get("/api/dashboard/accounting")
+def dashboard_accounting() -> dict[str, Any]:
+    """K18 -- unifica los DOS ledgers: gasto de agentes/motores (reusa
+    `finance_dashboard`, K14) + contabilidad de negocio real (CASS/Cano
+    Digital/LUZYA/otro) desde la tabla Baserow `contabilidad`. See
+    `orchestration.dashboards.accounting_dashboard`."""
+    return dashboards.accounting_dashboard(store(), budget())
+
+
+@app.post("/api/finance/close")
+def finance_close(year: int, month: int) -> dict[str, Any]:
+    """K18 task 5 -- dry-run monthly close: writes
+    `reports/finance/cierre-<year>-<month>.md` (sums by negocio/categoría,
+    posición de caja acumulada, duplicados posibles) and returns the same
+    data as JSON. Explicitly NOT certified accounting -- see
+    `finance.accounting.finance_close`'s own docstring. Read-only against
+    every external system (only ever GETs `contabilidad`, writes a local
+    markdown file) -- no approval gate needed for a report Cano reads
+    himself."""
+    from cano_hermes.finance import accounting as _accounting
+
+    fetched = _accounting.fetch_rows()
+    rows = fetched["rows"] if fetched["status"] == "ok" else []
+    result = _accounting.finance_close(rows, year, month)
+    result["baserow_status"] = fetched["status"]
+    return result
 
 
 def _money(value: float) -> str:
@@ -824,3 +853,45 @@ def _content_html(data: dict[str, Any]) -> str:
 @app.get("/dashboard/content", response_class=HTMLResponse)
 def dashboard_content_view():
     return _content_html(dashboards.content_dashboard(store()))
+
+
+def _accounting_html(data: dict[str, Any]) -> str:
+    def esc(value: Any) -> str:
+        return str(value).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+    business = data["business_ledger"]
+    position_rows = "".join(
+        f"<tr><td>{esc(negocio)}</td><td>{_money(pos['ingresos_total_usd'])}</td>"
+        f"<td>{_money(pos['gastos_total_usd'])}</td><td>{_money(pos['saldo_bruto_usd'])}</td>"
+        f"<td>{pos['movimientos']}</td></tr>"
+        for negocio, pos in business["cash_position"]["by_negocio"].items()
+    ) or "<tr><td colspan=5 class='muted'>Tabla contabilidad vacía todavía (Baserow).</td></tr>"
+
+    month_rows = "".join(
+        f"<tr><td>{esc(row['negocio'])}</td><td>{esc(row['month'])}</td>"
+        f"<td>{_money(row['ingresos_usd'])}</td><td>{_money(row['gastos_usd'])}</td>"
+        f"<td>{_money(row['flujo_neto_usd'])}</td></tr>"
+        for row in business["by_negocio_and_month"]
+    ) or "<tr><td colspan=5 class='muted'>Sin movimientos todavía.</td></tr>"
+
+    return f"""<!doctype html><html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>StarHome OS — Contabilidad</title><link rel="stylesheet" href="/static/style.css"></head>
+<body style="display:block;padding:28px">
+{_dashboard_nav("/dashboard/accounting")}
+<header style="border-bottom:1px solid #1d273a;padding-bottom:18px">
+<h2 style="margin:0">Contabilidad integral (K18)</h2>
+<small class="muted">Generado {esc(data['generated_at'])} — ledger de agentes (BudgetService) + ledger de negocio (Baserow contabilidad).</small></header>
+<div class="card" style="margin-top:16px"><h3>Ledger de agentes/motores hoy</h3>
+<p>Gastado: {_money(data['agent_ledger']['today']['spent_usd'])} / {_money(data['agent_ledger']['today']['daily_limit_usd'])} USD
+({data['agent_ledger']['today']['percent_used']*100:.1f}%)</p></div>
+<div class="card" style="margin-top:16px"><h3>Posición de caja por negocio ({esc(business['baserow_status'])})</h3>
+<table style="width:100%;border-collapse:collapse"><tr><th>Negocio</th><th>Ingresos</th><th>Gastos</th><th>Saldo bruto</th><th>Movimientos</th></tr>{position_rows}</table></div>
+<div class="card" style="margin-top:16px"><h3>Movimientos por negocio y mes</h3>
+<table style="width:100%;border-collapse:collapse"><tr><th>Negocio</th><th>Mes</th><th>Ingresos</th><th>Gastos</th><th>Flujo neto</th></tr>{month_rows}</table></div>
+</body></html>"""
+
+
+@app.get("/dashboard/accounting", response_class=HTMLResponse)
+def dashboard_accounting_view():
+    return _accounting_html(dashboards.accounting_dashboard(store(), budget()))

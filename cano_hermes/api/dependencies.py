@@ -46,7 +46,19 @@ def engine() -> TaskEngine:
 
 @lru_cache
 def approvals() -> ApprovalService:
-    return ApprovalService(store(), on_request=notification_service().on_approval_requested)
+    """K18 -- `on_resolved` wires `finance.accounting.on_approval_resolved`
+    in as a second observer alongside K4's `on_request` notification hook:
+    an approved request with `costo_estimado_usd > 0` becomes a real
+    `contabilidad` movement (tipo=gasto, origen=agente,
+    referencia=<approval.id>). See `governance/approvals.py` and
+    `finance/accounting.py` for the mechanics."""
+    from cano_hermes.finance.accounting import on_approval_resolved
+
+    return ApprovalService(
+        store(),
+        on_request=notification_service().on_approval_requested,
+        on_resolved=on_approval_resolved,
+    )
 
 
 @lru_cache
