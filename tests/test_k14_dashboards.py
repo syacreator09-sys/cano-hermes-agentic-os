@@ -147,7 +147,7 @@ class DashboardRoutesShapeTests(unittest.TestCase):
         self.assertIn(data["matrix"]["status"], ("ok", "sin_datos"))
 
     def test_html_views_respond_200(self):
-        for path in ("/dashboard/finance", "/dashboard/orders", "/dashboard/offices", "/dashboard/connections", "/dashboard/ads"):
+        for path in ("/dashboard/finance", "/dashboard/orders", "/dashboard/offices", "/dashboard/connections", "/dashboard/ads", "/dashboard/trading"):
             response = self.client.get(path)
             self.assertEqual(response.status_code, 200, path)
             self.assertIn("text/html", response.headers["content-type"])
@@ -159,6 +159,7 @@ class DashboardRoutesShapeTests(unittest.TestCase):
         for href in (
             "/dashboard", "/dashboard/finance", "/dashboard/orders",
             "/dashboard/offices", "/dashboard/connections", "/dashboard/ads",
+            "/dashboard/trading",
         ):
             self.assertIn(f'href="{href}"', response.text)
 
@@ -170,6 +171,20 @@ class DashboardRoutesShapeTests(unittest.TestCase):
             self.assertIn(key, data)
         self.assertEqual(data["published_count"], 0)
         self.assertEqual(data["total_spend_usd"], 0)
+
+    def test_trading_route_shape(self):
+        """Hermetic regardless of whether cano-invest-api happens to be
+        running on this machine -- points at a port nothing listens on so
+        the real network path (urllib timeout/connection-refused) is what
+        gets exercised, same as every other 'schema only' test here."""
+        with patch("cano_hermes.orchestration.dashboards.INVEST_API_BASE_URL", "http://127.0.0.1:1"):
+            response = self.client.get("/api/dashboard/trading")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        for key in ("api", "crypto_spot", "market_intel_synthesis", "live_trading_status"):
+            self.assertIn(key, data)
+        self.assertEqual(data["live_trading_status"], "disabled_by_design")
+        self.assertIn(data["api"]["status"], ("sin_datos", "error"))
 
 
 class FinanceAndOrdersAggregationTests(unittest.TestCase):
@@ -628,6 +643,60 @@ class AdsAggregationTests(unittest.TestCase):
         self.assertEqual(result["draft_campaigns"][0]["canal"], "cano-digital")
         self.assertEqual(result["published_count"], 0)
         self.assertEqual(result["total_spend_usd"], 0)
+
+
+class TradingAggregationTests(unittest.TestCase):
+    """P3-B -- mocks urlopen (never real network) to confirm
+    trading_dashboard() genuinely aggregates the API response + a seeded
+    market-intel synthesis file instead of returning an always-empty
+    shape."""
+
+    def setUp(self):
+        self._tmpdir = tempfile.TemporaryDirectory()
+        self.tmp_path = Path(self._tmpdir.name)
+
+    def tearDown(self):
+        self._tmpdir.cleanup()
+
+    def test_api_down_degrades_honestly(self):
+        result = dashboards.trading_dashboard(invest_api_base_url="http://127.0.0.1:1", market_intel_output_dir=self.tmp_path)
+        self.assertIn(result["api"]["status"], ("sin_datos", "error"))
+        self.assertEqual(result["market_intel_synthesis"]["status"], "sin_datos")
+
+    def test_seeded_api_response_and_synthesis_aggregate(self):
+        output_dir = self.tmp_path
+        (output_dir / "market-intel-daily-1.md").write_text("# old", encoding="utf-8")
+        (output_dir / "market-intel-daily-2.md").write_text("# nueva sintesis real", encoding="utf-8")
+
+        class _FakeResponse:
+            def __init__(self, payload):
+                self._payload = json.dumps(payload).encode()
+            def read(self):
+                return self._payload
+            def __enter__(self):
+                return self
+            def __exit__(self, *a):
+                return False
+
+        responses = {
+            "/health": {"status": "ok", "mode": "offline", "version": "0.3.0"},
+            "/v1/crypto/spot": {"as_of": "2026-08-07T00:00:00Z", "items": [{"venue": "BINANCE", "symbol": "BTCUSDT", "status": "ok", "price": 64000.0, "currency": "USDT"}]},
+        }
+
+        def fake_urlopen(url, timeout=None):
+            for path, payload in responses.items():
+                if url.endswith(path):
+                    return _FakeResponse(payload)
+            raise AssertionError(f"unexpected url {url}")
+
+        with patch("urllib.request.urlopen", side_effect=fake_urlopen):
+            result = dashboards.trading_dashboard(invest_api_base_url="http://fake", market_intel_output_dir=output_dir)
+
+        self.assertEqual(result["api"]["status"], "ok")
+        self.assertEqual(result["crypto_spot"]["items"][0]["price"], 64000.0)
+        self.assertEqual(result["market_intel_synthesis"]["status"], "ok")
+        self.assertEqual(result["market_intel_synthesis"]["file"], "market-intel-daily-2.md")
+        self.assertIn("nueva sintesis real", result["market_intel_synthesis"]["content"])
 
 
 class OfficeContainerStatusMatchingTests(unittest.TestCase):

@@ -581,6 +581,7 @@ def _dashboard_nav(active: str) -> str:
         ("/dashboard/business/cass", "Negocio CASS"),
         ("/dashboard/connections", "Conexiones"),
         ("/dashboard/ads", "Ads"),
+        ("/dashboard/trading", "Trading"),
     ]
     parts = [
         f'<a href="{href}" class="{"status" if href == active else "muted"}" '
@@ -1182,3 +1183,47 @@ def _ads_html(data: dict[str, Any]) -> str:
 @app.get("/dashboard/ads", response_class=HTMLResponse)
 def dashboard_ads_view():
     return _ads_html(dashboards.ads_dashboard())
+
+
+@app.get("/api/dashboard/trading")
+def dashboard_trading() -> dict[str, Any]:
+    """P3-B -- API real de cano-investment-intelligence (health, crypto
+    spot público) + última síntesis de office-market-intel. Paper-only."""
+    return dashboards.trading_dashboard()
+
+
+def _trading_html(data: dict[str, Any]) -> str:
+    def esc(value: Any) -> str:
+        return str(value).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+    crypto = data["crypto_spot"]
+    if isinstance(crypto, dict) and crypto.get("items"):
+        crypto_rows = "".join(
+            f"<tr><td>{esc(i['venue'])}</td><td>{esc(i['symbol'])}</td><td>{esc(i.get('status'))}</td>"
+            f"<td>{esc(i.get('price'))}</td><td>{esc(i.get('currency'))}</td></tr>"
+            for i in crypto["items"]
+        )
+        crypto_section = f"<table style='width:100%;border-collapse:collapse'><tr><th>Venue</th><th>Symbol</th><th>Estado</th><th>Precio</th><th>Moneda</th></tr>{crypto_rows}</table>"
+    else:
+        crypto_section = f"<p class='muted'>{esc(crypto)}</p>" if not isinstance(crypto, dict) else f"<p class='muted'>{esc(crypto.get('detail', crypto.get('status')))}</p>"
+
+    synthesis = data["market_intel_synthesis"]
+    synthesis_html = f"<pre style='white-space:pre-wrap'>{esc(synthesis.get('content', synthesis.get('detail', '')))}</pre>"
+
+    return f"""<!doctype html><html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>StarHome OS — Trading</title><link rel="stylesheet" href="/static/style.css"></head>
+<body style="display:block;padding:28px">
+{_dashboard_nav("/dashboard/trading")}
+<header style="border-bottom:1px solid #1d273a;padding-bottom:18px">
+<h2 style="margin:0">Trading / Crypto — análisis, paper-only</h2>
+<small class="muted">Generado {esc(data['generated_at'])} · API: {esc(data['api']['status'])} · live_trading: {esc(data['live_trading_status'])}</small></header>
+<div class="card" style="margin-top:16px"><h3>Crypto spot (público, sin auth)</h3>{crypto_section}</div>
+<div class="card" style="margin-top:16px"><h3>Última síntesis de market-intel</h3>
+<p class="muted">{esc(synthesis.get('file', synthesis.get('status', '')))}</p>{synthesis_html}</div>
+</body></html>"""
+
+
+@app.get("/dashboard/trading", response_class=HTMLResponse)
+def dashboard_trading_view():
+    return _trading_html(dashboards.trading_dashboard())

@@ -53,17 +53,42 @@ echo "== office-market-intel: read-only synthesis (no trading, no buying, no Bro
   fi
 
   echo
-  echo "## Señal 2: inteligencia financiera (cano-investment-intelligence, solo lectura, council OFFLINE -- no se levanta el servicio aquí)"
-  if [ -d "$INVEST_REPO/docs/reports" ]; then
-      LATEST_INVEST_DOC="$(ls -t "$INVEST_REPO"/docs/reports/*.md 2>/dev/null | head -1)"
-      if [ -n "${LATEST_INVEST_DOC:-}" ]; then
-          echo "fuente: ${LATEST_INVEST_DOC}"
-          head -5 "$LATEST_INVEST_DOC"
-      else
-          echo "no hay docs/reports en ${INVEST_REPO} -- nada que sintetizar."
-      fi
+  echo "## Señal 2: inteligencia financiera (cano-investment-intelligence)"
+  # P3-B (plan POTENCIA, 2026-08-07): el gate documentado abajo esta
+  # resuelto -- cano-invest-api corre de verdad como servicio systemd del
+  # host (P3-A) y este contenedor ahora la alcanza via host.docker.internal
+  # (extra_hosts, ver docker-compose.yml). Se consulta /v1/crypto/spot
+  # (publico, gratis, sin auth) de verdad; si la API no responde, degrada
+  # al doc estatico como antes -- nunca falla el ciclo completo por esto.
+  CRYPTO_SPOT="$(python3 -c "
+import urllib.request, sys
+try:
+    with urllib.request.urlopen('http://host.docker.internal:8000/v1/crypto/spot', timeout=5) as r:
+        sys.stdout.write(r.read().decode())
+except Exception:
+    pass
+" 2>/dev/null)"
+  if [ -n "$CRYPTO_SPOT" ] && echo "$CRYPTO_SPOT" | python3 -c "import json,sys; json.load(sys.stdin)" 2>/dev/null; then
+      echo "fuente: cano-invest-api (host, en vivo) /v1/crypto/spot"
+      echo "$CRYPTO_SPOT" | python3 -c "
+import json, sys
+d = json.load(sys.stdin)
+for item in d.get('items', []):
+    print(f\"  {item['venue']}/{item['symbol']}: {item['status']} price={item.get('price')} {item.get('currency','')}\")
+"
   else
-      echo "cano-investment-intelligence no montado en este contenedor."
+      echo "cano-invest-api no respondio (host.docker.internal:8000) -- degradando a doc estatico."
+      if [ -d "$INVEST_REPO/docs/reports" ]; then
+          LATEST_INVEST_DOC="$(ls -t "$INVEST_REPO"/docs/reports/*.md 2>/dev/null | head -1)"
+          if [ -n "${LATEST_INVEST_DOC:-}" ]; then
+              echo "fuente: ${LATEST_INVEST_DOC}"
+              head -5 "$LATEST_INVEST_DOC"
+          else
+              echo "no hay docs/reports en ${INVEST_REPO} -- nada que sintetizar."
+          fi
+      else
+          echo "cano-investment-intelligence no montado en este contenedor."
+      fi
   fi
 
   echo

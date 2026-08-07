@@ -1189,3 +1189,61 @@ def ads_dashboard(*, snapshot_path: Path | None = None, workspace_root: Path | N
         "published_count": sum(1 for c in campaigns if c["published"]),
         "total_spend_usd": round(sum(c["spend_usd"] or 0 for c in campaigns), 4),
     }
+
+
+INVEST_API_BASE_URL = "http://127.0.0.1:8000"
+MARKET_INTEL_OUTPUT_DIR = ROOT / "infrastructure" / "offices" / "data" / "market-intel" / "output"
+
+
+def _invest_api_get(path: str, *, base_url: str, timeout: float = 5.0) -> dict[str, Any]:
+    """P3-B (plan POTENCIA, 2026-08-07) -- StarHome runs natively (systemd,
+    not Docker), so it reaches cano-invest-api directly on loopback, no
+    host.docker.internal trick needed (that's only for the Docker office
+    containers, see market-intel/task.sh). Never raises: an API outage
+    must not take the whole dashboard down, same contract as every other
+    signal in this module."""
+    import urllib.error
+    import urllib.request
+
+    try:
+        with urllib.request.urlopen(f"{base_url}{path}", timeout=timeout) as resp:
+            return {"status": "ok", "data": json.loads(resp.read())}
+    except urllib.error.HTTPError as exc:
+        return {"status": "error", "detail": f"HTTP {exc.code}"}
+    except (urllib.error.URLError, OSError, TimeoutError, json.JSONDecodeError) as exc:
+        return {"status": "sin_datos", "detail": f"{exc.__class__.__name__}: cano-invest-api no responde en {base_url}"}
+
+
+def _latest_market_intel_synthesis(output_dir: Path | None = None) -> dict[str, Any]:
+    """Última síntesis real que escribió office-market-intel/task.sh
+    (`market-intel-daily-<timestamp>.md`), leída del bind mount que ya
+    existe en el compose -- nunca dispara una corrida nueva desde un GET."""
+    root = output_dir or MARKET_INTEL_OUTPUT_DIR
+    if not root.is_dir():
+        return {"status": "sin_datos", "detail": f"{root} no existe -- la oficina nunca corrió en este host"}
+    files = sorted(root.glob("market-intel-daily-*.md"))
+    if not files:
+        return {"status": "sin_datos", "detail": "sin síntesis escrita todavía"}
+    latest = files[-1]
+    return {"status": "ok", "file": latest.name, "content": latest.read_text(encoding="utf-8")[:4000]}
+
+
+def trading_dashboard(*, invest_api_base_url: str | None = None, market_intel_output_dir: Path | None = None) -> dict[str, Any]:
+    """`GET /api/dashboard/trading`'s data: API real de
+    cano-investment-intelligence (health, crypto spot público) + última
+    síntesis de office-market-intel. Paper-only en todo -- nunca coloca
+    una orden real, `/v1/orders/live` de ese repo sigue en 404 por diseño."""
+    generated_at = dt.datetime.now(dt.UTC)
+    base_url = invest_api_base_url or INVEST_API_BASE_URL
+
+    health = _invest_api_get("/health", base_url=base_url)
+    crypto = _invest_api_get("/v1/crypto/spot", base_url=base_url)
+    synthesis = _latest_market_intel_synthesis(market_intel_output_dir)
+
+    return {
+        "generated_at": generated_at.isoformat(),
+        "api": {"base_url": base_url, "status": health["status"], "detail": health.get("data") or health.get("detail")},
+        "crypto_spot": crypto.get("data") if crypto["status"] == "ok" else {"status": crypto["status"], "detail": crypto.get("detail")},
+        "market_intel_synthesis": synthesis,
+        "live_trading_status": "disabled_by_design",  # /v1/orders/live -> 404, paper-only siempre
+    }

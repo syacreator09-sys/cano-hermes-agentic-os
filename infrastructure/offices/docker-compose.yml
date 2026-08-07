@@ -423,6 +423,12 @@ services:
     image: starhome/office-market-intel:latest
     profiles: ["market-intel"]
     networks: ["starhome-net"]
+    # P3-B (plan POTENCIA, 2026-08-07): reach cano-invest-api (host
+    # systemd service, now bound 0.0.0.0:8000) from inside this
+    # bridge-networked container. host-gateway resolves to the host's
+    # Docker bridge IP -- no other host is reachable through this alias.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       <<: *hermes-tier0-env
       # P0: market-intel crosses read-only local signals but its mission
