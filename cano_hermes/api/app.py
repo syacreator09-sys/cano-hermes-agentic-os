@@ -577,6 +577,7 @@ def _dashboard_nav(active: str) -> str:
         ("/dashboard/content", "Contenido"),
         ("/dashboard/accounting", "Contabilidad"),
         ("/dashboard/business/cass", "Negocio CASS"),
+        ("/dashboard/connections", "Conexiones"),
     ]
     parts = [
         f'<a href="{href}" class="{"status" if href == active else "muted"}" '
@@ -625,6 +626,16 @@ def dashboard_accounting() -> dict[str, Any]:
     Digital/LUZYA/otro) desde la tabla Baserow `contabilidad`. See
     `orchestration.dashboards.accounting_dashboard`."""
     return dashboards.accounting_dashboard(store(), budget())
+
+
+@app.get("/api/dashboard/connections")
+def dashboard_connections() -> dict[str, Any]:
+    """C3 -- registry de llaves (config/key_registry.yaml: resumen por
+    dominio, llaves sin consumidor, rotación pendiente) cruzado con la
+    corrida más reciente de connection_matrix.py (estado por proveedor,
+    latencia, cuota). Sin llamadas de red desde esta ruta -- lee el JSON
+    ya escrito. See `orchestration.dashboards.connections_dashboard`."""
+    return dashboards.connections_dashboard()
 
 
 @app.post("/api/finance/close")
@@ -985,3 +996,76 @@ def _business_cass_html(data: dict[str, Any]) -> str:
 @app.get("/dashboard/business/cass", response_class=HTMLResponse)
 def dashboard_business_cass_view():
     return _business_cass_html(business_cass.cass_dashboard(store(), budget()))
+
+
+def _connections_html(data: dict[str, Any]) -> str:
+    def esc(value: Any) -> str:
+        return str(value).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+    registry = data["registry"]
+    matrix = data["matrix"]
+
+    rotation_rows = "".join(
+        f"<tr><td>{esc(row['nombre'])}</td><td>{esc(row['proveedor'] or '—')}</td>"
+        f"<td>{esc(row['dominio'] or '—')}</td><td>{esc(row['riesgo'] or '—')}</td>"
+        f"<td>{esc(row['rotacion_motivo'] or '—')}</td></tr>"
+        for row in data["rotation_pending"]
+    ) or "<tr><td colspan=5 class='muted'>Sin rotaciones pendientes.</td></tr>"
+
+    unclaimed_pills = "".join(
+        f"<span class='pill'>{esc(row['nombre'])} ({esc(row['proveedor'] or '—')})</span>"
+        for row in data["unclaimed_keys"]
+    ) or "<p class='muted'>Todas las llaves tienen consumidor detectado.</p>"
+
+    domain_pills = "".join(
+        f"<span class='pill'>{esc(domain)}: {esc(count)}</span>"
+        for domain, count in registry["by_domain"].items()
+    ) or "<p class='muted'>Sin datos de registry.</p>"
+
+    validator_rows = "".join(
+        f"<tr><td>{esc(v['provider'])}</td>"
+        f"<td><span class='pill {'status' if v['status'] == '✓' else ''}'>{esc(v['status'] or '—')}</span></td>"
+        f"<td>{esc(v['latency_ms']) if v['latency_ms'] is not None else '—'}</td>"
+        f"<td>{esc(v['quota']) if v['quota'] is not None else '—'}</td>"
+        f"<td class='muted'>{esc(v['detail'] or '')}</td></tr>"
+        for v in matrix["validators"]
+    ) or "<tr><td colspan=5 class='muted'>Sin corrida de connection_matrix.py todavía (sin datos).</td></tr>"
+
+    validators_totals = matrix["validators_totals"]
+    validators_ok = validators_totals.get("✓", 0)
+    validators_total = sum(validators_totals.values()) if validators_totals else 0
+
+    return f"""<!doctype html><html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>StarHome OS — Conexiones</title><link rel="stylesheet" href="/static/style.css"></head>
+<body style="display:block;padding:28px">
+{_dashboard_nav("/dashboard/connections")}
+<header style="border-bottom:1px solid #1d273a;padding-bottom:18px">
+<h2 style="margin:0">Conexiones y proveedores</h2>
+<small class="muted">Generado {esc(data['generated_at'])} · última validación: {esc(matrix['date'] or 'sin datos')}</small></header>
+<div class="grid">
+<div class="card"><div class="muted">Llaves en el registry</div>
+<div class="metric">{esc(registry['total_keys'])}</div>
+<p class="muted">{esc(registry['status'])}</p></div>
+<div class="card"><div class="muted">Sin consumidor</div>
+<div class="metric">{esc(data['unclaimed_keys_count'])}</div>
+<p class="muted">llaves sin uso detectado en el código</p></div>
+<div class="card"><div class="muted">Rotación pendiente</div>
+<div class="metric">{esc(data['rotation_pending_count'])}</div>
+<p class="muted">llaves marcadas para rotar</p></div>
+<div class="card"><div class="muted">Validadores ✓</div>
+<div class="metric">{esc(validators_ok)}/{esc(validators_total)}</div>
+<p class="muted">de la última corrida de connection_matrix.py</p></div>
+</div>
+<div class="card" style="margin-top:16px"><h3>Rotación pendiente (accionable)</h3>
+<table style="width:100%;border-collapse:collapse"><tr><th>Llave</th><th>Proveedor</th><th>Dominio</th><th>Riesgo</th><th>Motivo</th></tr>{rotation_rows}</table></div>
+<div class="card" style="margin-top:16px"><h3>Llaves sin consumidor (accionable)</h3>{unclaimed_pills}</div>
+<div class="card" style="margin-top:16px"><h3>Llaves por dominio</h3>{domain_pills}</div>
+<div class="card" style="margin-top:16px"><h3>Estado por proveedor</h3>
+<table style="width:100%;border-collapse:collapse"><tr><th>Proveedor</th><th>Estado</th><th>Latencia (ms)</th><th>Cuota</th><th>Detalle</th></tr>{validator_rows}</table></div>
+</body></html>"""
+
+
+@app.get("/dashboard/connections", response_class=HTMLResponse)
+def dashboard_connections_view():
+    return _connections_html(dashboards.connections_dashboard())

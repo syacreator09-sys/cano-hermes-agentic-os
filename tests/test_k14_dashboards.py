@@ -25,7 +25,10 @@ from __future__ import annotations
 
 import tempfile
 import unittest
+from pathlib import Path
+from unittest.mock import patch
 
+import yaml
 from fastapi.testclient import TestClient
 
 from cano_hermes import monitoring
@@ -119,17 +122,42 @@ class DashboardRoutesShapeTests(unittest.TestCase):
                 self.assertIn(key, office)
             self.assertIn(office["status"], ("up", "down", "unknown"))
 
+    def test_connections_route_shape(self):
+        """C3 -- schema only, against whatever the real registry/matrix on
+        this host happen to hold right now (same convention
+        `test_offices_route_shape` already uses for docker/kanban: no
+        mocking, just assert the documented top-level shape holds)."""
+        response = self.client.get("/api/dashboard/connections")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        for key in (
+            "generated_at", "registry", "unclaimed_keys", "unclaimed_keys_count",
+            "rotation_pending", "rotation_pending_count", "matrix",
+        ):
+            self.assertIn(key, data)
+        for key in ("status", "detail", "total_keys", "by_domain"):
+            self.assertIn(key, data["registry"])
+        for key in (
+            "status", "date", "report_path", "validators",
+            "validators_totals", "totals", "apify", "rapidapi",
+        ):
+            self.assertIn(key, data["matrix"])
+        self.assertIn(data["matrix"]["status"], ("ok", "sin_datos"))
+
     def test_html_views_respond_200(self):
-        for path in ("/dashboard/finance", "/dashboard/orders", "/dashboard/offices"):
+        for path in ("/dashboard/finance", "/dashboard/orders", "/dashboard/offices", "/dashboard/connections"):
             response = self.client.get(path)
             self.assertEqual(response.status_code, 200, path)
             self.assertIn("text/html", response.headers["content-type"])
 
     def test_html_views_link_to_each_other(self):
         """K14's nav bar (`_dashboard_nav`) -- every dashboard page links to
-        the other 3, not just its own content."""
+        the other views, not just its own content."""
         response = self.client.get("/dashboard/finance")
-        for href in ("/dashboard", "/dashboard/finance", "/dashboard/orders", "/dashboard/offices"):
+        for href in (
+            "/dashboard", "/dashboard/finance", "/dashboard/orders",
+            "/dashboard/offices", "/dashboard/connections",
+        ):
             self.assertIn(f'href="{href}"', response.text)
 
 
@@ -231,6 +259,131 @@ class FinanceAndOrdersAggregationTests(unittest.TestCase):
         seeded = dashboards.finance_dashboard(self.store, self.budget)
         self.assertNotEqual(seeded["cost_by_order"], [])
         self.assertNotEqual(seeded["cost_by_executor"], [])
+
+
+class ConnectionsAggregationTests(unittest.TestCase):
+    """C3 -- seeds a tmp_path `key_registry.yaml` (never the real vault
+    mirror) and mocks `monitoring.latest_connection_matrix_summary()`
+    (never a real report file, never network) to confirm
+    `connections_dashboard()` genuinely aggregates both sources instead of
+    returning an always-empty shape -- same criterion
+    `FinanceAndOrdersAggregationTests`/`content_dashboard`'s own tests use
+    for the other views."""
+
+    def setUp(self):
+        self._tmpdir = tempfile.TemporaryDirectory()
+        self.tmp_path = Path(self._tmpdir.name)
+
+    def tearDown(self):
+        self._tmpdir.cleanup()
+
+    def _write_registry(self) -> Path:
+        registry_path = self.tmp_path / "key_registry.yaml"
+        registry_path.write_text(
+            yaml.safe_dump({
+                "_meta": {"nota": "fixture de test, nunca el vault real"},
+                "llaves": [
+                    {
+                        "nombre": "TEST_KEY_CLAIMED", "proveedor": "TestProv", "dominio": "starhome",
+                        "uso": "fixture", "consumidores": ["repo/file.py:1"],
+                        "validacion": "live-free", "riesgo": "bajo",
+                        "rotacion_pendiente": False, "rotacion_motivo": "",
+                    },
+                    {
+                        "nombre": "TEST_KEY_UNCLAIMED", "proveedor": "TestProv", "dominio": "otro-proyecto",
+                        "uso": "fixture", "consumidores": [],
+                        "validacion": "presence-only", "riesgo": "alto",
+                        "rotacion_pendiente": False, "rotacion_motivo": "",
+                    },
+                    {
+                        "nombre": "TEST_KEY_ROTATE", "proveedor": "TestProv", "dominio": "factory-v5",
+                        "uso": "fixture", "consumidores": ["repo/other.py:5"],
+                        "validacion": "live-free", "riesgo": "alto",
+                        "rotacion_pendiente": True, "rotacion_motivo": "expuesta en logs",
+                    },
+                ],
+            }),
+            encoding="utf-8",
+        )
+        return registry_path
+
+    def test_connections_dashboard_aggregates_registry_and_matrix(self):
+        registry_path = self._write_registry()
+        fake_matrix = {
+            "date": "2026-01-01",
+            "report_path": "reports/connection-matrix-2026-01-01.md",
+            "totals": {"✓": 1, "✗": 0, "—": 0},
+            "validators": {
+                "testprov": {"status": "✓", "detail": "200 ok", "latency_ms": 123, "quota": None},
+            },
+            "validators_totals": {"✓": 1, "✗": 0, "—": 0, "policy-skip": 0},
+            "apify": {"status": "—", "detail": "n/a"},
+            "rapidapi": {"status": "—", "detail": "n/a"},
+        }
+
+        with patch(
+            "cano_hermes.orchestration.dashboards.monitoring.latest_connection_matrix_summary",
+            return_value=fake_matrix,
+        ):
+            data = dashboards.connections_dashboard(registry_path=registry_path)
+
+        self.assertEqual(data["registry"]["status"], "ok")
+        self.assertEqual(data["registry"]["total_keys"], 3)
+        self.assertEqual(data["registry"]["by_domain"], {"factory-v5": 1, "otro-proyecto": 1, "starhome": 1})
+
+        self.assertEqual(data["unclaimed_keys_count"], 1)
+        self.assertEqual(data["unclaimed_keys"][0]["nombre"], "TEST_KEY_UNCLAIMED")
+
+        self.assertEqual(data["rotation_pending_count"], 1)
+        self.assertEqual(data["rotation_pending"][0]["nombre"], "TEST_KEY_ROTATE")
+        self.assertEqual(data["rotation_pending"][0]["rotacion_motivo"], "expuesta en logs")
+
+        self.assertEqual(data["matrix"]["status"], "ok")
+        self.assertEqual(data["matrix"]["date"], "2026-01-01")
+        self.assertEqual(len(data["matrix"]["validators"]), 1)
+        self.assertEqual(data["matrix"]["validators"][0]["provider"], "testprov")
+        self.assertEqual(data["matrix"]["validators"][0]["latency_ms"], 123)
+        self.assertEqual(data["matrix"]["validators_totals"]["✓"], 1)
+
+    def test_connections_dashboard_handles_missing_matrix_without_raising(self):
+        """`latest_connection_matrix_summary()` returning None (audit never
+        ran in this environment) must not raise -- the endpoint still
+        responds 200 with an explicit 'sin_datos' section."""
+        registry_path = self._write_registry()
+
+        with patch(
+            "cano_hermes.orchestration.dashboards.monitoring.latest_connection_matrix_summary",
+            return_value=None,
+        ):
+            data = dashboards.connections_dashboard(registry_path=registry_path)
+
+        self.assertEqual(data["matrix"]["status"], "sin_datos")
+        self.assertEqual(data["matrix"]["validators"], [])
+        self.assertEqual(data["matrix"]["validators_totals"], {})
+        # Registry aggregation must still work even with no matrix data.
+        self.assertEqual(data["registry"]["total_keys"], 3)
+
+    def test_connections_route_survives_missing_matrix(self):
+        """HTTP-level guard for the same contract: the FastAPI route
+        itself must stay 200, not just the aggregation function."""
+        from cano_hermes.api import dependencies
+        from cano_hermes.api.app import app
+
+        for cached in (
+            dependencies.store, dependencies.registry, dependencies.engine,
+            dependencies.approvals, dependencies.budget,
+            dependencies.execution_service, dependencies.forge_pipeline,
+        ):
+            cached.cache_clear()
+
+        with patch(
+            "cano_hermes.orchestration.dashboards.monitoring.latest_connection_matrix_summary",
+            return_value=None,
+        ), TestClient(app) as client:
+            response = client.get("/api/dashboard/connections")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["matrix"]["status"], "sin_datos")
 
 
 class OfficeContainerStatusMatchingTests(unittest.TestCase):

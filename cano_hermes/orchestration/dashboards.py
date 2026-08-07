@@ -734,3 +734,143 @@ def accounting_dashboard(
             "by_negocio_and_month": movements_by_negocio_month,
         },
     }
+
+
+# --------------------------------------------------------------------------
+# C3 (plan StarHome, tras el cierre de HERMES-KICKOFF) -- connections
+# dashboard (`GET /api/dashboard/connections`). Combines the C0 key
+# registry (`config/key_registry.yaml`, 273 vault keys mirrored by NAME
+# only -- its own `_meta.nota` says "Ningún valor de llave vive en este
+# archivo", and nothing here ever reads or surfaces a value either) with
+# the most recent connection-matrix audit written by
+# `scripts/connection_matrix.py`. Reads `monitoring.
+# latest_connection_matrix_summary()` -- the on-disk JSON mirror -- rather
+# than calling any provider live: same "a GET must stay instant, the
+# batch job already paid the network cost" contract `monitoring.py`'s own
+# module docstring establishes for `offices_dashboard`. A registry that
+# fails to parse or a matrix that has never run both degrade to an
+# explicit empty/"sin_datos" section instead of raising, matching every
+# other function in this module.
+# --------------------------------------------------------------------------
+KEY_REGISTRY_PATH = ROOT / "config" / "key_registry.yaml"
+
+
+def _load_key_registry(path: Path | None = None) -> dict[str, Any]:
+    """Read-only parse of `config/key_registry.yaml`. Missing file, bad
+    YAML, or a `llaves` key that isn't a list all degrade to an empty
+    list with an explanatory `status`/`detail` -- never a raised
+    exception, since a stale/corrupt registry mirror must not take down
+    the whole dashboard."""
+    registry_path = path or KEY_REGISTRY_PATH
+    if not registry_path.is_file():
+        return {"status": "ausente", "detail": f"{registry_path} no existe", "llaves": []}
+    try:
+        data = yaml.safe_load(registry_path.read_text(encoding="utf-8")) or {}
+    except (OSError, yaml.YAMLError) as exc:
+        return {"status": "error", "detail": f"{exc.__class__.__name__}: {exc}", "llaves": []}
+    llaves = data.get("llaves")
+    if not isinstance(llaves, list):
+        return {"status": "error", "detail": "'llaves' no es una lista en el registry", "llaves": []}
+    return {"status": "ok", "detail": None, "llaves": llaves}
+
+
+def connections_dashboard(*, registry_path: Path | None = None) -> dict[str, Any]:
+    """`GET /api/dashboard/connections`'s data: the registry-of-keys
+    summary (count by `dominio`, keys with no detected `consumidores`,
+    keys flagged `rotacion_pendiente`) crossed with the latest
+    `connection_matrix.py` audit (per-provider ✓/✗/—/policy-skip status,
+    latency, quota, plus the run's own totals and date).
+
+    `registry_path` is test-only (a tmp_path fixture instead of the real
+    vault mirror, same convention `content_dashboard`'s path overrides
+    use); production callers (the HTTP route) pass none and get the real
+    `config/key_registry.yaml`. There is no equivalent override for the
+    matrix -- it's always read via `monitoring.
+    latest_connection_matrix_summary()`, so tests patch that function
+    directly rather than the filesystem underneath it.
+    """
+    generated_at = dt.datetime.now(dt.UTC)
+
+    registry = _load_key_registry(registry_path)
+    llaves = registry["llaves"]
+
+    by_domain: dict[str, int] = {}
+    for llave in llaves:
+        domain = llave.get("dominio") or "sin-dominio"
+        by_domain[domain] = by_domain.get(domain, 0) + 1
+
+    unclaimed_keys = sorted(
+        (
+            {"nombre": llave.get("nombre"), "proveedor": llave.get("proveedor"), "dominio": llave.get("dominio")}
+            for llave in llaves
+            if not llave.get("consumidores")
+        ),
+        key=lambda row: row["nombre"] or "",
+    )
+
+    rotation_pending = sorted(
+        (
+            {
+                "nombre": llave.get("nombre"),
+                "proveedor": llave.get("proveedor"),
+                "dominio": llave.get("dominio"),
+                "riesgo": llave.get("riesgo"),
+                "rotacion_motivo": llave.get("rotacion_motivo"),
+            }
+            for llave in llaves
+            if llave.get("rotacion_pendiente")
+        ),
+        key=lambda row: row["nombre"] or "",
+    )
+
+    matrix = monitoring.latest_connection_matrix_summary()
+    if matrix is not None:
+        validators = [
+            {
+                "provider": provider,
+                "status": info.get("status"),
+                "detail": info.get("detail"),
+                "latency_ms": info.get("latency_ms"),
+                "quota": info.get("quota"),
+            }
+            for provider, info in sorted((matrix.get("validators") or {}).items())
+        ]
+        matrix_summary = {
+            "status": "ok",
+            "date": matrix.get("date"),
+            "report_path": matrix.get("report_path"),
+            "validators": validators,
+            "validators_totals": matrix.get("validators_totals") or {},
+            "totals": matrix.get("totals") or {},
+            "apify": matrix.get("apify"),
+            "rapidapi": matrix.get("rapidapi"),
+        }
+    else:
+        # No audit has ever run in this environment -- "sin datos", not a
+        # failure (mirrors `latest_connection_matrix_summary`'s own
+        # docstring contract).
+        matrix_summary = {
+            "status": "sin_datos",
+            "date": None,
+            "report_path": None,
+            "validators": [],
+            "validators_totals": {},
+            "totals": {},
+            "apify": None,
+            "rapidapi": None,
+        }
+
+    return {
+        "generated_at": generated_at.isoformat(),
+        "registry": {
+            "status": registry["status"],
+            "detail": registry["detail"],
+            "total_keys": len(llaves),
+            "by_domain": dict(sorted(by_domain.items())),
+        },
+        "unclaimed_keys": unclaimed_keys,
+        "unclaimed_keys_count": len(unclaimed_keys),
+        "rotation_pending": rotation_pending,
+        "rotation_pending_count": len(rotation_pending),
+        "matrix": matrix_summary,
+    }
