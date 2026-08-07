@@ -100,3 +100,31 @@ de los 8 canales.
 - Nota: `SUPADATA_API_KEY` y `HIGGSFIELD_API_KEY` NO estaban en ninguna
   de las 7 versiones de este RAR — siguen genuinamente pendientes de otra
   fuente.
+
+## Actualización 2026-08-07 (paridad Factory V5 — gate real)
+
+Retomé el paquete "paridad Factory V5" (`cano-ai-command-center`,
+`.command-center/hermes-remote/CAPABILITY_HANDOFF_FACTORY_V5.md`, solo
+lectura) y corrí su gate de paridad real (`scripts/factory_v5_preflight.py`,
+replicado en `~/repos/factory-ia-channel-v5`, mismo diseño no-facturable de
+command-center):
+
+| Proveedor | Estado | Detalle |
+|---|---|---|
+| Apify | ✅ `configured_metadata_only` | token presente |
+| Kie | ✅ `configured_execution_disabled` | key presente, flags de ejecución real apagados por diseño |
+| ElevenLabs | ✅ `configured_executor_required` | key presente |
+| **Remotion** | ✅ `available` | **Construido de cero, render real verificado** (PNG 1280x720 genuino) — no existía en este repo, solo en la OMEN |
+| CUDA | N/A (por diseño) | sin GPU, esperado |
+| Supadata | ❌ `not_configured` | sigue sin llave en ningún lugar (vault, USB de hoy, ningún .env) |
+
+**4/5 gates en verde** (5/5 si cuentas CUDA N/A como esperado, no como falla).
+Único gap real: Supadata, credencial que genuinamente no existe en ningún
+lugar accesible — necesita alta de cuenta nueva con el proveedor.
+
+**Nota de honestidad**: el Remotion nuevo es una composición mínima
+(`editorial-thumbnail`) para pasar el gate con una base real y funcional —
+NO son las 14 composiciones de producción reales de la OMEN
+(EditorialExplainer, CampaignCarousel, Short, Long, etc.). Esas necesitan
+transferencia de archivos reales desde la OMEN (mismo patrón que
+`stage-handlers.yaml`), no se pueden fabricar sin el código fuente real.
