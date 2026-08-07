@@ -36,6 +36,7 @@ from __future__ import annotations
 
 import datetime
 import json
+import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -52,6 +53,107 @@ from cano_hermes.orchestration import dashboards  # noqa: E402
 from cano_hermes.storage.sqlite import SQLiteStore  # noqa: E402
 
 BUDGET_ALERT_THRESHOLD = 0.8
+
+# C5 -- where `scripts/connection_matrix.py`'s `compute_and_render()` writes
+# its daily JSON mirror (`reports/connection-matrix-<fecha>.json`, see that
+# module's `REPO_ROOT / "reports"`). Read-only from here.
+REPORTS_DIR = ROOT / "reports"
+CONNECTION_MATRIX_DATE_RE = re.compile(r"^connection-matrix-(\d{4}-\d{2}-\d{2})\.json$")
+
+
+def _load_previous_connection_matrix(
+    today: str, reports_dir: Path | None = None
+) -> dict[str, Any] | None:
+    """C5 -- best-effort load of the most recent `connection-matrix-<fecha>.json`
+    strictly before `today`, for the regression alert below. Prefers yesterday's
+    exact date (`today - 1 day`); if that specific file doesn't exist, falls back
+    to the next most recent one available in `reports/` (excluding today's own
+    file, which may already have been written by a previous invocation this same
+    day). Returns `None` -- never raises -- when there is no prior report at all
+    (first day of the system) or the directory/file can't be read/parsed: a
+    missing history must not break the cycle."""
+    reports_dir = reports_dir or REPORTS_DIR
+    try:
+        today_date = datetime.date.fromisoformat(today)
+    except ValueError:
+        today_date = datetime.date.today()
+    yesterday = (today_date - datetime.timedelta(days=1)).isoformat()
+
+    candidate_path: Path | None = None
+    yesterday_path = reports_dir / f"connection-matrix-{yesterday}.json"
+    if yesterday_path.is_file():
+        candidate_path = yesterday_path
+    elif reports_dir.is_dir():
+        dated: list[tuple[str, Path]] = []
+        for path in reports_dir.glob("connection-matrix-*.json"):
+            m = CONNECTION_MATRIX_DATE_RE.match(path.name)
+            if not m:
+                continue
+            date_str = m.group(1)
+            if date_str >= today:
+                continue
+            dated.append((date_str, path))
+        if dated:
+            dated.sort(key=lambda pair: pair[0])
+            candidate_path = dated[-1][1]
+
+    if candidate_path is None:
+        return None
+    try:
+        return json.loads(candidate_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+
+
+def _detect_connection_regressions(
+    today_connections: Any, previous_matrix: dict[str, Any] | None
+) -> list[str]:
+    """C5 -- pure comparison, split out from `run_cycle()` so it's directly
+    unit-testable without running the full cycle: providers whose `validators[
+    provider]["status"]` was `"✓"` in `previous_matrix` and is `"✗"` in
+    `today_connections["validators"]`, sorted. Degrades to `[]` (never
+    raises, never a false alert) when there's no prior report, or either
+    side is missing/malformed (e.g. today's connections step itself errored,
+    or an old-format JSON with no `validators` key at all)."""
+    if previous_matrix is None or not isinstance(today_connections, dict):
+        return []
+    today_validators = today_connections.get("validators") or {}
+    previous_validators = previous_matrix.get("validators") or {}
+    regressed = [
+        provider
+        for provider, previous_info in previous_validators.items()
+        if isinstance(previous_info, dict)
+        and previous_info.get("status") == "✓"
+        and isinstance(today_validators.get(provider), dict)
+        and today_validators[provider].get("status") == "✗"
+    ]
+    return sorted(regressed)
+
+
+def _key_registry_summary() -> dict[str, Any]:
+    """C5 -- read-only counts from `config/key_registry.yaml` (C0) for the
+    daily report and Baserow metrics: keys with no detected consumer
+    (`consumidores` empty) and keys flagged `rotacion_pendiente`. Reuses
+    `dashboards._load_key_registry()` -- same registry the C3
+    `/dashboard/connections` view reads, same "never raise" contract (a
+    missing/corrupt registry degrades to zero counts with a `status`/
+    `detail` explaining why, not an exception that kills the cycle)."""
+    try:
+        registry = dashboards._load_key_registry()
+    except Exception as exc:  # noqa: BLE001 -- one failing step must not kill the cycle
+        return {
+            "status": "error", "detail": str(exc),
+            "unclaimed_count": 0, "rotation_pending_count": 0,
+        }
+    llaves = registry.get("llaves") or []
+    unclaimed_count = sum(1 for llave in llaves if not llave.get("consumidores"))
+    rotation_pending_count = sum(1 for llave in llaves if llave.get("rotacion_pendiente"))
+    return {
+        "status": registry.get("status", "ok"),
+        "detail": registry.get("detail"),
+        "unclaimed_count": unclaimed_count,
+        "rotation_pending_count": rotation_pending_count,
+    }
 
 
 def memory_candidates_snapshot(store: SQLiteStore) -> dict[str, Any]:
@@ -92,6 +194,10 @@ def run_cycle() -> dict[str, Any]:
         result["connections"] = monitoring.run_connection_matrix()
     except Exception as exc:  # noqa: BLE001 -- one failing step must not kill the cycle
         result["connections"] = {"status": "error", "detail": str(exc)}
+
+    # 1b. Key registry (C0) counts -- unclaimed / rotation-pending, surfaced
+    # in the report and Baserow (C5).
+    result["key_registry"] = _key_registry_summary()
 
     # 2. Health.
     result["health"] = {
@@ -155,6 +261,27 @@ def run_cycle() -> dict[str, Any]:
             f"Presupuesto del día al {percent_used * 100:.0f}% "
             f"(${ledger.spent_usd:.2f} de ${ledger.daily_limit_usd:.2f})."
         )
+
+    # C5 -- regression alert: compare today's live validators against the
+    # most recent prior connection-matrix JSON. This is the central piece
+    # of C5 ("eso es lo que de verdad hay que ver a tiempo"): a provider
+    # that was ✓ yesterday and is ✗ today is worth a human's attention even
+    # when nothing else in the cycle flagged a problem. No prior report
+    # (first day, or the connections step itself errored today) means no
+    # comparison is possible -- that degrades to "nothing to compare",
+    # never a false alert.
+    previous_matrix = _load_previous_connection_matrix(today)
+    regressed_providers = _detect_connection_regressions(result.get("connections"), previous_matrix)
+    result["connections_regression"] = {
+        "previous_report_found": previous_matrix is not None,
+        "regressed_providers": regressed_providers,
+    }
+    if regressed_providers:
+        alerts.append(
+            "⚠️ ATENCIÓN: proveedor(es) que estaban ✓ ayer y hoy están ✗: "
+            + ", ".join(regressed_providers) + "."
+        )
+
     result["alerts"] = alerts
 
     return result
@@ -191,6 +318,39 @@ def render_markdown(result: dict[str, Any]) -> str:
         )
         lines.append(f"- Apify: {conn.get('apify', {}).get('status')} — {conn.get('apify', {}).get('detail')}")
         lines.append(f"- RapidAPI: {conn.get('rapidapi', {}).get('status')} — {conn.get('rapidapi', {}).get('detail')}")
+
+        # C5 -- validadores en vivo (~30 proveedores, scripts/validators/registry.py
+        # vía connection_matrix.py). `detail` de estos validadores nunca contiene
+        # valores de llave (solo nombres de variable de entorno / texto
+        # descriptivo -- ver scripts/validators/registry.py), así que es seguro
+        # imprimirlo aquí tal cual.
+        validators_totals = conn.get("validators_totals") or {}
+        lines.append(
+            f"- Validadores en vivo: ✓{validators_totals.get('✓', '?')} "
+            f"✗{validators_totals.get('✗', '?')} —{validators_totals.get('—', '?')} "
+            f"policy-skip{validators_totals.get('policy-skip', '?')}"
+        )
+        validators = conn.get("validators") or {}
+        failed_validators = sorted(
+            (name, info) for name, info in validators.items()
+            if isinstance(info, dict) and info.get("status") == "✗"
+        )
+        if failed_validators:
+            lines.append("- Proveedores en ✗ (validador en vivo):")
+            for name, info in failed_validators:
+                lines.append(f"  - `{name}`: {info.get('detail')}")
+        else:
+            lines.append("- Proveedores en ✗ (validador en vivo): ninguno.")
+
+    key_registry = result.get("key_registry", {})
+    lines.append(
+        f"- Llaves sin consumidor (`config/key_registry.yaml`): "
+        f"**{key_registry.get('unclaimed_count', 0)}**"
+    )
+    lines.append(
+        f"- Llaves con rotación pendiente (`config/key_registry.yaml`): "
+        f"**{key_registry.get('rotation_pending_count', 0)}**"
+    )
     lines.append("")
 
     health = result["health"]
@@ -281,6 +441,17 @@ def write_baserow_metrics(result: dict[str, Any]) -> list[dict[str, Any]]:
     )
     budget = result["costs"]["budget"]
 
+    # C5 -- validadores en vivo (~30 proveedores) y registry de llaves (C0).
+    validators_totals = result.get("connections", {}).get("validators_totals") or {}
+    validators_total_checks = sum(
+        validators_totals.get(k, 0) for k in ("✓", "✗", "—", "policy-skip")
+    )
+    validators_ok_pct = (
+        (validators_totals.get("✓", 0) / validators_total_checks * 100.0)
+        if validators_total_checks else 0.0
+    )
+    key_registry = result.get("key_registry", {})
+
     rows_to_write = [
         ("sistema", "connection_matrix_ok_pct", round(conn_ok_pct, 2), "F2, % de variables ✓ sobre el total revisado"),
         ("sistema", "starhome_api_health", 1.0 if result["health"]["starhome_api"]["status"] == "ok" else 0.0, ""),
@@ -289,6 +460,14 @@ def write_baserow_metrics(result: dict[str, Any]) -> list[dict[str, Any]]:
         ("sistema", "budget_remaining_usd", round(budget["remaining_usd"], 4), ""),
         ("costos", "usage_files_total_cost_usd", result["costs"]["usage_files"]["total_cost_usd"], ""),
         ("ugc", "performance_classification", 0.0, result["ugc_performance"]["note"]),
+        ("sistema", "validators_ok_pct", round(validators_ok_pct, 2),
+         "C5/C1, % de proveedores ✓ sobre los validadores en vivo corridos"),
+        ("sistema", "validators_policy_skip_count", float(validators_totals.get("policy-skip", 0)),
+         "C5/C1, proveedores en policy-skip (sin red por política, no es fallo)"),
+        ("sistema", "unclaimed_keys_count", float(key_registry.get("unclaimed_count", 0)),
+         "C5/C0, llaves del vault sin consumidor detectado en código"),
+        ("sistema", "rotation_pending_count", float(key_registry.get("rotation_pending_count", 0)),
+         "C5/C0, llaves marcadas rotacion_pendiente en config/key_registry.yaml"),
     ]
 
     written = []

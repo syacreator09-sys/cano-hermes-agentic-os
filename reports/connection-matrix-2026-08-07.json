@@ -57,6 +57,12 @@
     "—": 65
   },
   "validators": {
+    "groq": {
+      "status": "—",
+      "detail": "sin llave utilizable en el vault (GROQ_API_KEY)",
+      "latency_ms": null,
+      "quota": null
+    },
     "anthropic": {
       "status": "—",
       "detail": "sin llave utilizable en el vault (ANTHROPIC_API_KEY)",
@@ -69,16 +75,10 @@
       "latency_ms": null,
       "quota": null
     },
-    "groq": {
-      "status": "—",
-      "detail": "sin llave utilizable en el vault (GROQ_API_KEY)",
-      "latency_ms": null,
-      "quota": null
-    },
     "openrouter": {
       "status": "✓",
       "detail": "200 -- estado de la llave obtenido",
-      "latency_ms": 386,
+      "latency_ms": 219,
       "quota": {
         "limit_remaining": null,
         "is_free_tier": true
@@ -87,7 +87,7 @@
     "cohere": {
       "status": "✓",
       "detail": "200 -- lista de modelos obtenida",
-      "latency_ms": 455,
+      "latency_ms": 288,
       "quota": null
     },
     "perplexity": {
@@ -99,79 +99,79 @@
     "mistral": {
       "status": "✗",
       "detail": "llave invalida o sin permiso (HTTP 401)",
-      "latency_ms": 465,
-      "quota": null
-    },
-    "gemini": {
-      "status": "—",
-      "detail": "respuesta inesperada HTTP 400",
-      "latency_ms": 515,
-      "quota": null
-    },
-    "kimi_moonshot": {
-      "status": "✓",
-      "detail": "200 -- lista de modelos obtenida (`KIMI_API_KEY`)",
-      "latency_ms": 580,
+      "latency_ms": 324,
       "quota": null
     },
     "nvidia_nim": {
       "status": "✓",
       "detail": "200 -- lista de modelos obtenida",
-      "latency_ms": 583,
+      "latency_ms": 388,
       "quota": null
     },
     "xai": {
       "status": "✗",
       "detail": "llave invalida o sin permiso (HTTP 403)",
-      "latency_ms": 204,
+      "latency_ms": 184,
+      "quota": null
+    },
+    "gemini": {
+      "status": "—",
+      "detail": "respuesta inesperada HTTP 400",
+      "latency_ms": 405,
+      "quota": null
+    },
+    "kimi_moonshot": {
+      "status": "✓",
+      "detail": "200 -- lista de modelos obtenida (`KIMI_API_KEY`)",
+      "latency_ms": 452,
       "quota": null
     },
     "replicate": {
       "status": "✗",
       "detail": "llave invalida o sin permiso (HTTP 403)",
-      "latency_ms": 205,
+      "latency_ms": 166,
       "quota": null
     },
     "apify": {
       "status": "✓",
       "detail": "200 -- perfil de usuario obtenido (`APIFY_API_KEY`)",
-      "latency_ms": 714,
-      "quota": null
-    },
-    "openai": {
-      "status": "✓",
-      "detail": "200 -- lista de modelos obtenida",
-      "latency_ms": 756,
+      "latency_ms": 510,
       "quota": null
     },
     "elevenlabs": {
       "status": "—",
       "detail": "respuesta inesperada HTTP 400",
-      "latency_ms": 233,
+      "latency_ms": 182,
       "quota": null
     },
-    "supabase": {
-      "status": "—",
-      "detail": "proyecto orion: error de red: URLError",
-      "latency_ms": 105,
-      "quota": null
-    },
-    "github": {
-      "status": "✗",
-      "detail": "llave invalida o sin permiso (HTTP 401)",
-      "latency_ms": 286,
+    "openai": {
+      "status": "✓",
+      "detail": "200 -- lista de modelos obtenida",
+      "latency_ms": 653,
       "quota": null
     },
     "heygen": {
       "status": "✗",
       "detail": "llave invalida (HTTP 401)",
-      "latency_ms": 372,
+      "latency_ms": 283,
       "quota": null
     },
     "cloudflare": {
       "status": "✓",
       "detail": "200 -- token `CLOUDFLARE_AUTH_TOKEN` activo",
-      "latency_ms": 241,
+      "latency_ms": 199,
+      "quota": null
+    },
+    "github": {
+      "status": "✗",
+      "detail": "llave invalida o sin permiso (HTTP 401)",
+      "latency_ms": 263,
+      "quota": null
+    },
+    "notion": {
+      "status": "✓",
+      "detail": "200 -- bot user obtenido",
+      "latency_ms": 296,
       "quota": null
     },
     "exa": {
@@ -180,40 +180,40 @@
       "latency_ms": null,
       "quota": null
     },
-    "baserow": {
+    "supabase": {
       "status": "—",
-      "detail": "error de red/host no disponible: URLError",
-      "latency_ms": 186,
-      "quota": null
-    },
-    "n8n": {
-      "status": "—",
-      "detail": "error de red/host no disponible: URLError",
-      "latency_ms": 184,
+      "detail": "proyecto orion: error de red: URLError",
+      "latency_ms": 79,
       "quota": null
     },
     "pexels": {
       "status": "✗",
       "detail": "llave invalida o sin permiso (HTTP 403)",
-      "latency_ms": 129,
+      "latency_ms": 80,
       "quota": null
     },
-    "notion": {
-      "status": "✓",
-      "detail": "200 -- bot user obtenido",
-      "latency_ms": 568,
+    "baserow": {
+      "status": "—",
+      "detail": "error de red/host no disponible: URLError",
+      "latency_ms": 204,
       "quota": null
     },
-    "stripe": {
-      "status": "✓",
-      "detail": "200 -- balance obtenido (`STRIPE_SECRET_KEY`)",
-      "latency_ms": 404,
+    "n8n": {
+      "status": "—",
+      "detail": "error de red/host no disponible: URLError",
+      "latency_ms": 191,
+      "quota": null
+    },
+    "upstash": {
+      "status": "—",
+      "detail": "error de red: URLError",
+      "latency_ms": 43,
       "quota": null
     },
     "deepl": {
       "status": "✓",
       "detail": "200 -- uso consultado",
-      "latency_ms": 706,
+      "latency_ms": 674,
       "quota": {
         "character_count": 0,
         "character_limit": 500000
@@ -237,22 +237,16 @@
       "latency_ms": null,
       "quota": null
     },
-    "telegram": {
+    "stripe": {
       "status": "✓",
-      "detail": "200 -- getMe ok (`TELEGRAM_BOT_TOKEN`)",
-      "latency_ms": 636,
-      "quota": null
-    },
-    "upstash": {
-      "status": "—",
-      "detail": "error de red: URLError",
-      "latency_ms": 259,
+      "detail": "200 -- balance obtenido (`STRIPE_SECRET_KEY`)",
+      "latency_ms": 459,
       "quota": null
     },
     "firecrawl": {
       "status": "✓",
       "detail": "200 -- créditos consultados",
-      "latency_ms": 392,
+      "latency_ms": 331,
       "quota": {
         "remaining_credits": 1294,
         "plan_credits": 1000
@@ -261,32 +255,38 @@
     "huggingface": {
       "status": "✓",
       "detail": "200 -- whoami ok (`HF_TOKEN`)",
-      "latency_ms": 213,
+      "latency_ms": 148,
+      "quota": null
+    },
+    "telegram": {
+      "status": "✓",
+      "detail": "200 -- getMe ok (`TELEGRAM_BOT_TOKEN`)",
+      "latency_ms": 581,
       "quota": null
     },
     "cloudinary": {
       "status": "✗",
       "detail": "credenciales inválidas (HTTP 401)",
-      "latency_ms": 515,
+      "latency_ms": 304,
       "quota": null
     },
     "uploadpost": {
       "status": "✓",
       "detail": "200 -- perfiles listados",
-      "latency_ms": 634,
+      "latency_ms": 601,
       "quota": null
     },
     "pixabay": {
-      "status": "✓",
-      "detail": "200 -- búsqueda de prueba ok",
-      "latency_ms": 2105,
+      "status": "—",
+      "detail": "error de red: TimeoutError",
+      "latency_ms": 5043,
       "quota": null
     }
   },
   "validators_totals": {
-    "✓": 18,
+    "✓": 17,
     "✗": 7,
-    "—": 8,
+    "—": 9,
     "policy-skip": 3
   },
   "apify": {
