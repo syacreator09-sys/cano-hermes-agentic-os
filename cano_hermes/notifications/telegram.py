@@ -21,6 +21,7 @@ production.
 from __future__ import annotations
 
 import logging
+from pathlib import Path
 
 import httpx
 
@@ -29,6 +30,12 @@ from cano_hermes.config import settings
 logger = logging.getLogger(__name__)
 
 TELEGRAM_API_BASE = "https://api.telegram.org"
+
+# A2 (plan AUTONOMÍA TOTAL, 2026-08-08): Telegram's own Bot API hard limit
+# for `sendDocument` -- uploads above this are rejected by Telegram itself
+# (413), so this is checked BEFORE ever making the request, not learned
+# from a failed one.
+TELEGRAM_MAX_DOCUMENT_BYTES = 50 * 1024 * 1024
 
 
 def send_telegram_message(text: str, timeout: float = 10.0) -> bool:
@@ -59,5 +66,62 @@ def send_telegram_message(text: str, timeout: float = 10.0) -> bool:
         response.raise_for_status()
     except httpx.HTTPError as exc:
         logger.warning("Envío a Telegram falló (%s) -- notificación omitida", exc.__class__.__name__)
+        return False
+    return True
+
+
+def send_telegram_document(path: str, caption: str = "", timeout: float = 60.0) -> bool:
+    """Best-effort file delivery via `sendDocument` (multipart/form-data).
+    Same never-raise contract as `send_telegram_message`: every failure
+    mode (no credentials, missing file, oversized file, network error,
+    non-2xx from Telegram) logs a warning and returns False, never raises
+    -- a delivery is a side effect of a task/cycle completing, not part of
+    it (see A2's callers in aggregator.py / daily_cycle.py).
+
+    A file over `TELEGRAM_MAX_DOCUMENT_BYTES` is never uploaded (Telegram
+    itself would reject it) -- instead this falls back to
+    `send_telegram_message` with the local path appended to `caption`, so
+    Cano still gets an honest notification pointing at where the file
+    actually lives, rather than a silent failure.
+
+    Never logs the token or the file's content. Longer timeout default
+    than `send_telegram_message` (60s vs 10s) since this uploads a real
+    file body, not a short JSON payload.
+    """
+    token = settings.telegram_bot_token
+    chat_id = settings.telegram_chat_id
+    if not token or not chat_id:
+        logger.warning(
+            "Telegram no configurado (falta TELEGRAM_BOT_TOKEN o TELEGRAM_CHAT_ID) -- envío de documento omitido"
+        )
+        return False
+
+    file_path = Path(path)
+    if not file_path.is_file():
+        logger.warning("Documento no encontrado en %s -- envío omitido", file_path)
+        return False
+
+    size = file_path.stat().st_size
+    if size > TELEGRAM_MAX_DOCUMENT_BYTES:
+        logger.warning(
+            "Documento %s excede el límite de Telegram (%d bytes > %d) -- "
+            "se envía la ruta local por texto en su lugar",
+            file_path, size, TELEGRAM_MAX_DOCUMENT_BYTES,
+        )
+        fallback = f"{caption}\n\n[archivo demasiado grande para Telegram, {size} bytes]\n{file_path}".strip()
+        return send_telegram_message(fallback, timeout=timeout)
+
+    url = f"{TELEGRAM_API_BASE}/bot{token}/sendDocument"
+    try:
+        with file_path.open("rb") as fh:
+            response = httpx.post(
+                url,
+                data={"chat_id": chat_id, "caption": caption},
+                files={"document": (file_path.name, fh)},
+                timeout=timeout,
+            )
+        response.raise_for_status()
+    except httpx.HTTPError as exc:
+        logger.warning("Envío de documento a Telegram falló (%s) -- notificación omitida", exc.__class__.__name__)
         return False
     return True

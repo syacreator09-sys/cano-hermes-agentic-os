@@ -25,6 +25,10 @@ publicación):
      vía su API REST con `BASEROW_TOKEN` del vault) y un reporte markdown
      en `reports/daily/<fecha>.md`, con un `⚠️ ATENCIÓN:` arriba del
      documento si algo de salud falló o el presupuesto del día superó 80%.
+  8. A2 (plan AUTONOMÍA TOTAL, 2026-08-08): envía ese reporte como
+     documento real de Telegram (`notify_daily_report`) -- antes de esto
+     el reporte solo quedaba escrito en disco, sin empujarse a ningún
+     lado; best-effort, nunca rompe el ciclo si Telegram falla.
 
 Se invoca por cron real vía `hermes cron create --script ... --no-agent`
 (mismo patrón que los jobs `heartbeat-salud`/`backup-diario-vault` ya
@@ -49,6 +53,7 @@ from cano_hermes import monitoring  # noqa: E402
 from cano_hermes.config import settings  # noqa: E402
 from cano_hermes.governance.budget import BudgetService  # noqa: E402
 from cano_hermes.governance.memory_candidates import MemoryCandidateService  # noqa: E402
+from cano_hermes.notifications.telegram import send_telegram_document  # noqa: E402
 from cano_hermes.orchestration import dashboards  # noqa: E402
 from cano_hermes.storage.sqlite import SQLiteStore  # noqa: E402
 
@@ -547,6 +552,22 @@ def write_finance_and_orders_snapshot(store: SQLiteStore, budget_service: Budget
     return {"metric_writes": metric_writes, "expense_writes": expense_writes}
 
 
+def notify_daily_report(report_path: Path, alerts: list[str]) -> bool:
+    """A2 (plan AUTONOMÍA TOTAL, 2026-08-08): the plan assumed this cron
+    job already delivered its report over Telegram -- confirmed live it
+    did not (no telegram/notify reference anywhere in this file before
+    this function); it only ever wrote `report_path` to disk and printed
+    a summary to stdout, silent unless someone happened to look. Sends
+    the real report file as a document so Cano gets it pushed, not just
+    written somewhere he'd have to remember to check. Best-effort, same
+    never-raise contract as everything else in notifications/telegram.py
+    -- a failed delivery must never fail the whole daily cycle run."""
+    caption = f"📊 Ciclo diario — {report_path.stem}"
+    if alerts:
+        caption += f"\n⚠️ {len(alerts)} alerta(s)"
+    return send_telegram_document(str(report_path), caption)
+
+
 def main() -> int:
     result = run_cycle()
 
@@ -562,11 +583,13 @@ def main() -> int:
     report_dir.mkdir(parents=True, exist_ok=True)
     report_path = report_dir / f"{result['date']}.md"
     report_path.write_text(render_markdown(result), encoding="utf-8")
+    telegram_sent = notify_daily_report(report_path, result["alerts"])
 
     baserow_ok = sum(1 for w in baserow_writes if w["result"].get("status") == "ok")
     snapshot_metric_ok = sum(1 for w in finance_orders_snapshot["metric_writes"] if w["result"].get("status") == "ok")
     snapshot_expense_ok = sum(1 for w in finance_orders_snapshot["expense_writes"] if w["result"].get("status") == "ok")
     print(f"reporte diario: {report_path}")
+    print(f"telegram: {'enviado' if telegram_sent else 'omitido/falló'}")
     print(f"alertas: {len(result['alerts'])}")
     print(f"baserow: {baserow_ok}/{len(baserow_writes)} filas escritas en metricas_diarias")
     print(

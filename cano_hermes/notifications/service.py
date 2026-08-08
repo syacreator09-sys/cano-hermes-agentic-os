@@ -25,13 +25,21 @@ down with it either.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from cano_hermes.domain.enums import TaskStatus
 from cano_hermes.domain.models import ApprovalRequest, OrderRecord, TaskRecord
 from cano_hermes.storage.sqlite import SQLiteStore
 
-from .telegram import send_telegram_message
+from .telegram import TELEGRAM_MAX_DOCUMENT_BYTES, send_telegram_document, send_telegram_message
 
 _ARTIFACTS_PREVIEW_LIMIT = 10
+
+# A2 (plan AUTONOMÍA TOTAL, 2026-08-08): only these are worth Cano actually
+# opening on his phone as a document -- the rest of an order's artifacts
+# (workspace scratch files, raw JSON, etc.) stay text-only in the summary
+# message above, same as before A2.
+_DELIVERABLE_SUFFIXES = {".md", ".png", ".mp4", ".pdf"}
 
 
 class NotificationService:
@@ -107,6 +115,25 @@ class NotificationService:
             if remaining > 0:
                 lines.append(f"  ... y {remaining} más")
         send_telegram_message("\n".join(lines))
+        self._deliver_documents(order, artifacts)
+
+    def _deliver_documents(self, order: OrderRecord, artifacts: list[str]) -> None:
+        """A2 (plan AUTONOMÍA TOTAL, 2026-08-08): the summary message above
+        only ever listed artifact paths as text -- Cano had to already be
+        on this machine to open one. Send the real deliverable files
+        (md/png/mp4/pdf, within Telegram's own size limit -- checked here
+        too, not just inside send_telegram_document, so an oversized file
+        never even attempts an upload for every artifact in a big batch)
+        as actual Telegram documents. Best-effort per file: one failing
+        upload must never block the rest of the batch."""
+        caption_prefix = order.objective.strip().splitlines()[0][:80]
+        for path_str in artifacts:
+            path = Path(path_str)
+            if path.suffix.lower() not in _DELIVERABLE_SUFFIXES:
+                continue
+            if not path.is_file() or path.stat().st_size > TELEGRAM_MAX_DOCUMENT_BYTES:
+                continue
+            send_telegram_document(path_str, f"{caption_prefix} — {path.name}")
 
     # -- ApprovalService.request hook ----------------------------------
     def on_approval_requested(self, approval: ApprovalRequest) -> None:
