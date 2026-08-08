@@ -40,7 +40,14 @@ from pathlib import Path
 from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from guion_to_videovox import GuionValidationError, parse_guion, to_scenes_json  # noqa: E402
+from guion_to_videovox import (  # noqa: E402
+    BEATS_LARGO,
+    GuionValidationError,
+    parse_guion,
+    parse_guion_largo,
+    to_scenes_json,
+    to_scenes_json_largo,
+)
 
 import yaml
 
@@ -98,15 +105,61 @@ payoff:
 
 Reglas: 2 a 4 beats. Narración siempre en español natural, hablado, sin sonar a IA. image_prompt siempre en inglés, concreto y visual. Nunca inventes datos/cifras que no estén en las referencias."""
 
+# A4 (plan AUTONOMÍA TOTAL, 2026-08-08): estructura documental fija de 6
+# beats -- verificado leyendo el schema REAL que cano-video-vox espera
+# (src/data/long.json + el tipo Beat en src/scenes/EscenaShort.tsx), no
+# los "7 capitulos" que decía la mission de la oficina hermes-guiones
+# (offices/hermes-guiones/office.yaml -- corregida también en A4). Un
+# guion de 7 capítulos no tendría dónde mapear el 7mo en el render real.
+LONG_GUION_PROMPT_TEMPLATE = """Eres un guionista de documentales cortos en español (formato largo: 3-10 minutos, estructura de 6 beats fijos).
 
-def build_prompt(brief: dict[str, Any], canal: str, tema: str) -> str:
+Perfil de canal: {profile} -- {profile_brief}
+Tema: {tema}
+
+Referencias de qué está funcionando ahora mismo en este nicho (de una búsqueda real de contenido viral, úsalas como inspiración de FORMATO y GANCHO, nunca copies texto ni datos):
+{referencias}
+
+Escribe un guion documental largo en ESPAÑOL siguiendo EXACTAMENTE este formato YAML, sin texto antes ni después, sin bloque de código markdown. Debe tener EXACTAMENTE estos 6 bloques, con estos nombres exactos:
+
+title: "<titulo corto y llamativo>"
+music_prompt: "<descripcion en ingles del estilo de musica de fondo, para un generador de musica IA>"
+hook:
+  keyword: "<3-5 palabras en MAYUSCULAS, el gancho visual>"
+  narration: "<1-2 frases que enganchan en los primeros segundos>"
+  image_prompt: "<descripcion en ingles de la imagen para ese momento>"
+context:
+  keyword: "<palabras clave>"
+  narration: "<frase(s) que dan contexto/antecedente del tema>"
+  image_prompt: "<descripcion en ingles de la imagen>"
+claims:
+  keyword: "<palabras clave>"
+  narration: "<frase(s) con la afirmación central del video>"
+  image_prompt: "<descripcion en ingles de la imagen>"
+evidence:
+  keyword: "<palabras clave>"
+  narration: "<frase(s) con evidencia o fuente concreta que respalda la afirmación>"
+  image_prompt: "<descripcion en ingles de la imagen>"
+counterpoint:
+  keyword: "<palabras clave>"
+  narration: "<frase(s) con un contrapunto, objeción o matiz honesto>"
+  image_prompt: "<descripcion en ingles de la imagen>"
+conclusion:
+  keyword: "<palabras clave del cierre>"
+  narration: "<frase(s) de cierre con CTA suave o remate>"
+  image_prompt: "<descripcion en ingles de la imagen final>"
+
+Reglas: EXACTAMENTE 6 bloques (hook, context, claims, evidence, counterpoint, conclusion), ninguno de más ni de menos. Narración siempre en español natural, hablado, sin sonar a IA. image_prompt siempre en inglés, concreto y visual. Nunca inventes datos/cifras que no estén en las referencias; en 'evidence' cita la fuente real si está en las referencias, o deja el punto como pregunta abierta si no la hay."""
+
+
+def build_prompt(brief: dict[str, Any], canal: str, tema: str, *, formato: str = "corto") -> str:
     profile = CHANNEL_PROFILE.get(canal, "systems-explainer")
     ranking = brief.get("viral_ranking") or []
     referencias = "\n".join(
         f"- \"{r.get('title', '')[:80]}\" ({r.get('platform', '?')}, opportunity_score={r.get('opportunity_score')})"
         for r in ranking[:5]
     ) or "(sin referencias reales disponibles para este brief)"
-    return GUION_PROMPT_TEMPLATE.format(
+    template = LONG_GUION_PROMPT_TEMPLATE if formato == "largo" else GUION_PROMPT_TEMPLATE
+    return template.format(
         profile=profile, profile_brief=PROFILE_BRIEF[profile], tema=tema, referencias=referencias,
     )
 
@@ -130,15 +183,16 @@ def invoke_hermes(prompt: str, *, usage_file: Path, model: str = "kimi-k2.6", pr
     return result.stdout
 
 
-def write_guion(canal: str, brief_path: Path, tema: str | None, *, apply: bool) -> dict[str, Any]:
+def write_guion(canal: str, brief_path: Path, tema: str | None, *, apply: bool, formato: str = "corto") -> dict[str, Any]:
     brief = json.loads(brief_path.read_text(encoding="utf-8"))
     tema_real = tema or brief.get("engine_result", {}).get("run_id", canal).rsplit("-", 1)[0]
-    prompt = build_prompt(brief, canal, tema_real)
+    prompt = build_prompt(brief, canal, tema_real, formato=formato)
 
     fecha = brief_path.parent.name
     out_dir = ROOT / "storage" / "workspaces" / "guiones" / fecha
     usage_file = out_dir / f"{canal}.usage.json"
-    yaml_path = out_dir / f"{canal}.short-script.yaml"
+    suffix = "long-script" if formato == "largo" else "short-script"
+    yaml_path = out_dir / f"{canal}.{suffix}.yaml"
     scenes_path = out_dir / f"{canal}.scenes.json"
 
     if not apply:
@@ -151,11 +205,11 @@ def write_guion(canal: str, brief_path: Path, tema: str | None, *, apply: bool) 
 
     try:
         raw = yaml.safe_load(yaml_text)
-        guion = parse_guion(raw)
+        guion = parse_guion_largo(raw) if formato == "largo" else parse_guion(raw)
     except (yaml.YAMLError, GuionValidationError) as exc:
         return {"status": "error", "detail": f"guion invalido: {exc}", "raw_output_path": str(yaml_path)}
 
-    scenes_json = to_scenes_json(guion)
+    scenes_json = to_scenes_json_largo(guion) if formato == "largo" else to_scenes_json(guion)
     scenes_path.write_text(json.dumps(scenes_json, indent=2, ensure_ascii=False), encoding="utf-8")
 
     usage = json.loads(usage_file.read_text(encoding="utf-8")) if usage_file.exists() else {}
@@ -172,13 +226,16 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--brief", required=True, type=Path, help="ruta al brief de viralidad (P4-B)")
     parser.add_argument("--tema", help="default: derivado del brief")
     parser.add_argument("--apply", action="store_true", help="invoca hermes de verdad (default: dry-run)")
+    parser.add_argument("--formato", choices=("corto", "largo"), default="corto",
+                         help="corto: hook+2-4 beats+payoff (default). largo: 6 beats documentales fijos "
+                              f"({', '.join(BEATS_LARGO)}), ver cano-video-vox src/data/long.json.")
     args = parser.parse_args(argv)
 
     if not args.brief.exists():
         print(f"no existe el brief: {args.brief}", file=sys.stderr)
         return 1
 
-    result = write_guion(args.canal, args.brief, args.tema, apply=args.apply)
+    result = write_guion(args.canal, args.brief, args.tema, apply=args.apply, formato=args.formato)
     print(json.dumps(result, indent=2, ensure_ascii=False))
     return 0 if result["status"] in ("ok", "dry_run") else 1
 

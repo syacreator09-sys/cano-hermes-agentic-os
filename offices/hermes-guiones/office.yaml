@@ -1,5 +1,5 @@
 name: hermes-guiones
-mission: "Escribir guiones reales por canal desde research: narracion 7 capitulos para largos, hooks y reels de 8s, reparacion de scripts corruptos"
+mission: "Escribir guiones reales por canal desde research: narracion documental de 6 beats (hook/context/claims/evidence/counterpoint/conclusion) para largos, hooks y reels de 8s, reparacion de scripts corruptos"
 # P0 (plan POTENCIA, 2026-08-07): `humanizer` es la skill real instalada en
 # ~/.hermes/profiles/hermes-guiones/skills/ (bundled de hermes-agent,
 # skills/creative/humanizer -- equivalente directo de la "humanizalo"

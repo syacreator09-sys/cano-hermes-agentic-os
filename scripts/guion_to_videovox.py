@@ -57,6 +57,15 @@ _FROM_CYCLE = ["left", "bottom", "right", "diag"]
 
 REQUIRED_SCENE_FIELDS = ("keyword", "narration", "image_prompt")
 
+# A4 (plan AUTONOMÍA TOTAL, 2026-08-08): los 6 beats fijos que
+# `cano-video-vox` espera para long-form (verificado leyendo
+# `src/data/long.json` y el tipo `Beat` real en
+# `src/scenes/EscenaShort.tsx` de ese repo) -- a diferencia de short
+# (hook + 2-4 beats flexibles + payoff), largo es una estructura
+# documental fija de 6 beats con nombre semántico propio, no una lista
+# genérica.
+BEATS_LARGO = ("hook", "context", "claims", "evidence", "counterpoint", "conclusion")
+
 
 class GuionValidationError(ValueError):
     pass
@@ -112,10 +121,57 @@ def to_scenes_json(guion: dict[str, Any]) -> dict[str, Any]:
     return {"title": guion["title"], "musicPrompt": guion["music_prompt"], "scenes": scenes}
 
 
-def convert_file(guion_path: Path, out_path: Path) -> dict[str, Any]:
+def parse_guion_largo(raw: dict[str, Any]) -> dict[str, Any]:
+    """Valida el shape largo: title, music_prompt, y un bloque por cada uno
+    de los 6 BEATS_LARGO (no 'beats' genérico como short). Mismos mensajes
+    de error claros por problema, nunca produce un resultado a medias."""
+    if not raw.get("title"):
+        raise GuionValidationError("falta 'title'")
+    if not raw.get("music_prompt"):
+        raise GuionValidationError("falta 'music_prompt'")
+    blocks: dict[str, Any] = {}
+    for beat in BEATS_LARGO:
+        block = raw.get(beat)
+        if block is None:
+            raise GuionValidationError(f"falta el beat '{beat}'")
+        _validate_scene_block(block, beat)
+        blocks[beat] = block
+    return {"title": raw["title"], "music_prompt": raw["music_prompt"], **blocks}
+
+
+def to_scenes_json_largo(guion: dict[str, Any]) -> dict[str, Any]:
+    """Aplana los 6 beats fijos a scenes[] en el shape largo de video-vox
+    -- igual que to_scenes_json() pero cada escena lleva además su
+    "beat" (hook/context/claims/.../conclusion), que gen-video-assets.mjs
+    de cano-video-vox todavía no consume hoy (confirmado leyendo ese
+    script: no referencia "beat" en ninguna parte) -- lo incluye igual
+    porque src/data/long.json, la forma final que sí llega al render, sí
+    lo requiere; enchufar ese threading en gen-video-assets.mjs queda
+    como follow-up explícito en ese repo, no inventado aquí."""
+    scenes = []
+    for i, beat in enumerate(BEATS_LARGO):
+        block = guion[beat]
+        scene_id = str(i + 1).zfill(2)
+        from_dir = block.get("from") or _FROM_CYCLE[i % len(_FROM_CYCLE)]
+        scenes.append({
+            "id": scene_id,
+            "beat": beat,
+            "keyword": block["keyword"],
+            "narration": block["narration"],
+            "imagePrompt": block["image_prompt"],
+            "from": from_dir,
+        })
+    return {"title": guion["title"], "musicPrompt": guion["music_prompt"], "scenes": scenes}
+
+
+def convert_file(guion_path: Path, out_path: Path, *, formato: str = "corto") -> dict[str, Any]:
     raw = yaml.safe_load(guion_path.read_text(encoding="utf-8"))
-    guion = parse_guion(raw)
-    scenes_json = to_scenes_json(guion)
+    if formato == "largo":
+        guion = parse_guion_largo(raw)
+        scenes_json = to_scenes_json_largo(guion)
+    else:
+        guion = parse_guion(raw)
+        scenes_json = to_scenes_json(guion)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(scenes_json, indent=2, ensure_ascii=False), encoding="utf-8")
     return scenes_json
@@ -123,12 +179,13 @@ def convert_file(guion_path: Path, out_path: Path) -> dict[str, Any]:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("guion", type=Path, help="ruta a short-script.yaml")
+    parser.add_argument("guion", type=Path, help="ruta a short-script.yaml (o long-script.yaml con --formato largo)")
     parser.add_argument("--out", type=Path, required=True, help="ruta de salida scenes.json")
+    parser.add_argument("--formato", choices=("corto", "largo"), default="corto")
     args = parser.parse_args(argv)
 
     try:
-        scenes_json = convert_file(args.guion, args.out)
+        scenes_json = convert_file(args.guion, args.out, formato=args.formato)
     except GuionValidationError as exc:
         print(f"guion inválido: {exc}", file=sys.stderr)
         return 1

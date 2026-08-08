@@ -49,7 +49,7 @@ carpeta) y `runbooks/` (checklists heredados del command center).
 | Oficina | Mision | Skills/fuentes clave | Modelo default |
 |---|---|---|---|
 | hermes-research | Radar viral diario (Apify metadata-only) + transcripts bajo demanda (Supadata→Whisper) | providers/apify_*, providers/supadata/, viral_reference_expansion | NIM (clasificar), Sonnet (sintetizar) |
-| hermes-guiones | Guiones reales desde research: narracion 7 capitulos, hooks, 8s-optimizer, repair | runbooks long-narration-writer + content-repair, skills 8s-script-optimizer, scroll-stopper-hooks | Sonnet (prosa final), NIM (borradores masivos) |
+| hermes-guiones | Guiones reales desde research: narracion documental de 6 beats (hook/context/claims/evidence/counterpoint/conclusion), hooks, 8s-optimizer, repair | runbooks long-narration-writer + content-repair, skills 8s-script-optimizer, scroll-stopper-hooks | Sonnet (prosa final), NIM (borradores masivos) |
 | hermes-produccion | Render: Remotion + ffmpeg + edge-tts + MoneyPrinter; QA con ffprobe | scripts/produce_*.py, final_remotion_v2.py, renderers/remotion | Sonnet |
 | hermes-ugc | Scout afiliados → manifest → (gate) → Higgsfield → draft | ugc-affiliate scout, adapters/ugc/affiliate_scout_adapter.py, engines/ugc/ugc-commerce-studio | Sonnet; generacion = gate SIEMPRE |
 | hermes-distribucion | Preparar drafts de subida (YouTube nativo), dedup, metadata veraz | runbook publishing-coordinator, ledger | Sonnet; dispatch = gate SIEMPRE |
