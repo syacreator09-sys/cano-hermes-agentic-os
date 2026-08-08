@@ -1,7 +1,15 @@
 services:
   hermes:
     build: .
-    ports: ["8000:8000"]
+    # A6 (auditoría de seguridad, 2026-08-08): sin binding explícito, Docker
+    # publica esto como 0.0.0.0:8000 -- alcanzable desde toda la LAN, y
+    # 44/45 rutas de cano_hermes/api/app.py no tienen autenticación. Este
+    # compose no es el path de despliegue activo hoy (StarHome real corre
+    # nativo vía systemd, 127.0.0.1:8787 -- ver infrastructure/systemd/),
+    # así que este cambio no afecta nada en ejecución; deja el mismo
+    # binding solo-local que infrastructure/baserow/docker-compose.yml ya
+    # usa, en vez del riesgo quedando latente para el día que sí se use.
+    ports: ["127.0.0.1:8000:8000"]
     env_file: [.env]
     volumes:
       - ./storage:/app/storage
