@@ -1,0 +1,37 @@
+# AAH:PERMISSIONS:START
+# AAH named profiles are selected only by AAH's Codex subprocesses.
+# The user's default_permissions setting is intentionally not changed.
+[permissions.aah_readonly.filesystem]
+":minimal" = "read"
+glob_scan_max_depth = 4
+
+[permissions.aah_readonly.filesystem.":project_roots"]
+"." = "read"
+".env" = "deny"
+".env.*" = "deny"
+"*/.env" = "deny"
+"*/.env.*" = "deny"
+"*/*/.env" = "deny"
+"*/*/.env.*" = "deny"
+"*/*/*/.env" = "deny"
+"*/*/*/.env.*" = "deny"
+
+[permissions.aah_workspace.filesystem]
+":minimal" = "read"
+glob_scan_max_depth = 4
+
+[permissions.aah_workspace.filesystem.":project_roots"]
+"." = "write"
+".git/**" = "read"
+".claude/**" = "read"
+".codex/**" = "read"
+".aah/**" = "read"
+".env" = "deny"
+".env.*" = "deny"
+"*/.env" = "deny"
+"*/.env.*" = "deny"
+"*/*/.env" = "deny"
+"*/*/.env.*" = "deny"
+"*/*/*/.env" = "deny"
+"*/*/*/.env.*" = "deny"
+# AAH:PERMISSIONS:END

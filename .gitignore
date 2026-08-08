@@ -51,3 +51,4 @@ infrastructure/baserow/baserow_api_token.txt
 infrastructure/baserow/baserow_content_api_token.txt
 infrastructure/baserow/baserow_accounting_api_token.txt
 infrastructure/baserow/data/
+.aah/

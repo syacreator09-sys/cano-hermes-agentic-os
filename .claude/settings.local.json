@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Read|Write|Edit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".aah/bin/guardian-hook",
+            "timeout": 10,
+            "statusMessage": "AAH Guardian"
+          }
+        ]
+      }
+    ]
+  }
+}
