@@ -20,5 +20,5 @@ Agents must not receive Docker socket access, global secrets, unrestricted files
 
 <!-- AAH:START -->
 ## Adaptive Agent Harness
-When a task is explicitly assigned to AAH, inspect `.aah/project.json` and use the AAH protocol: producer and evaluator are independent, evidence is required, and Final Gate decides completion. From an external shell use `.aah/bin/factory run "<goal>" --profile auto`. Do not bypass AAH Guardian or expose `.env` values.
+For AAH work use fresh independent producer/evaluator brains, sealed SPEC/RUBRIC contracts, persistent findings/evidence, and deterministic gates. External runs: `.aah/bin/factory run "<goal>" --profile auto`; native Claude Code: `/aah`. Never expose `.env` values, bypass Guardian, or treat another agent's conclusion as proof. MCP servers remain project/user managed and are selected only when required.
 <!-- AAH:END -->
