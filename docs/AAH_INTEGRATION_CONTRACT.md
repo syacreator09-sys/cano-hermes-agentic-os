@@ -101,11 +101,15 @@ AGENT_RUNTIME_TO_EXECUTOR: dict[str, str] = {
     "api": "hermes-agent",
     "claude-code": "claude-code",
     "codex": "codex",
-    "browser": "openclaw",
     "python": "container-sandbox",
     "aah": "aah",            # ← futuro
 }
 ```
+
+Nota (A3, plan AUTONOMÍA TOTAL, 2026-08-08): la entrada `"browser": "openclaw"`
+de este snippet ya no existe -- `openclaw` nunca fue un binario real (siempre
+"stand-in"). Los agentes que necesitan navegador usan `runtime: hermes` +
+`"browser"` en su `tools`, ver `docs/OPERATIONS.md`.
 
 ## 5. Comando y resultado estructurado
 

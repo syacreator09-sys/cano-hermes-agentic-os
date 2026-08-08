@@ -19,25 +19,28 @@ from cano_hermes.runtimes.codex import CodexExecutor
 from cano_hermes.runtimes.container_sandbox import ContainerSandboxExecutor
 from cano_hermes.runtimes.hermes_agent import HermesAgentExecutor
 from cano_hermes.runtimes.locks import WriteLockManager
-from cano_hermes.runtimes.openclaw import OpenClawExecutor
 from cano_hermes.runtimes.worktrees import SAFE_NAME, WorktreeManager
 
 # AgentManifest.runtime (agents/**/*.yaml `runtime:` field) -> registered
-# Executor id. Not a 1:1 name match by accident in three cases: "hermes" is
+# Executor id. Not a 1:1 name match by accident in two cases: "hermes" is
 # the manifest spelling of the "hermes-agent" executor; "api" (model-profile
 # tier, e.g. kimi/deepseek/nvidia-NIM agents) also runs through hermes-agent,
 # which reads packet.metadata["model"/"provider"] to pick the right backend
-# (see HermesAgentExecutor.build_args); "browser" maps to openclaw (K10 will
-# give it a dedicated runtime, this is the current stand-in); "python" maps
-# to container-sandbox, the only executor that runs arbitrary local code in
-# an isolated, capability-dropped container rather than shelling out to a
-# specific vendor CLI.
+# (see HermesAgentExecutor.build_args). "python" maps to container-sandbox,
+# the only executor that runs arbitrary local code in an isolated,
+# capability-dropped container rather than shelling out to a specific
+# vendor CLI. There is deliberately no "browser" entry: A3 (plan
+# AUTONOMÍA TOTAL, 2026-08-08) confirmed the "openclaw" binary this used
+# to map to has never existed anywhere (docs/OPERATIONS.md always called
+# it a "stand-in") -- the two agents that needed a browser now use
+# runtime "hermes" with "browser" in their tools list instead, which
+# reaches hermes-agent's own real local browser toolset through the path
+# below. See runtimes/openclaw.py's docstring for the full resolution.
 AGENT_RUNTIME_TO_EXECUTOR: dict[str, str] = {
     "hermes": "hermes-agent",
     "api": "hermes-agent",
     "claude-code": "claude-code",
     "codex": "codex",
-    "browser": "openclaw",
     "python": "container-sandbox",
     "aah": "aah",  # A0: engineering-domain tasks routed to Adaptive Agent Harness
 }
@@ -81,7 +84,6 @@ class ExecutionService:
             "claude-code": ClaudeCodeExecutor(mode=mode),
             "codex": CodexExecutor(mode=mode),
             "hermes-agent": HermesAgentExecutor(mode=mode),
-            "openclaw": OpenClawExecutor(mode=mode),
             "container-sandbox": ContainerSandboxExecutor(mode=mode),
             "aah": AAHExecutor(str(AAH_BINARY), mode=mode),
         }
@@ -228,10 +230,26 @@ class ExecutionService:
             reason = decision.reason if not decision.allowed else "daily budget would be exceeded"
             self.engine.transition(task.id, TaskStatus.APPROVAL, "permission-engine", {"reason": reason})
             evidence_path = self._write_evidence(task, executor_id, reason)
+            # A3 (plan AUTONOMÍA TOTAL, 2026-08-08): confirmed live that
+            # `action=executor_id` (e.g. "hermes-agent") never actually
+            # matches anything in policy.SENSITIVE_ACTIONS, so K12's
+            # auto-approval engine's own "action not sensitive" condition
+            # was vacuously true for every task regardless of tools --
+            # a LOW-risk, $0-task-budget browser-capable task auto-
+            # approved and ran for real, unsupervised. policy.py's own
+            # comment already named the fix: emit "browser_with_session"
+            # for exactly this case so SENSITIVE_ACTIONS actually blocks
+            # it, instead of the generic executor_id label. Deliberately
+            # coarse (every browser-tool task, not just ones that detect
+            # a login/session domain) rather than a fragile content
+            # classifier -- "cuando dudes, requiere aprobacion humana"
+            # per this same phase's own golden rule.
+            manifest = self.engine.conductor.registry.get(task.assigned_agent) if task.assigned_agent else None
+            approval_action = "browser_with_session" if manifest is not None and "browser" in manifest.tools else executor_id
             approval = self.approvals.request(
                 ApprovalRequest(
                     task_id=task.id,
-                    action=executor_id,
+                    action=approval_action,
                     motivo=reason,
                     risk=task.risk,
                     requested_by=str(task.metadata.get("requested_by", "system")),

@@ -236,21 +236,37 @@ Aplicado:
   (`hermes_cli.tools_config._get_platform_tools`) sobre los tres
   `config.yaml`: `browser` efectivamente **False** en el perfil default,
   **True** en `hermes-research` y `hermes-ugc`.
-- **Gap conocido, no resuelto en K10**: StarHome (`HermesAgentExecutor` en
-  `cano_hermes/runtimes/hermes_agent.py`) todavía no invoca `hermes -p
-  hermes-research` / `-p hermes-ugc` según la oficina del task — hoy corre
-  siempre bajo el perfil default y solo hereda `browser` cuando el
-  `AgentManifest.tools` de la tarea lo lista explícito (`--toolsets`
-  explícito en la línea de comando, que gana sobre cualquier
-  `platform_toolsets`). Los dos perfiles nuevos quedan listos y correctos
-  para cuando se cablee esa selección de perfil por oficina (candidato
-  natural para K12, que ya toca gobernanza de acciones sensibles). Ver
-  también el comentario en `cano_hermes/orchestration/
-  execution_service.py::AGENT_RUNTIME_TO_EXECUTOR` — el runtime `browser`
-  de un `AgentManifest` hoy mapea al executor `openclaw` (stand-in), no a
-  `hermes-agent`; darle un executor dedicado también quedó fuera de este K10
-  por alcance (no estaba en las 5 tareas encargadas) y es otro candidato para
-  el mismo follow-up.
+- **Resuelto en A3 (plan AUTONOMÍA TOTAL, 2026-08-08)**: confirmado en vivo
+  que `openclaw` nunca existió como binario en ninguna máquina ni repo
+  (siempre fue un "stand-in" documentado, nunca construido). El runtime
+  `browser` de `AgentManifest` ya NO mapea a `openclaw` —
+  `cano_hermes/orchestration/execution_service.py::AGENT_RUNTIME_TO_EXECUTOR`
+  no tiene entrada `browser` en absoluto. Los dos agentes que necesitaban
+  navegador (`ui-reviewer`, `browser-operator`) ahora usan `runtime: hermes`
+  con `browser` agregado a su lista `tools`, lo que llega al toolset real
+  de `hermes-agent` (agent-browser + Chromium vía Playwright) a través del
+  `HermesAgentExecutor` que ya existía — `_build_metadata` copia
+  `AgentManifest.tools` a `packet.metadata["toolsets"]`, que
+  `HermesAgentExecutor.build_args` convierte en `--toolsets`. Verificado en
+  vivo: `hermes -z "..." -t browser` y, bajo el perfil real
+  `HERMES_PROFILE=hermes-market-intel hermes -z "..."`, ambos completaron
+  contra una página pública real, tier-0/kimi, costo $0.
+- **Regla dura, ahora enforced de verdad (no solo documentada)**: se
+  descubrió en vivo, con un test real, que la regla "browser nunca
+  auto-aprueba" NO se cumplía en la práctica — `ApprovalRequest.action`
+  usaba `executor_id` (p.ej. `"hermes-agent"`), que nunca coincide con
+  nada en `SENSITIVE_ACTIONS`, así que una tarea LOW-risk con presupuesto
+  de tarea $0 (el default de `TaskCreate` sin `budget=` explícito)
+  auto-aprobaba y ejecutaba de verdad, sin supervisión. Arreglado en
+  `ExecutionService.run()`: cuando el agente asignado tiene `"browser"` en
+  su `tools`, la `ApprovalRequest` emite `action="browser_with_session"`
+  (el nombre que `policy.py` ya reservaba para esto) en vez del
+  `executor_id` genérico — así `SENSITIVE_ACTIONS` sí bloquea el
+  auto-approve del motor K12, sin importar el riesgo o el presupuesto de
+  la tarea. Deliberadamente amplio (toda tarea con `browser`, no solo la
+  que detecte sesión/login) en vez de un clasificador de contenido frágil
+  — "cuando dudes, requiere aprobación humana". Ver
+  `tests/test_a3_browser_never_auto_approves.py`.
 
 ### Política de riesgo: `browser_with_session`
 

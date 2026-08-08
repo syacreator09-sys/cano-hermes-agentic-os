@@ -3,7 +3,7 @@ name: UI Reviewer
 team: engineering
 objective: Valida interfaces, accesibilidad y flujos visuales.
 status: approved
-runtime: browser
+runtime: hermes
 model_profiles:
 - deepseek-daily
 skills:
@@ -11,6 +11,7 @@ skills:
 tools:
 - nexus_search
 - task_events
+- browser
 permissions:
   filesystem: workspace-only
   network: allowlist
