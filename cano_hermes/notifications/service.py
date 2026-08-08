@@ -38,8 +38,11 @@ _ARTIFACTS_PREVIEW_LIMIT = 10
 # A2 (plan AUTONOMÍA TOTAL, 2026-08-08): only these are worth Cano actually
 # opening on his phone as a document -- the rest of an order's artifacts
 # (workspace scratch files, raw JSON, etc.) stay text-only in the summary
-# message above, same as before A2.
-_DELIVERABLE_SUFFIXES = {".md", ".png", ".mp4", ".pdf"}
+# message above, same as before A2. .txt added in A7 after a real master
+# order (order-8f945ff6915e) proved K7's aggregator always writes its
+# synthesis report as synthesis-summary.txt -- a genuinely rich final
+# report Cano would want pushed as a document, not just listed by path.
+_DELIVERABLE_SUFFIXES = {".md", ".png", ".mp4", ".pdf", ".txt"}
 
 
 class NotificationService:

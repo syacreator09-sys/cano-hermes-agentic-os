@@ -42,9 +42,22 @@ class DeliverDocumentsTests(unittest.TestCase):
         self.assertIn(png, sent_paths)
         self.assertEqual(fake_doc.call_count, 2)
 
+    def test_synthesis_summary_txt_is_sent_as_a_document(self):
+        """A7 (plan AUTONOMÍA TOTAL, 2026-08-08): a real master order
+        (order-8f945ff6915e) proved K7's aggregator always writes
+        synthesis-summary.txt -- it must be delivered as a document, not
+        just listed by path in the text summary."""
+        txt = self._write("synthesis-summary.txt")
+        with patch("cano_hermes.notifications.service.send_telegram_message"), \
+             patch("cano_hermes.notifications.service.send_telegram_document") as fake_doc:
+            fake_doc.return_value = True
+            self.notifier.notify_order_done(self.order, [txt])
+        fake_doc.assert_called_once()
+        self.assertEqual(fake_doc.call_args.args[0], txt)
+
     def test_non_deliverable_extensions_are_skipped(self):
-        """Workspace scratch files (json/log/txt/...) stay text-only in
-        the summary message, same as before A2 -- not every artifact is
+        """Workspace scratch files (json/log/...) stay text-only in the
+        summary message, same as before A2 -- not every artifact is
         worth a document upload."""
         scratch = self._write("scratch.json")
         with patch("cano_hermes.notifications.service.send_telegram_message"), \
