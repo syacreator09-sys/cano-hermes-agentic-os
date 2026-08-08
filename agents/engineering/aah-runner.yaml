@@ -1,0 +1,27 @@
+id: aah-runner
+name: AAH Runner
+team: engineering
+objective: Ejecuta cambios de riesgo medio+ con el ciclo Planner->Builder->Evaluator(->Fixer) y Final Gate determinista de Adaptive Agent Harness.
+status: approved
+runtime: aah
+model_profiles:
+- aah-subscription
+skills:
+- architecture-spec
+- tdd-build
+tools:
+- nexus_search
+- task_events
+permissions:
+  filesystem: workspace-only
+  network: allowlist
+  production: approval-required
+budget:
+  max_cost_usd: 0.5
+  max_turns: 16
+  timeout_seconds: 1200
+evaluations:
+- schema
+- safety
+- task-contract
+max_concurrency: 1

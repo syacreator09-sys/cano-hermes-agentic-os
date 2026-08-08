@@ -125,7 +125,7 @@ class Conductor:
             agents = [a for a in self.registry.all() if a.id == "task-governor"]
         if not agents:
             raise RuntimeError(f"No active agent for team {team}")
-        agent = agents[0]
+        agent = self._select(team, agents, RiskLevel(task.risk))
         complexity = int(task.metadata.get("complexity", 3))
         context_need = int(task.metadata.get("context_need", 2))
         route = self.router.route(
@@ -141,6 +141,22 @@ class Conductor:
         )
         kanban_profile = TEAM_TO_KANBAN_PROFILE.get(team)
         return Assignment(agent.id, route.profile.id, route.reasons, kanban_profile)
+
+    @staticmethod
+    def _select(team: str, agents: list, risk: RiskLevel):
+        """A0 (plan AUTONOMÍA TOTAL): engineering tasks at MEDIUM+ risk
+        prefer a `runtime: aah` agent (AAHExecutor -- deterministic Final
+        Gate, Planner->Builder->Evaluator(->Fixer)) over a single-shot
+        claude-code/codex agent. AAH runs on the HOST only (subscription
+        CLIs, not available inside tier-0 Docker containers), which is
+        already true of every existing engineering agent, so this changes
+        nothing about where the work executes -- only which agent handles
+        it. Below MEDIUM, or for every other team, behavior is unchanged:
+        first match in registry order (previously inlined as `agents[0]`).
+        """
+        if team != "engineering" or risk not in {RiskLevel.MEDIUM, RiskLevel.HIGH, RiskLevel.CRITICAL}:
+            return next((a for a in agents if a.runtime != "aah"), agents[0])
+        return next((a for a in agents if a.runtime == "aah"), agents[0])
 
 
 def kanban_profile_for_domain(domain: str) -> str | None:
