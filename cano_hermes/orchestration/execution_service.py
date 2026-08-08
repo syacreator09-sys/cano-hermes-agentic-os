@@ -187,6 +187,12 @@ class ExecutionService:
         # P1 (plan POTENCIA, 2026-08-07): carried so ClaudeCodeExecutor can
         # pick --model by risk (build_args reads packet.metadata["risk"]).
         metadata["risk"] = task.risk.value
+        # A1 (plan AUTONOMÍA TOTAL, 2026-08-08): caller-supplied task_kind
+        # ("plan"/"consulta"/"rutina" -- see TaskCreate.metadata) carried
+        # the same way, so ClaudeCodeExecutor.build_args's task_kind
+        # override (checked before risk) is actually reachable.
+        if task.metadata.get("task_kind"):
+            metadata["task_kind"] = task.metadata["task_kind"]
         if task.assigned_agent:
             metadata["agent_id"] = task.assigned_agent
         if task.route_profile:

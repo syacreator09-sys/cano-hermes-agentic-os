@@ -38,6 +38,21 @@ class ClaudeCodeExecutor(CommandExecutor):
     # --model, i.e. its own configured default.
     RISK_TO_MODEL = {"high": "opus", "critical": "opus", "low": "haiku"}
 
+    # A1 (plan AUTONOMÍA TOTAL, 2026-08-08): task_kind is an explicit
+    # caller signal ("this call IS a plan/consultation" / "this call IS
+    # routine"), independent of risk -- a LOW-risk task can still be a
+    # consultation worth Fable's judgment, and a HIGH-risk task can still
+    # be routine grunt work. Checked before RISK_TO_MODEL so an explicit
+    # task_kind always wins over the risk-based default.
+    # `--model fable` confirmed live (2026-08-08) as a real alias on the
+    # installed Claude Code CLI (2.1.223), resolving to `claude-fable-5`
+    # (`claude --model fable -p "di ok" --output-format json` ->
+    # modelUsage key "claude-fable-5"). "plan"/"consulta" get Fable
+    # directly rather than falling back to opus, since the alias is
+    # confirmed to exist -- the plan's own "si no, opus" fallback would
+    # only apply if a future CLI version dropped the alias.
+    TASK_KIND_TO_MODEL = {"plan": "fable", "consulta": "fable", "rutina": "haiku"}
+
     def __init__(self, command: str = "claude", mode: str = "dry_run") -> None:
         super().__init__("claude-code", command, mode)
 
@@ -53,7 +68,9 @@ class ClaudeCodeExecutor(CommandExecutor):
             "--permission-mode",
             "plan" if self.mode == "dry_run" else "default",
         ]
-        model = self.RISK_TO_MODEL.get(str(packet.metadata.get("risk", "")))
+        model = self.TASK_KIND_TO_MODEL.get(str(packet.metadata.get("task_kind", "")))
+        if not model:
+            model = self.RISK_TO_MODEL.get(str(packet.metadata.get("risk", "")))
         if model:
             args += ["--model", model]
         return args
